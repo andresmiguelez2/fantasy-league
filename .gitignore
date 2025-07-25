@@ -3,3 +3,5 @@ secrets/
 
 # environment variables
 .env
+
+.vscode/
