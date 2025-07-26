@@ -1,8 +1,6 @@
-import os
 import logging
 import time
-import psycopg2
-from market import Market
+from market import load_market
 
 
 LOOP_TIME_SECONDS = 10
@@ -26,55 +24,6 @@ def wait_loop_time(start_time):
             return
 
 
-def load_market():
-    try:
-        logger.info("Connecting to database...")
-        # Connect to PostgreSQL database using environment variables
-        conn = psycopg2.connect(
-            host=os.getenv("DB_HOST", "postgres_db"),
-            database=os.getenv("DB_NAME", "postgres"),
-            user=os.getenv("DB_USER", "postgres"),
-            password=os.getenv("DB_PASSWORD", "password"),
-            port=os.getenv("DB_PORT", "5432"),
-        )
-
-        cursor = conn.cursor()
-
-        logger.info("Executing market query...")
-        # Example query to load market data
-        cursor.execute(
-            """
-            SELECT *
-            FROM market
-            WHERE closing_timestamp > now()
-        """
-        )
-        market_data = cursor.fetchall()
-
-        if len(market_data) > 1:
-            logger.error("Several concurrent markets found in the database.")
-            raise ValueError("Several concurrent markets found in the database.")
-        if len(market_data) == 0:
-            logger.warning("No active market found in the database.")
-            raise ValueError("No active market found in the database.")
-
-        market = Market()
-        market.id = market_data[0][0]
-        market.closing_ts = market_data[0][1]
-        market.has_been_closed = market_data[0][2]
-        logger.info(f"Found market {market}")
-
-        cursor.close()
-        conn.close()
-        logger.info("Database connection closed successfully")
-
-        return market
-
-    except psycopg2.Error as e:
-        logger.error(f"Database error: {e}")
-        return []
-
-
 if __name__ == "__main__":
     logger.info("Backend app is starting...")
 
@@ -83,14 +32,14 @@ if __name__ == "__main__":
             start_time = time.time()
 
             logger.info("Loading market data...")
-            active_market = load_market()
+            active_market = load_market(logger)
             logger.info("Market loading completed")
 
             wait_loop_time(start_time)
 
         except KeyboardInterrupt:
             print("\n")
-            logger.info("Application interrupted by user")
+            logger.info("Backend app stopped by user")
             break
         except Exception as e:
             logger.error(f"Unexpected error: {e}")

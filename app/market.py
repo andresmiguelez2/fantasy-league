@@ -1,4 +1,6 @@
 import datetime
+import os
+import psycopg2
 
 
 class Market:
@@ -47,3 +49,53 @@ class Market:
 
     def __str__(self):
         return f"Market(id={self._id}, closing_ts={self._closing_ts}, has_been_closed={self._has_been_closed})"
+    
+
+def load_market(logger):
+    """Load the active market from the database."""
+    try:
+        logger.info("Connecting to database...")
+        # Connect to PostgreSQL database using environment variables
+        conn = psycopg2.connect(
+            host=os.getenv("DB_HOST", "postgres_db"),
+            database=os.getenv("DB_NAME", "postgres"),
+            user=os.getenv("DB_USER", "postgres"),
+            password=os.getenv("DB_PASSWORD", "password"),
+            port=os.getenv("DB_PORT", "5432"),
+        )
+
+        cursor = conn.cursor()
+
+        logger.info("Executing market query...")
+        # Example query to load market data
+        cursor.execute(
+            """
+            SELECT *
+            FROM market
+            WHERE closing_timestamp > now()
+        """
+        )
+        market_data = cursor.fetchall()
+
+        if len(market_data) > 1:
+            logger.error("Several concurrent markets found in the database.")
+            raise ValueError("Several concurrent markets found in the database.")
+        if len(market_data) == 0:
+            logger.warning("No active market found in the database.")
+            raise ValueError("No active market found in the database.")
+
+        market = Market()
+        market.id = market_data[0][0]
+        market.closing_ts = market_data[0][1]
+        market.has_been_closed = market_data[0][2]
+        logger.info(f"Found market {market}")
+
+        cursor.close()
+        conn.close()
+        logger.info("Database connection closed successfully")
+
+        return market
+
+    except psycopg2.Error as e:
+        logger.error(f"Database error: {e}")
+        return []
