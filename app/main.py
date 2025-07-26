@@ -30,7 +30,7 @@ def load_market():
         # Example query to load market data
         cursor.execute(
             """
-            SELECT id, closing_timestamp
+            SELECT *
             FROM market
             WHERE closing_timestamp > now()
         """
@@ -44,10 +44,11 @@ def load_market():
             logger.warning("No active market found in the database.")
             raise ValueError("No active market found in the database.")
 
-        logger.info(f"Found market with ID: {market_data[0][0]}")
         market = Market()
         market.id = market_data[0][0]
         market.closing_ts = market_data[0][1]
+        market.has_been_closed = market_data[0][2]
+        logger.info(f"Found market {market}")
 
         cursor.close()
         conn.close()
@@ -62,5 +63,5 @@ def load_market():
 
 if __name__ == "__main__":
     logger.info("Backend app is starting...")
-    markets = load_market()
+    active_market = load_market()
     logger.info("Market loading completed")
