@@ -11,7 +11,9 @@
         "ms-python.python",
         "ms-python.debugpy",
         "ms-python.pylint",
-        "ms-vscode.vscode-git"
+        "ms-vscode.vscode-git",
+        "ms-python.black-formatter",
+        "GitHub.copilot-chat"
     ],
     "settings": {
         "python.defaultInterpreterPath": "/usr/local/bin/python",
