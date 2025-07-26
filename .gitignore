@@ -9,3 +9,5 @@ secrets/
 *.pylintrc
 
 *.pyc
+*.cpython-*
+app/__pycache__/
