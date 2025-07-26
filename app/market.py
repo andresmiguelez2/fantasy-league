@@ -1,6 +1,10 @@
 import datetime
 import os
+import logging
 import psycopg2
+
+# Create logger for this module
+logger = logging.getLogger(__name__)
 
 
 class Market:
@@ -41,19 +45,65 @@ class Market:
         """Set the market closed status."""
         self._has_been_closed = value
 
-    def is_active(self):
+    def _is_active(self):
         """Check if the market is still active based on the closing timestamp."""
         if self._closing_ts:
             return self._closing_ts > datetime.datetime.now(tz=datetime.timezone.utc)
         return False
+    
+    def _open_new_market(self, cursor):
+        cursor.execute(
+            """
+            INSERT INTO market (id, closing_timestamp, has_been_closed)
+            VALUES (default, '{}', FALSE)
+            """.format(datetime.datetime.strftime(self._closing_ts + datetime.timedelta(days=1), "%Y-%m-%d %H:%M:%S"))
+        )
+        logger.info("New market opened.")
+
+    
+    def fulfill_market(self):
+        if not self._is_active() and not self._has_been_closed:
+            self._has_been_closed = True
+            logger.info(f"Market {self._id} has been closed.")
+
+            try:
+                conn = psycopg2.connect(
+                    host=os.getenv("DB_HOST", "postgres_db"),
+                    database=os.getenv("DB_NAME", "postgres"),
+                    user=os.getenv("DB_USER", "postgres"),
+                    password=os.getenv("DB_PASSWORD", "password"),
+                    port=os.getenv("DB_PORT", "5432"),
+                )
+                cursor = conn.cursor()
+
+                # Use parameterized query to prevent SQL injection
+                cursor.execute(
+                    f"""
+                    UPDATE market
+                    SET has_been_closed = TRUE
+                    WHERE id = {self._id}
+                    """
+                )
+                self._open_new_market(cursor)
+
+                conn.commit()
+                cursor.close()
+                conn.close()
+                logger.info(f"Database updated: Market {self._id} marked as closed")
+                
+            except psycopg2.Error as e:
+                logger.error(f"Database error while fulfilling market {self._id}: {e}")
+                self._has_been_closed = False# Rollback the local state change if database update failed
+
 
     def __str__(self):
         return f"Market(id={self._id}, closing_ts={self._closing_ts}, has_been_closed={self._has_been_closed})"
     
 
-def load_market(logger):
+def load_market():
     """Load the active market from the database."""
     try:
+        logger.info("Loading market data...")
         logger.info("Connecting to database...")
         # Connect to PostgreSQL database using environment variables
         conn = psycopg2.connect(

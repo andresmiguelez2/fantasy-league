@@ -26,14 +26,15 @@ def wait_loop_time(start_time):
 
 if __name__ == "__main__":
     logger.info("Backend app is starting...")
+    active_market = None
 
     while True:
         try:
             start_time = time.time()
 
-            logger.info("Loading market data...")
-            active_market = load_market(logger)
-            logger.info("Market loading completed")
+            if active_market:
+                active_market.fulfill_market()
+            active_market = load_market()
 
             wait_loop_time(start_time)
 
