@@ -1,0 +1,25 @@
+{
+    "name": "Fantasy App Development",
+    "dockerComposeFile": "../docker-compose.yml",
+    "service": "app",
+    "workspaceFolder": "/workspace",
+    "shutdownAction": "none",
+    "mounts": [
+        "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
+    ],
+    "extensions": [
+        "ms-python.python",
+        "ms-python.debugpy",
+        "ms-python.pylint",
+        "ms-vscode.vscode-git"
+    ],
+    "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.terminal.activateEnvironment": false
+    },
+    "forwardPorts": [8000],
+    "features": {
+        "ghcr.io/devcontainers/features/git:1": {},
+        "ghcr.io/devcontainers/features/github-cli:1": {}
+    }
+}

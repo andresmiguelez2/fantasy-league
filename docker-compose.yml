@@ -15,18 +15,16 @@ services:
     env_file:
       - secrets/db.env
     environment:
-      - DATABASE_URL=postgresql://$${POSTGRES_USER}:$${POSTGRES_PASSWORD}@db:5432/$${POSTGRES_DB}
       - DB_HOST=db
       - DB_PORT=5432
-      - DB_NAME=${POSTGRES_DB}
-      - DB_USER=${POSTGRES_USER}
-      - DB_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
+      - ./:/workspace
       - ./app:/app
     ports:
       - "8000:8000"
     depends_on:
       - db
+    command: tail -f /dev/null # Keep the container running
 
   pgadmin:
     image: dpage/pgadmin4
