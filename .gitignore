@@ -7,3 +7,5 @@ secrets/
 .vscode/
 
 *.pylintrc
+
+*.pyc
