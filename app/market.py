@@ -60,7 +60,40 @@ class Market:
         )
         logger.info("New market opened.")
 
-    
+    def _assign_bids(self, cursor):
+        """Assign bids to the market."""
+        cursor.execute(
+            """
+            SELECT footballer_id, bidder_id, amount
+            FROM bid
+            """,
+        )
+        bid_data = cursor.fetchall()
+
+        bid_players = dict()
+        for bid in bid_data:
+            footballer_id, bidder_id, amount = bid
+            if footballer_id not in bid_players:
+                bid_players[footballer_id] = (bidder_id, amount)
+            elif amount > bid_players[footballer_id][1]:
+                bid_players[footballer_id] = (bidder_id, amount)
+            elif amount == bid_players[footballer_id][1]:
+                logger.warning(f"Bid for footballer {footballer_id} by {bidder_id} with amount {amount} is equal to an existing bid. Skipping.")
+
+        for footballer_id, (bidder_id, amount) in bid_players.items():
+            cursor.execute(
+                """
+                UPDATE footballer
+                SET on_market = FALSE, owner_id = %s
+                WHERE id = %s;
+                DELETE FROM bid
+                WHERE bidder_id = %s AND footballer_id = %s;
+                """,
+                (bidder_id, footballer_id, bidder_id, footballer_id)
+            )
+            logger.info(f"Footballer {footballer_id} assigned to bidder {bidder_id} with amount {amount}.")
+            
+            
     def fulfill_market(self):
         if not self._is_active() and not self._has_been_closed:
             self._has_been_closed = True
@@ -84,12 +117,15 @@ class Market:
                     WHERE id = {self._id}
                     """
                 )
+                conn.commit()
+                logger.info(f"Database updated: Market {self._id} marked as closed")
+
+                self._assign_bids(cursor)
                 self._open_new_market(cursor)
 
                 conn.commit()
                 cursor.close()
                 conn.close()
-                logger.info(f"Database updated: Market {self._id} marked as closed")
                 
             except psycopg2.Error as e:
                 logger.error(f"Database error while fulfilling market {self._id}: {e}")

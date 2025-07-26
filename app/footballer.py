@@ -7,7 +7,7 @@ class Footballer():
         self._name: str = None
         self._price: int = None
         self._on_market: bool = None
-        self._owner: int = None
+        self._owner_id: int = None
 
     @property
     def id(self):
@@ -50,14 +50,14 @@ class Footballer():
         self._on_market = value
 
     @property
-    def owner(self):
-        """Get the footballer owner ID."""
-        return self._owner
+    def owner_id(self):
+        """Get the footballer owner_id ID."""
+        return self._owner_id
     
-    @owner.setter
-    def owner(self, value):
+    @owner_id.setter
+    def owner_id(self, value):
         """Set the footballer owner ID."""
-        self._owner = value
+        self._owner_id = value
 
     def __str__(self):
         attrs = [attr for attr in dir(self) if attr.startswith('_') and not attr.startswith('__')]
