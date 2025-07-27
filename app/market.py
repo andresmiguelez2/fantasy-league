@@ -61,11 +61,13 @@ class Market:
         logger.info("New market opened.")
 
     def _assign_bids(self, cursor):
-        """Assign bids to the market."""
+        """Assign bids placed on league players."""
         cursor.execute(
             """
-            SELECT footballer_id, bidder_id, amount
-            FROM bid
+            SELECT bid.footballer_id, bid.bidder_id, bid.amount
+            FROM bid JOIN footballer ON footballer.id = bid.footballer_id
+            WHERE footballer.owner_id IS NULL
+            ORDER BY amount DESC, timestamp ASC
             """,
         )
         bid_data = cursor.fetchall()
