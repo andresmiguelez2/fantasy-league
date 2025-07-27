@@ -24,7 +24,8 @@ services:
       - "8000:8000"
     depends_on:
       - db
-    command: tail -f /dev/null # Keep the container running
+    # command: tail -f /dev/null # Keep the container running
+    command: python /app/main.py
 
   pgadmin:
     image: dpage/pgadmin4
