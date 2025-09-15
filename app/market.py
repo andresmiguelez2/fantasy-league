@@ -97,6 +97,7 @@ class Market:
             
             
     def fulfill_market(self):
+        """Fulfill the market if it has been closed."""
         if not self._is_active() and not self._has_been_closed:
             self._has_been_closed = True
             logger.info(f"Market {self._id} has been closed.")
@@ -119,7 +120,6 @@ class Market:
                     WHERE id = {self._id}
                     """
                 )
-                conn.commit()
                 logger.info(f"Database updated: Market {self._id} marked as closed")
 
                 self._assign_bids(cursor)
