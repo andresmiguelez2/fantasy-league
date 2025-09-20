@@ -63,14 +63,46 @@ class Market:
         )
         logger.info("New market opened.")
 
-    def _place_footballers_into_market(self, cursor, n_agents):
+    def _cleanup_market(self, cursor):
+        """Removes players without bids and owner from the market.
+            
+        returns:
+            list[int]: List of footballer IDs removed from the market.
+        """
+        cursor.execute(
+            """
+            SELECT id
+            FROM public.footballer
+            WHERE 
+                on_market = TRUE
+                AND owner_id IS NULL
+            """
+        )
+        footballers_to_remove = cursor.fetchall()
+        if footballers_to_remove:
+            cursor.execute(
+                """
+                DELETE FROM public.footballer
+                WHERE id IN %s
+                """,
+                (tuple([f[0] for f in footballers_to_remove]),)
+            )
+            logger.info(f"Removed footballers without bids and owner from market: {footballers_to_remove}")
+
+        return [f_[0] for f_ in footballers_to_remove]
+
+    def _place_footballers_into_market(self, cursor, n_agents, just_removed):
         """Place free agents into the market."""
         cursor.execute(
             """
             SELECT footballer.id
             FROM footballer
-            WHERE footballer.owner_id IS NULL AND footballer.on_market = FALSE
-            """
+            WHERE 
+                footballer.owner_id IS NULL 
+                AND footballer.on_market = FALSE
+                AND footballer.id NOT IN %s
+            """,
+            (tuple(just_removed) if just_removed else (0,),)
         )
         free_agents = cursor.fetchall()
         chosen_free_agents = random.sample(free_agents, min(n_agents, len(free_agents)))
@@ -78,12 +110,15 @@ class Market:
         cursor.execute(
             """
             UPDATE footballer
-            SET on_market = TRUE
-            WHERE id IN %s;
+            SET
+                on_market = TRUE,
+                on_market_since = now()
+            WHERE 
+                ID in %s;
             """,
             (tuple([fa[0] for fa in chosen_free_agents]),)
         )
-        logger.info(f"Placed players ({chosen_free_agents}) into the market.")
+        logger.info(f"Placed players {chosen_free_agents} into the market.")
 
     def _assign_bids(self, cursor):
         """Assign bids placed on league players."""
@@ -157,7 +192,8 @@ class Market:
 
                 self._assign_bids(cursor)
                 self._open_new_market(cursor)
-                self._place_footballers_into_market(cursor, N_NEW_FOOTBALLERS_INTO_MARKET)
+                removed_from_market = self._cleanup_market(cursor)
+                self._place_footballers_into_market(cursor, N_NEW_FOOTBALLERS_INTO_MARKET, removed_from_market)
 
                 conn.commit()
                 cursor.close()
