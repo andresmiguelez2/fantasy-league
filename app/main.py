@@ -1,9 +1,7 @@
 import logging
 import time
 from market import load_market
-
-
-LOOP_TIME_SECONDS = 10
+from constants import LOOP_TIME_SECONDS, SLEEP_TIME
 
 
 # Configure logging to output to stdout (container logs)
@@ -19,7 +17,7 @@ def wait_loop_time(start_time):
     """Check if the loop time has exceeded the defined limit."""
     while True:
         if time.time() - start_time < LOOP_TIME_SECONDS:
-            time.sleep(0.001)
+            time.sleep(SLEEP_TIME)
         else:
             return
 
