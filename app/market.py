@@ -2,6 +2,9 @@ import datetime
 import os
 import logging
 import psycopg2
+import random
+
+from constants import N_NEW_FOOTBALLERS_INTO_MARKET
 
 # Create logger for this module
 logger = logging.getLogger(__name__)
@@ -59,6 +62,28 @@ class Market:
             """.format(datetime.datetime.strftime(self._closing_ts + datetime.timedelta(days=1), "%Y-%m-%d %H:%M:%S"))
         )
         logger.info("New market opened.")
+
+    def _place_footballers_into_market(self, cursor, n_agents):
+        """Place free agents into the market."""
+        cursor.execute(
+            """
+            SELECT footballer.id
+            FROM footballer
+            WHERE footballer.owner_id IS NULL AND footballer.on_market = FALSE
+            """
+        )
+        free_agents = cursor.fetchall()
+        chosen_free_agents = random.sample(free_agents, min(n_agents, len(free_agents)))
+
+        cursor.execute(
+            """
+            UPDATE footballer
+            SET on_market = TRUE
+            WHERE id IN %s;
+            """,
+            (tuple([fa[0] for fa in chosen_free_agents]),)
+        )
+        logger.info(f"Placed players ({chosen_free_agents}) into the market.")
 
     def _assign_bids(self, cursor):
         """Assign bids placed on league players."""
@@ -124,6 +149,7 @@ class Market:
 
                 self._assign_bids(cursor)
                 self._open_new_market(cursor)
+                self._place_footballers_into_market(cursor, N_NEW_FOOTBALLERS_INTO_MARKET)
 
                 conn.commit()
                 cursor.close()
@@ -160,7 +186,7 @@ def load_market():
             """
             SELECT *
             FROM market
-            WHERE closing_timestamp > now()
+            WHERE closing_timestamp > now() AND has_been_closed = FALSE
         """
         )
         market_data = cursor.fetchall()
