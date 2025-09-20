@@ -24,8 +24,19 @@ services:
       - "8000:8000"
     depends_on:
       - db
-    # command: tail -f /dev/null # Keep the container running
     command: python /app/main.py
+
+  userapp:
+    build: .
+    container_name: user_app
+    environment:
+      - BACKEND_URL=http://app:8000
+      - BACKEND_HOST=app
+      - BACKEND_PORT=8000
+    volumes:
+      - ./:/workspace
+    depends_on:
+      - app
 
   pgadmin:
     image: dpage/pgadmin4
