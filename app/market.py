@@ -89,10 +89,18 @@ class Market:
         """Assign bids placed on league players."""
         cursor.execute(
             """
-            SELECT bid.footballer_id, bid.bidder_id, bid.amount
+            SELECT 
+                bid.footballer_id
+                , bid.bidder_id
+                , bid.amount
             FROM bid JOIN footballer ON footballer.id = bid.footballer_id
-            WHERE footballer.owner_id IS NULL
-            ORDER BY amount DESC, timestamp ASC
+            WHERE 
+                footballer.owner_id IS NULL
+                AND footballer.on_market = TRUE -- para mayor robustez
+                AND bid.amount >= footballer.price -- para mayor robustez
+            ORDER BY 
+                amount DESC
+                , timestamp ASC
             """,
         )
         bid_data = cursor.fetchall()
@@ -114,9 +122,9 @@ class Market:
                 SET on_market = FALSE, owner_id = %s
                 WHERE id = %s;
                 DELETE FROM bid
-                WHERE bidder_id = %s AND footballer_id = %s;
+                WHERE footballer_id = %s;
                 """,
-                (bidder_id, footballer_id, bidder_id, footballer_id)
+                (bidder_id, footballer_id, footballer_id)
             )
             logger.info(f"Footballer {footballer_id} assigned to bidder {bidder_id} with amount {amount}.")
             
