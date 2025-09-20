@@ -4,7 +4,7 @@ import logging
 import psycopg2
 import random
 
-from constants import N_NEW_FOOTBALLERS_INTO_MARKET
+from aux.constants import N_NEW_FOOTBALLERS_INTO_MARKET
 
 # Create logger for this module
 logger = logging.getLogger(__name__)

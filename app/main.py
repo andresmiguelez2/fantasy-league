@@ -1,7 +1,7 @@
 import logging
 import time
-from market import load_market
-from constants import LOOP_TIME_SECONDS, SLEEP_TIME
+from classes.market import load_market
+from aux.constants import LOOP_TIME_SECONDS, SLEEP_TIME
 
 
 # Configure logging to output to stdout (container logs)
