@@ -39,3 +39,32 @@ def squad(player_id: int):
     except psycopg2.Error as e:
         logger.error(f"Database error: {e}")
         return {"players": []}
+    
+
+@server_app.get("/market")
+def market():
+    try:
+        conn = psycopg2.connect(
+            host=os.getenv("DB_HOST", "postgres_db"),
+            database=os.getenv("DB_NAME", "postgres"),
+            user=os.getenv("DB_USER", "postgres"),
+            password=os.getenv("DB_PASSWORD", "password"),
+            port=os.getenv("DB_PORT", "5432"),
+        )
+
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT *
+            FROM footballer
+            WHERE on_market = TRUE
+            ORDER BY owner_id, on_market_since 
+            """
+        )
+        players = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return {"players": players}
+    except psycopg2.Error as e:
+        logger.error(f"Database error: {e}")
+        return {"players": []}
