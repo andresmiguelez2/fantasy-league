@@ -24,7 +24,7 @@ services:
       - "8000:8000"
     depends_on:
       - db
-    command: python /app/main.py
+    command: bash -c "uvicorn main:server_app --host 0.0.0.0 --port 8000 --reload & python /app/main.py"
 
   userapp:
     build: .

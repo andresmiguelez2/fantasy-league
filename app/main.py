@@ -5,7 +5,7 @@ from classes.market import load_market
 from aux.constants import LOOP_TIME_SECONDS, SLEEP_TIME
 
 
-app = FastAPI()
+server_app = FastAPI()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -15,7 +15,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-@app.get("/ping")
+@server_app.get("/ping")
 def ping():
     return {"status": "ok", "message": "pong"}
 
