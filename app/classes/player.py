@@ -1,6 +1,8 @@
 import logging
 import requests
 import os
+from tabulate import tabulate
+from aux.constants import FOOTBALLER_COLUMNS
 
 
 logger = logging.getLogger(__name__)
@@ -69,7 +71,14 @@ class Session():
             logger.info("Invalid choice.")
 
     def _squad_main(self):
-        print("Squad management is not implemented yet.")
+        print("\nSquad menu:")
+        print("\t1. View Squad")
+        choice = input("Select an option: ")
+
+        if choice == "1":
+            self._view_squad()
+        else:
+            logger.info("Invalid choice.")
 
     def _market_main(self):
         print("Market interaction is not implemented yet.")
@@ -110,3 +119,20 @@ class Session():
         except Exception as e:
             logger.error(f"Failed to reach backend: {e}")
             return False
+
+    def _view_squad(self):
+        try:
+            url = f"{os.environ['BACKEND_URL']}/squads/{self.player_id}"
+            response = requests.get(url)
+            if response.status_code == 200:
+                data = response.json()
+                players = data.get("players", [])
+                if players:
+                    print("\nYour Squad:")
+                    print(tabulate(players, headers=FOOTBALLER_COLUMNS, tablefmt="grid"))
+                else:
+                    print("No players found in your squad.")
+            else:
+                logger.error(f"Failed to fetch squad: {response.status_code}")
+        except Exception as e:
+            logger.error(f"Error while fetching squad: {e}")
