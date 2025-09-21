@@ -224,7 +224,7 @@ def load_market():
 
         cursor = conn.cursor()
 
-        logger.info("Executing market query...")
+        logger.debug("Executing market query...")
         # Example query to load market data
         cursor.execute(
             """
