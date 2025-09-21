@@ -1,5 +1,6 @@
 import logging
 import requests
+from aux.constants import BACKEND_ENDPOINT
 
 logger = logging.getLogger(__name__)
 
@@ -33,8 +34,12 @@ class Session():
             logger.info("Login successful!")
             self._user = username
             self._player_id = users_id[username]
-            self._active = True
-            return True
+            if self._ping_backend():
+                self._active = True
+                return True
+            else:
+                logger.error("Backend is not reachable.")
+                return False
         else:
             logger.warning("Invalid username or password.")
             return False
@@ -44,11 +49,11 @@ class Session():
             logger.warning("Session is not active. Please log in first.")
             return
 
-        logger.info("\nMain Menu:")
-        logger.info("\t1. Squad")
-        logger.info("\t2. Market")
-        logger.info("\t3. Leaderboard")
-        logger.info("\t4. Logout")
+        print("\nMain Menu:")
+        print("\t1. Squad")
+        print("\t2. Market")
+        print("\t3. Leaderboard")
+        print("\t4. Logout")
         choice = input("Select an option: ")
 
         if choice == "1":
@@ -63,13 +68,13 @@ class Session():
             logger.info("Invalid choice.")
 
     def _squad_main(self):
-        logger.info("Squad management is not implemented yet.")
+        print("Squad management is not implemented yet.")
 
     def _market_main(self):
-        logger.info("Market interaction is not implemented yet.")
+        print("Market interaction is not implemented yet.")
 
     def _leaderboard_main(self):
-        logger.info("Leaderboard viewing is not implemented yet.")
+        print("Leaderboard viewing is not implemented yet.")
 
     @property
     def user(self):
@@ -90,15 +95,17 @@ class Session():
     def logout(self):
         self.active = False
         logger.info("Logged out successfully.")
-        
-    def ping_backend(self):
+
+    def _ping_backend(self):
         try:
-            # Use the service name and port as defined in docker-compose.yml
-            url = "http://backend_app:8000/ping"
+            url = f"{BACKEND_ENDPOINT}/ping"
             response = requests.get(url)
             if response.status_code == 200:
-                logger.info("Backend is reachable:", response.text)
+                logger.info("Backend is reachable.")
+                return True
             else:
-                logger.error("Backend returned error:", response.status_code)
+                logger.error(f"Backend returned error: {response.status_code}")
+                return False
         except Exception as e:
-            logger.error("Failed to reach backend:", e)
+            logger.error(f"Failed to reach backend: {e}")
+            return False
