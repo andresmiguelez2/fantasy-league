@@ -5,3 +5,6 @@ SLEEP_TIME = 0.001 # Sleep time in seconds
 
 ### Market ####
 N_NEW_FOOTBALLERS_INTO_MARKET = 5 # number of new players to be added into new market
+
+
+### Client app ###

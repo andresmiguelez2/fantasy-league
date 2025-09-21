@@ -1,11 +1,9 @@
-from fastapi import FastAPI
 import logging
 import time
 from classes.market import load_market
 from aux.constants import LOOP_TIME_SECONDS, SLEEP_TIME
+from aux.server_requests import server_app
 
-
-server_app = FastAPI()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -13,11 +11,6 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
-
-
-@server_app.get("/ping")
-def ping():
-    return {"status": "ok", "message": "pong"}
 
 
 def wait_loop_time(start_time):

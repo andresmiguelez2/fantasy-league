@@ -1,6 +1,7 @@
 import logging
 import requests
-from aux.constants import BACKEND_ENDPOINT
+import os
+
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +99,7 @@ class Session():
 
     def _ping_backend(self):
         try:
-            url = f"{BACKEND_ENDPOINT}/ping"
+            url = f"{os.environ['BACKEND_URL']}/ping"
             response = requests.get(url)
             if response.status_code == 200:
                 logger.info("Backend is reachable.")
