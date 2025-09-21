@@ -30,7 +30,7 @@ services:
     build: .
     container_name: user_app
     environment:
-      - BACKEND_URL=http://app:8000
+      - BACKEND_URL=http://backend_app:8000
       - BACKEND_HOST=app
       - BACKEND_PORT=8000
     volumes:

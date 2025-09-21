@@ -13,7 +13,9 @@
         "ms-python.pylint",
         "ms-vscode.vscode-git",
         "ms-python.black-formatter",
-        "GitHub.copilot-chat"
+        "GitHub.copilot-chat",
+        "vivaxy.vscode-conventional-commits",
+        "mhutchie.git-graph"
     ],
     "settings": {
         "python.defaultInterpreterPath": "/usr/local/bin/python",
