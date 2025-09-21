@@ -81,7 +81,17 @@ class Session():
             logger.info("Invalid choice.")
 
     def _market_main(self):
-        print("Market interaction is not implemented yet.")
+        print("\nMarket menu:")
+        print("\t1. View Market")
+        print("\t2. Place bid")
+        choice = input("Select an option: ")
+
+        if choice == "1":
+            self._view_market()
+        elif choice == "2":
+            self._place_bid()
+        else:
+            logger.info("Invalid choice.")
 
     def _leaderboard_main(self):
         print("Leaderboard viewing is not implemented yet.")
@@ -136,3 +146,35 @@ class Session():
                 logger.error(f"Failed to fetch squad: {response.status_code}")
         except Exception as e:
             logger.error(f"Error while fetching squad: {e}")
+
+    def _view_market(self):
+        try:
+            url = f"{os.environ['BACKEND_URL']}/market"
+            response = requests.get(url)
+            if response.status_code == 200:
+                data = response.json()
+                players = data.get("players", [])
+                if players:
+                    print("\nMarket:")
+                    print(tabulate(players, headers=FOOTBALLER_COLUMNS, tablefmt="grid"))
+                else:
+                    print("No players found on the market.")
+            else:
+                logger.error(f"Failed to fetch market: {response.status_code}")
+        except Exception as e:
+            logger.error(f"Error while fetching market: {e}")
+
+
+    def _place_bid(self):
+        footballer_id = input("Enter the ID of the player you want to bid on: ")
+        bid_amount = input("Enter your bid amount: ")
+
+        try:
+            url = f"{os.environ['BACKEND_URL']}/market/bids"
+            response = requests.post(url, json={"footballer_id": footballer_id, "player_id": self.player_id, "bid_amount": bid_amount})
+            if response.status_code == 200:
+                logger.info(response.json()['message'])
+            else:
+                logger.error(f"Failed to request bid: {response.status_code}")
+        except Exception as e:
+            logger.error(f"Error while placing bid: {e}")
