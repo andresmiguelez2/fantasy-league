@@ -211,8 +211,8 @@ class Market:
 def load_market():
     """Load the active market from the database."""
     try:
-        logger.info("Loading market data...")
-        logger.info("Connecting to database...")
+        logger.debug("Loading market data...")
+        logger.debug("Connecting to database...")
         # Connect to PostgreSQL database using environment variables
         conn = psycopg2.connect(
             host=os.getenv("DB_HOST", "postgres_db"),
@@ -250,7 +250,7 @@ def load_market():
 
         cursor.close()
         conn.close()
-        logger.info("Database connection closed successfully")
+        logger.debug("Database connection closed successfully")
 
         return market
 
