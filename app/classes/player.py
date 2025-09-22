@@ -2,7 +2,7 @@ import logging
 import requests
 import os
 from tabulate import tabulate
-from aux.constants import FOOTBALLER_COLUMNS
+from aux.constants import FOOTBALLER_COLUMNS, PLAYER_MARKET_COLUMNS
 
 
 logger = logging.getLogger(__name__)
@@ -149,14 +149,14 @@ class Session():
 
     def _view_market(self):
         try:
-            url = f"{os.environ['BACKEND_URL']}/market"
+            url = f"{os.environ['BACKEND_URL']}/market/{self.player_id}"
             response = requests.get(url)
             if response.status_code == 200:
                 data = response.json()
                 players = data.get("players", [])
                 if players:
                     print("\nMarket:")
-                    print(tabulate(players, headers=FOOTBALLER_COLUMNS, tablefmt="grid"))
+                    print(tabulate(players, headers=PLAYER_MARKET_COLUMNS, tablefmt="grid"))
                 else:
                     print("No players found on the market.")
             else:
