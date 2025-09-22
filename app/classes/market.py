@@ -154,7 +154,10 @@ class Market:
             cursor.execute(
                 """
                 UPDATE footballer
-                SET on_market = FALSE, owner_id = %s
+                SET 
+                    on_market = FALSE,
+                    owner_id = %s,
+                    on_market_since = NULL
                 WHERE id = %s;
                 DELETE FROM bid
                 WHERE footballer_id = %s;
