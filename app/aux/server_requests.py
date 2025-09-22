@@ -17,6 +17,7 @@ def ping():
 
 @server_app.get("/squads/{player_id}")
 def squad(player_id: int):
+    """Get the squad of a player."""
     try:
         conn = psycopg2.connect(
             host=os.getenv("DB_HOST", "postgres_db"),
@@ -44,6 +45,7 @@ def squad(player_id: int):
 
 @server_app.get("/market")
 def market():
+    """Get all players currently on the market."""
     try:
         conn = psycopg2.connect(
             host=os.getenv("DB_HOST", "postgres_db"),
@@ -73,6 +75,10 @@ def market():
 
 @server_app.get("/market/{player_id}")
 def player_market(player_id: int):
+    """Get all players currently on the market with bid info for a specific player.
+    
+    Args:
+        player_id (int): The ID of the player to get bid info for."""
     try:
         conn = psycopg2.connect(
             host=os.getenv("DB_HOST", "postgres_db"),
@@ -122,6 +128,10 @@ class BidRequest(BaseModel):
 
 @server_app.post("/market/bids")
 def place_bid(bid: BidRequest):
+    """Place or remove a bid on a footballer. To remove a bid, bid an amount of 0.
+    Args:
+        bid (BidRequest): The bid request containing player_id, footballer_id, and bid_amount.
+    """
     try:
         conn = psycopg2.connect(
             host=os.getenv("DB_HOST", "postgres_db"),
