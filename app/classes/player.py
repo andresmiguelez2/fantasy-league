@@ -94,7 +94,21 @@ class Session():
             logger.info("Invalid choice.")
 
     def _leaderboard_main(self):
-        print("Leaderboard viewing is not implemented yet.")
+        url=f"{os.environ['BACKEND_URL']}/leaderboard"
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                data = response.json()
+                players = data.get("leaderboard", [])
+                if players:
+                    print("\nLeaderboard:")
+                    print(tabulate(players, headers=["Position", "Name", "Score", "Squad value"], tablefmt="grid"))
+                else:
+                    print("No players found in the leaderboard.")
+            else:
+                logger.error(f"Failed to fetch leaderboard: {response.status_code}")
+        except Exception as e:
+            logger.error(f"Error while fetching leaderboard: {e}")
 
     @property
     def user(self):

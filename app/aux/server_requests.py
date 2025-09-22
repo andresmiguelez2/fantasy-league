@@ -173,3 +173,40 @@ def place_bid(bid: BidRequest):
         return {"status": "error", "message": str(e)}
 
 
+@server_app.get('/leaderboard')
+def leaderboard():
+    """Get the leaderboard of players
+    ."""
+    try:
+        conn = psycopg2.connect(
+            host=os.getenv("DB_HOST", "postgres_db"),
+            database=os.getenv("DB_NAME", "postgres"),
+            user=os.getenv("DB_USER", "postgres"),
+            password=os.getenv("DB_PASSWORD", "password"),
+            port=os.getenv("DB_PORT", "5432"),
+        )
+
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT 
+                row_number() OVER (ORDER BY p.score DESC) AS position
+                , p.name
+                , coalesce(p.score, 0) AS score
+                , coalesce(sv.squad_value, 0) AS squad_value
+            FROM player AS p LEFT JOIN (
+                SELECT owner_id, SUM(price) AS squad_value
+                FROM footballer
+                WHERE owner_id IS NOT NULL
+                GROUP BY owner_id
+            ) AS sv ON p.id = sv.owner_id
+            ORDER BY position
+            """
+        )
+        players = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return {"leaderboard": players}
+    except psycopg2.Error as e:
+        logger.error(f"Database error: {e}")
+        return {"leaderboard": []}
