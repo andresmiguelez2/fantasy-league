@@ -73,10 +73,13 @@ class Session():
     def _squad_main(self):
         print("\nSquad menu:")
         print("\t1. View Squad")
+        print("\t2. Edit player status")
         choice = input("Select an option: ")
 
         if choice == "1":
             self._view_squad()
+        elif choice == "2":
+            self._edit_player_status()
         else:
             logger.info("Invalid choice.")
 
@@ -192,3 +195,21 @@ class Session():
                 logger.error(f"Failed to request bid: {response.status_code}")
         except Exception as e:
             logger.error(f"Error while placing bid: {e}")
+
+    def _edit_player_status(self):
+        footballer_id = input("Enter the ID of the player you want to edit status for: ")
+        status_input = input("Enter '1' to place on market or '0' to remove from market: ")
+        if status_input not in ['0', '1']:
+            logger.error("Invalid input. Please enter '1' or '0'.")
+            return
+        on_market = status_input == '1'
+
+        try:
+            url = f"{os.environ['BACKEND_URL']}/edit_player"
+            response = requests.post(url, json={"footballer_id": int(footballer_id), "player_id": self.player_id, "on_market": on_market})
+            if response.status_code == 200:
+                logger.info(response.json()['message'])
+            else:
+                logger.error(f"Failed to edit player status: {response.status_code}")
+        except Exception as e:
+            logger.error(f"Error while editing player status: {e}")

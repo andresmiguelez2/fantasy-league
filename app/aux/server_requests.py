@@ -171,6 +171,46 @@ def place_bid(bid: BidRequest):
     except psycopg2.Error as e:
         logger.error(f"Database error: {e}")
         return {"status": "error", "message": str(e)}
+    
+
+class MarketFootballer(BaseModel):
+    footballer_id: int
+    player_id: int
+    on_market: bool
+
+@server_app.post("/edit_player")
+def edit_player_status(market_footballer: MarketFootballer):
+    try:
+        conn = psycopg2.connect(
+            host=os.getenv("DB_HOST", "postgres_db"),
+            database=os.getenv("DB_NAME", "postgres"),
+            user=os.getenv("DB_USER", "postgres"),
+            password=os.getenv("DB_PASSWORD", "password"),
+            port=os.getenv("DB_PORT", "5432"),
+        )
+        cursor = conn.cursor()
+
+        on_market_since = 'now()' if market_footballer.on_market else None
+
+        cursor.execute(
+            """
+            UPDATE footballer
+            SET 
+                on_market = %s
+                , on_market_since = %s
+            WHERE id = %s;
+            """,
+            (market_footballer.on_market, on_market_since, market_footballer.footballer_id)
+        )
+        logger.info(f"Player {market_footballer.player_id} {'placed on' if market_footballer.on_market else 'removed from'} market")
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return {"status": "success", "message": "Player status updated successfully."}
+    except psycopg2.Error as e:
+        logger.error(f"Database error: {e}")
+        return {"status": "error", "message": str(e)}
 
 
 @server_app.get('/leaderboard')
