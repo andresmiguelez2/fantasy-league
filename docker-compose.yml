@@ -48,5 +48,19 @@ services:
     depends_on:
       - db
 
+  scraper:
+    build: .
+    container_name: scraper_app
+    env_file:
+      - secrets/db.env
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+    volumes:
+      - ./:/workspace
+      - ./app:/app
+    depends_on:
+      - db
+
 volumes:
   pgdata:
