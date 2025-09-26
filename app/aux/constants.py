@@ -10,3 +10,7 @@ N_NEW_FOOTBALLERS_INTO_MARKET = 5 # number of new players to be added into new m
 ### Client app ###
 FOOTBALLER_COLUMNS = ["id", "name", "price", "on_market", "owner_id", "on_market_since"]
 PLAYER_MARKET_COLUMNS = ["id", "name", "price", "owner_id", "on_market_since", "bid_amount"]
+
+
+### Scraper ###
+FANTASY_MAIN_URL = "https://www.futbolfantasy.com/analytics/laliga-fantasy/puntos"
