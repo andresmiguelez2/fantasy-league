@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+import requests
+from bs4 import BeautifulSoup
 import logging
 import psycopg2
 import os
@@ -250,3 +252,11 @@ def leaderboard():
     except psycopg2.Error as e:
         logger.error(f"Database error: {e}")
         return {"leaderboard": []}
+
+
+def scrape_page(url):
+    logger.debug(f"Fetching {url}")
+    response = requests.get(url)
+    response.raise_for_status()
+    soup = BeautifulSoup(response.text, "html.parser")
+    return soup

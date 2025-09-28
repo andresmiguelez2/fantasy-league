@@ -15,3 +15,4 @@ PLAYER_MARKET_COLUMNS = ["id", "name", "price", "owner_id", "on_market_since", "
 ### Scraper ###
 FANTASY_MAIN_URL = "https://www.futbolfantasy.com/analytics/laliga-fantasy/puntos"
 FANTASY_PLAYER_URL = "https://www.futbolfantasy.com/jugadores/"
+FANTASY_PLAYER_MARKET_URL = "https://www.futbolfantasy.com/analytics/laliga-fantasy/mercado/detalle/"
