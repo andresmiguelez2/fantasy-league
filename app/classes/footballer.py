@@ -3,19 +3,24 @@ import logging
 import re
 from aux.server_requests import scrape_page
 
-from aux.constants import FANTASY_PLAYER_URL, FANTASY_PLAYER_MARKET_URL
+from aux.constants import FANTASY_PLAYER_URL, FANTASY_PLAYER_MARKET_URL, COMPETITION_NAME
 
 
 logger = logging.getLogger(__name__)
 
 
 class Footballer():
-    def __init__(self):
-        self._id: int = None
-        self._name: str = None
-        self._price: int = None
-        self._on_market: bool = None
-        self._owner_id: int = None
+    def __init__(self, obtain_data=False, name=None):
+        if obtain_data and name:
+            self._name = name
+            self._data = self._get_player_data(name)
+        else:
+            self._id: int = None
+            self._name: str = None
+            self._price: int = None
+            self._on_market: bool = None
+            self._owner_id: int = None
+            self._data: dict = None
 
     @property
     def id(self):
@@ -85,7 +90,8 @@ class Footballer():
             if points_div:
                 points_text = points_div.get_text(strip=True)
                 logger.debug(f"Found total points: {points_text}")
-                return int(points_text)
+                return int(points_text if points_text else 0)
+
         logger.warning("Total points not found.")
         return None
 
@@ -159,10 +165,14 @@ class Footballer():
                 })
         return breakdowns
 
-    def get_player_data(self, player_name):
+    def _get_player_data(self, player_name):
         """Fetches and parses player data from the fantasy football website."""
         search_url = FANTASY_PLAYER_URL + player_name.replace(" ", "-")
         soup = scrape_page(search_url)
+
+        if COMPETITION_NAME not in soup.text:
+            logger.warning(f"Player {player_name} does not belong to {COMPETITION_NAME}.")
+            return None
 
         total_points = self._get_total_points(soup)
         average_points = self._get_average_points(soup)

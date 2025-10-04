@@ -1,10 +1,11 @@
-from aux.constants import FANTASY_MAIN_URL
+from aux.constants import FANTASY_MAIN_URL, FOOTBALLER_NAME_DICT
 from aux.server_requests import scrape_page
 from classes.footballer import Footballer
 import unicodedata
 import logging
 import pandas as pd
 import re
+from tqdm import tqdm
 
 
 logging.basicConfig(
@@ -19,7 +20,7 @@ def get_all_players(soup):
     results = []
     elements = soup.find_all(attrs={"data-nombre": True})
     for el in elements:
-        nombre = el["data-nombre"]
+        nombre = FOOTBALLER_NAME_DICT.get(el["data-nombre"], el["data-nombre"])
         a_tag = el.find_next("a", class_="jugador mt-auto mb-1")
         if a_tag:
             spans = a_tag.find_all("span")
@@ -34,26 +35,16 @@ def get_all_players(soup):
     return results
 
 
-def normalise_string(s):
-    """
-    Lowercase the string and remove any character that is not a-z, whitespace,
-    or a lowercase accented vowel (á, é, í, ó, ú).
-    If the original letter is uppercase and contains an accent, remove it.
-    """
-    result = []
-    for c in s:
-        # If uppercase accented vowel, skip it
-        if c in "ÁÉÍÓÚ":
-            continue
-        # Keep lowercase a-z, whitespace, and lowercase accented vowels
-        if re.match(r"[a-z]", c):
-            result.append(c)
-        elif c in "áéíóú":
-            result.append(chr(int(unicodedata.decomposition(c).split()[0], 16)))
-        # Lowercase and check again (for uppercase unaccented letters)
-        elif c.lower() in "abcdefghijklmnopqrstuvwxyz " and not re.match(r"[ÁÉÍÓÚ]", c):
-            result.append(c.lower())
-    return ''.join(result)
+def normalise_name(name):
+    return_name = name[:]
+    if 'alvarez' in return_name:
+        return_name = return_name.replace('alvarez', 'lvarez')
+    if 'toni ' in return_name:
+        return_name = return_name.replace('toni ', 'antonio ')
+    if return_name == 'yeray lvarez':
+        return_name = 'yeray alvarez'
+        
+    return return_name
 
 
 if __name__ == "__main__":
@@ -61,8 +52,8 @@ if __name__ == "__main__":
     player_data_df = pd.DataFrame(get_all_players(soup), columns=["name", "full_name", "displayable_name"])
 
     for _, row in player_data_df.iterrows():
-        footballer = Footballer()
-        footballer.name = row['displayable_name'] if row['displayable_name'] else row['name']
-        footballer_data = footballer.get_player_data(row['name'])
-
-        pass
+        try:
+            footballer = Footballer(obtain_data=True, name=row['name'])
+            footballer.name = row['displayable_name'] if row['displayable_name'] else row['name']
+        except Exception as e:
+            print(f"Error processing {row['name']}: {e}")
