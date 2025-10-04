@@ -8,3 +8,4 @@ uvicorn
 tabulate
 beautifulsoup4
 pandas
+tqdm
