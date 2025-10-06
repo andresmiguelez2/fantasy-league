@@ -11,16 +11,16 @@ logger = logging.getLogger(__name__)
 
 class Footballer():
     def __init__(self, obtain_data=False, name=None):
+        self._id: int = None
+        self._name: str = None
+        self._price: int = None
+        self._on_market: bool = None
+        self._owner_id: int = None
+        self._data: dict = None
+        
         if obtain_data and name:
             self._name = name
             self._data = self._get_player_data(name)
-        else:
-            self._id: int = None
-            self._name: str = None
-            self._price: int = None
-            self._on_market: bool = None
-            self._owner_id: int = None
-            self._data: dict = None
 
     @property
     def id(self):
@@ -71,6 +71,11 @@ class Footballer():
     def owner_id(self, value):
         """Set the footballer owner ID."""
         self._owner_id = value
+
+    @property
+    def data(self):
+        """Get the footballer data."""
+        return self._data
 
     def __str__(self):
         attrs = [attr for attr in dir(self) if attr.startswith('_') and not attr.startswith('__')]
@@ -171,7 +176,7 @@ class Footballer():
         soup = scrape_page(search_url)
 
         if COMPETITION_NAME not in soup.text:
-            logger.warning(f"Player {player_name} does not belong to {COMPETITION_NAME}.")
+            logger.debug(f"Player {player_name} does not belong to {COMPETITION_NAME}.")
             return None
 
         total_points = self._get_total_points(soup)
@@ -278,3 +283,11 @@ class Bid():
         attr_strs = []
         for attr in attrs:
             attr_strs.append(f"{attr[1:]}={getattr(self, attr)}")
+
+    def __repr__(self):
+        attrs = [attr for attr in dir(self) if attr.startswith('_') and not attr.startswith('__')]
+        attr_strs = []
+        for attr in attrs:
+            attr_strs.append(f"{attr[1:]}={getattr(self, attr)}")
+
+        return '\n'.join(attr_strs)
