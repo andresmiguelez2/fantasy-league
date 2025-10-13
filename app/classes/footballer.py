@@ -1,6 +1,8 @@
 import datetime
 import logging
 import re
+import requests
+from bson import Binary
 from aux.server_requests import scrape_page
 
 from aux.constants import FANTASY_PLAYER_URL, FANTASY_PLAYER_MARKET_URL, COMPETITION_NAME
@@ -19,6 +21,7 @@ class Footballer():
         self._on_market: bool = None
         self._owner_id: int = None
         self._data: dict = None
+        self._team: str = None
         
         if obtain_data and name:
             self._name = name
@@ -54,6 +57,8 @@ class Footballer():
     @full_name.setter
     def full_name(self, value):
         """Set the footballer full name."""
+        if '-1' in value:
+            logger.warning(f"Full name not found in API: {value}")
         self._full_name = value
 
     @property
@@ -101,6 +106,21 @@ class Footballer():
         """Get the footballer data."""
         return self._data
 
+    @data.setter
+    def data(self, value):
+        """Set the footballer data."""
+        self._data = value
+
+    @property
+    def team(self):
+        """Get the footballer team."""
+        return self._team
+
+    @team.setter
+    def team(self, value):
+        """Set the footballer team."""
+        self._team = value
+
     def __str__(self):
         attrs = [attr for attr in dir(self) if attr.startswith('_') and not attr.startswith('__')]
         attr_strs = []
@@ -122,7 +142,7 @@ class Footballer():
                 return int(points_text if points_text else 0)
 
         logger.warning("Total points not found.")
-        return None
+        return 0
 
 
     def _get_average_points(self, soup):
@@ -196,36 +216,39 @@ class Footballer():
 
     def _get_player_data(self):
         """Fetches and parses player data from the fantasy football website."""
-        search_url = FANTASY_PLAYER_URL + self._url_name
+        search_url = FANTASY_PLAYER_URL + self.url_name
         soup = scrape_page(search_url)
 
         if COMPETITION_NAME not in soup.text:
-            if '-1' not in self._url_name:
+            if '-1' not in self.url_name:
                 self.url_name += '-1'
-                return self._get_player_data()
-            logger.debug(f"Player {self._name} does not belong to {COMPETITION_NAME}.")
-            return None
+                self._get_player_data()
+            logger.debug(f"Player {self.url_name} does not belong to {COMPETITION_NAME}.")
+            return
 
         total_points = self._get_total_points(soup)
         average_points = self._get_average_points(soup)
         fixture_breakdown = self._get_fixture_breakdown(soup)
         image_url = self._get_player_image_url(soup)
+        image_binary = self._get_image_binary(image_url) if image_url else None
         player_id = int(image_url.split('/')[-1].split('.')[0]) if image_url else None
         market_details = self._get_market_details(player_id) if player_id else None
+        self.team = self._get_team(soup)
 
-        self._data = {
-            # "player_source_id": player_id,
-            # "name": self.name,
+        self.data = {
+            "player_source_id": player_id,
+            "team": self.team,
             "total_points": total_points,
             "average_points": average_points,
             "fixture_breakdown": fixture_breakdown,
-            # "image_url": image_url,
+            "image_binary": image_binary,
             "market_details": market_details
         }
 
     def get_player_data(self):
-        """Public method to get player data, fetching it if not already done."""
-        return self._get_player_data()
+        """Public method to get player data, fetching it if not already done.
+        url_name must be set first."""
+        self._get_player_data()
 
     def _get_market_details(self, player_id):
         """
@@ -245,7 +268,7 @@ class Footballer():
                     value = int(match.group(2))
                     chart_data.append({"date": date, "value": value})
         logger.debug(f"Found {len(chart_data)} market data points for player {player_id}")
-        return chart_data
+        return list(reversed(chart_data))
 
     def _get_player_image_url(self, soup):
         """Extracts the player's image URL from the player's page soup."""
@@ -261,6 +284,27 @@ class Footballer():
         logger.warning("Player image URL not found.")
         return None
     
+    def _get_image_binary(self, image_url):
+        response = requests.get(image_url)
+        if response.status_code == 200:
+            img_binary = Binary(response.content)
+            return img_binary
+        logger.warning("Image binary not found.")
+        return None
+
+
+    def _get_team(self, soup):
+        """Extracts the player's team from the player's page soup."""
+        # Find all <a> tags with the team URL pattern
+        team_links = [a for a in soup.find_all("a", href=True) if "https://www.futbolfantasy.com/laliga/equipos/" in a["href"]]
+        if len(team_links) >= 41:
+            team_a = team_links[40]  # 41st appearance (0-based index)
+            img = team_a.find("img")
+            if img and img.has_attr("alt"):
+                return img["alt"]
+        logger.warning("Team not found for player.")
+        return None
+        
 
 class Bid():
     def __init__(self):
