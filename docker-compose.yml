@@ -49,6 +49,8 @@ services:
       - BACKEND_PORT=8000
     volumes:
       - ./:/workspace
+      - ./app:/app
+      - ./secrets/users.env:/secrets/users.env
     depends_on:
       - app
 
