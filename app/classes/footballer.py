@@ -302,7 +302,7 @@ class Footballer():
             img = team_a.find("img")
             if img and img.has_attr("alt"):
                 return img["alt"]
-        logger.warning("Team not found for player.")
+        logger.warning(f"Team not found for player {self.name}.")
         return None
         
 
