@@ -17,7 +17,7 @@ class Footballer():
         self._name: str = None
         self._full_name: str = None
         self._url_name: str = None
-        self._price: int = None
+        self._value: int = None
         self._on_market: bool = None
         self._owner_id: int = None
         self._data: dict = None
@@ -72,14 +72,14 @@ class Footballer():
         self._url_name = value
 
     @property
-    def price(self):
-        """Get the footballer price."""
-        return self._price
+    def value(self):
+        """Get the footballer value."""
+        return self._value
     
-    @price.setter
-    def price(self, value):
-        """Set the footballer price."""
-        self._price = value
+    @value.setter
+    def value(self, value):
+        """Set the footballer value."""
+        self._value = value
 
     @property
     def on_market(self):

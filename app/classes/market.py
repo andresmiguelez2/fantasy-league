@@ -132,7 +132,7 @@ class Market:
             WHERE 
                 footballer.owner_id IS NULL
                 AND footballer.on_market = TRUE -- para mayor robustez
-                AND bid.amount >= footballer.price -- para mayor robustez
+                AND bid.amount >= footballer.value -- para mayor robustez
             ORDER BY 
                 amount DESC
                 , timestamp ASC

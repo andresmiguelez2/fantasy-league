@@ -32,7 +32,13 @@ def squad(player_id: int):
         cursor = conn.cursor()
         cursor.execute(
             """
-            SELECT * FROM footballer WHERE owner_id = %s ORDER BY id
+            SELECT 
+                name
+                , team
+                , value
+                , on_market
+                , on_market_since
+            FROM footballer WHERE owner_id = %s ORDER BY id
             """,
             (player_id,),
         )
@@ -96,7 +102,7 @@ def player_market(player_id: int):
             SELECT 
                 f.id
                 , f.name
-                , f.price
+                , f.value
                 , f.owner_id
                 , date_trunc('second', f.on_market_since) AS on_market_since
                 , b.amount AS bid_amount
@@ -237,7 +243,7 @@ def leaderboard():
                 , coalesce(p.score, 0) AS score
                 , coalesce(sv.squad_value, 0) AS squad_value
             FROM player AS p LEFT JOIN (
-                SELECT owner_id, SUM(price) AS squad_value
+                SELECT owner_id, SUM(value) AS squad_value
                 FROM footballer
                 WHERE owner_id IS NOT NULL
                 GROUP BY owner_id

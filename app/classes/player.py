@@ -17,7 +17,7 @@ class Session():
         users = set()
         user_id = dict()
         try:
-            with open("secrets/users.env", "r") as f:
+            with open("/secrets/users.env", "r") as f:
                 for line in f:
                     line = line.strip()
                     if line and ':' in line:
