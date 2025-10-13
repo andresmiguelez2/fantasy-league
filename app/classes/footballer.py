@@ -10,9 +10,11 @@ logger = logging.getLogger(__name__)
 
 
 class Footballer():
-    def __init__(self, obtain_data=False, name=None):
+    def __init__(self, obtain_data=False, name=None, full_name=None):
         self._id: int = None
         self._name: str = None
+        self._full_name: str = None
+        self._url_name: str = None
         self._price: int = None
         self._on_market: bool = None
         self._owner_id: int = None
@@ -20,7 +22,9 @@ class Footballer():
         
         if obtain_data and name:
             self._name = name
-            self._data = self._get_player_data(name)
+            self._full_name = full_name
+            self._url_name = name.replace(" ", "-")
+            self._get_player_data()
 
     @property
     def id(self):
@@ -41,6 +45,26 @@ class Footballer():
     def name(self, value):
         """Set the footballer name."""
         self._name = value
+    
+    @property
+    def full_name(self):
+        """Get the footballer full name."""
+        return self._full_name
+
+    @full_name.setter
+    def full_name(self, value):
+        """Set the footballer full name."""
+        self._full_name = value
+
+    @property
+    def url_name(self):
+        """Get the footballer URL name."""
+        return self._url_name
+
+    @url_name.setter
+    def url_name(self, value):
+        """Set the footballer URL name."""
+        self._url_name = value
 
     @property
     def price(self):
@@ -170,13 +194,16 @@ class Footballer():
                 })
         return breakdowns
 
-    def _get_player_data(self, player_name):
+    def _get_player_data(self):
         """Fetches and parses player data from the fantasy football website."""
-        search_url = FANTASY_PLAYER_URL + player_name.replace(" ", "-")
+        search_url = FANTASY_PLAYER_URL + self._url_name
         soup = scrape_page(search_url)
 
         if COMPETITION_NAME not in soup.text:
-            logger.debug(f"Player {player_name} does not belong to {COMPETITION_NAME}.")
+            if '-1' not in self._url_name:
+                self.url_name += '-1'
+                return self._get_player_data()
+            logger.debug(f"Player {self._name} does not belong to {COMPETITION_NAME}.")
             return None
 
         total_points = self._get_total_points(soup)
@@ -186,7 +213,7 @@ class Footballer():
         player_id = int(image_url.split('/')[-1].split('.')[0]) if image_url else None
         market_details = self._get_market_details(player_id) if player_id else None
 
-        return {
+        self._data = {
             # "player_source_id": player_id,
             # "name": self.name,
             "total_points": total_points,
@@ -195,6 +222,10 @@ class Footballer():
             # "image_url": image_url,
             "market_details": market_details
         }
+
+    def get_player_data(self):
+        """Public method to get player data, fetching it if not already done."""
+        return self._get_player_data()
 
     def _get_market_details(self, player_id):
         """
