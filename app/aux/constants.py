@@ -53,5 +53,6 @@ FOOTBALLER_NAME_DICT = {
     'eric bailly': 'eric bertrand bailly',
     'hugo alvarez ': 'hugo lvarez ',
     'carlos alvarez': 'carlos lvarez',
+    'karl etta eyong': 'etta-eyong',
 }
 COMPETITION_NAME = 'LaLiga 2025/26'
