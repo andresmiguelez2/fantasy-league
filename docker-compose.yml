@@ -32,7 +32,6 @@ services:
       - MONGO_PORT=27017
     volumes:
       - ./:/workspace
-      - ./app:/app
     ports:
       - "8000:8000"
     depends_on:
@@ -49,7 +48,6 @@ services:
       - BACKEND_PORT=8000
     volumes:
       - ./:/workspace
-      - ./app:/app
       - ./secrets/users.env:/secrets/users.env
     depends_on:
       - app
@@ -77,7 +75,6 @@ services:
       - MONGO_PORT=27017
     volumes:
       - ./:/workspace
-      - ./app:/app
     depends_on:
       - db
       - mongodb
