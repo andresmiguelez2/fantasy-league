@@ -1,6 +1,6 @@
 import logging
 import time
-from classes.market import load_market
+from classes.market import load_market, load_last_market
 from aux.constants import LOOP_TIME_SECONDS, SLEEP_TIME
 from aux.server_requests import server_app
 
@@ -32,7 +32,11 @@ if __name__ == "__main__":
 
             if active_market:
                 active_market.fulfill_market()
+
             active_market = load_market()
+            if not active_market:
+                active_market = load_last_market()
+                active_market.fulfill_market()
 
             wait_loop_time(start_time)
 

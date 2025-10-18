@@ -36,6 +36,8 @@ class Market:
     @closing_ts.setter
     def closing_ts(self, value):
         """Set the market closing timestamp."""
+        if self._closing_ts is not None:
+            logger.info("Market closing timestamp overridden")
         self._closing_ts = value
 
     @property
@@ -206,6 +208,9 @@ class Market:
                 logger.error(f"Database error while fulfilling market {self._id}: {e}")
                 self._has_been_closed = False# Rollback the local state change if database update failed
 
+    def shift_closing_ts(self):
+        """Shift the market closing timestamp far into the future."""
+        self.closing_ts += datetime.timedelta(days=9999)
 
     def __str__(self):
         return f"Market(id={self._id}, closing_ts={self._closing_ts}, has_been_closed={self._has_been_closed})"
@@ -243,7 +248,7 @@ def load_market():
             raise ValueError("Several concurrent markets found in the database.")
         if len(market_data) == 0:
             logger.warning("No active market found in the database.")
-            raise ValueError("No active market found in the database.")
+            return None
 
         market = Market()
         market.id = market_data[0][0]
@@ -260,3 +265,46 @@ def load_market():
     except psycopg2.Error as e:
         logger.error(f"Database error: {e}")
         return []
+
+def load_last_market():
+    try:
+        logger.debug("Loading last unfulfilled market...")
+        conn = psycopg2.connect(
+            host=os.getenv("DB_HOST", "postgres_db"),
+            database=os.getenv("DB_NAME", "postgres"),
+            user=os.getenv("DB_USER", "postgres"),
+            password=os.getenv("DB_PASSWORD", "password"),
+            port=os.getenv("DB_PORT", "5432"),
+        )
+
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT *
+            FROM market
+            WHERE closing_timestamp < now() AND has_been_closed = FALSE
+        """
+        )
+        market_data = cursor.fetchall()
+
+        if len(market_data) > 1:
+            logger.error("Several non closed markets found in the database.")
+            raise ValueError("Several non closed markets found in the database.")
+        if len(market_data) == 0:
+            logger.error("No non closed market found in the database.")
+            raise ValueError("No non closed market found in the database.")
+
+        market = Market()
+        market.id = market_data[0][0]
+        market.closing_ts = market_data[0][1]
+        market.has_been_closed = market_data[0][2]
+        logger.info(f"Found non closed market {market}")
+
+        cursor.close()
+        conn.close()
+
+        return market
+    except psycopg2.Error as e:
+        logger.error(f"Database error: {e}")
+        return None
