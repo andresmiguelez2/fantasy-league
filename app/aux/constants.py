@@ -5,6 +5,7 @@ SLEEP_TIME = 0.001 # Sleep time in seconds
 
 ### Market ####
 N_NEW_FOOTBALLERS_INTO_MARKET = 5 # number of new players to be added into new market
+RELEASE_CLAUSE_DAYS = 14 # number of days until a footballer can be released again after being bought
 
 
 ### Client app ###

@@ -4,7 +4,10 @@ import logging
 import psycopg2
 import random
 
-from aux.constants import N_NEW_FOOTBALLERS_INTO_MARKET
+from aux.constants import N_NEW_FOOTBALLERS_INTO_MARKET, RELEASE_CLAUSE_DAYS
+from pymongo import MongoClient
+from classes.footballer import Footballer
+
 
 # Create logger for this module
 logger = logging.getLogger(__name__)
@@ -122,7 +125,7 @@ class Market:
         )
         logger.info(f"Placed players {chosen_free_agents} into the market.")
 
-    def _assign_bids(self, cursor):
+    def _assign_bids(self, cursor, mongoclient):
         """Assign bids placed on league players."""
         cursor.execute(
             """
@@ -166,6 +169,9 @@ class Market:
                 """,
                 (bidder_id, footballer_id, footballer_id)
             )
+
+            Footballer.set_release_clause_date(int(footballer_id), datetime.datetime.now() + datetime.timedelta(days=RELEASE_CLAUSE_DAYS), mongoclient)
+
             logger.info(f"Footballer {footballer_id} assigned to bidder {bidder_id} with amount {amount}.")
             
             
@@ -185,7 +191,8 @@ class Market:
                 )
                 cursor = conn.cursor()
 
-                # Use parameterized query to prevent SQL injection
+                mongoclient = MongoClient(f"mongodb://{os.getenv('MONGO_INITDB_ROOT_USERNAME')}:{os.getenv('MONGO_INITDB_ROOT_PASSWORD')}@mongodb:27017/fantasy_mongo_db?authSource=admin")
+
                 cursor.execute(
                     f"""
                     UPDATE market
@@ -195,7 +202,7 @@ class Market:
                 )
                 logger.info(f"Database updated: Market {self._id} marked as closed")
 
-                self._assign_bids(cursor)
+                self._assign_bids(cursor, mongoclient)
                 self._open_new_market(cursor)
                 removed_from_market = self._cleanup_market(cursor)
                 self._place_footballers_into_market(cursor, N_NEW_FOOTBALLERS_INTO_MARKET, removed_from_market)

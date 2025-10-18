@@ -4,6 +4,7 @@ import re
 import requests
 from bson import Binary
 from aux.server_requests import scrape_page
+from pymongo import MongoClient
 
 from aux.constants import FANTASY_PLAYER_URL, FANTASY_PLAYER_MARKET_URL, COMPETITION_NAME
 
@@ -304,4 +305,16 @@ class Footballer():
                 return img["alt"]
         logger.warning(f"Team not found for player {self.name}.")
         return None
-        
+
+    @classmethod
+    def set_release_clause_date(cls, footballer_id: int, release_clause_date: datetime.datetime, client: MongoClient):
+        """Sets the release clause expiry date for a footballer in the MongoDB."""
+        db = client["FantasyMDB"]
+
+        try:
+            db.footballer.update_one(
+                {"id": footballer_id},
+                {"$set": {"release_clause_expiry_date": release_clause_date}}
+            )
+        except Exception as e:
+            logger.error(f"Error setting release clause date for footballer {footballer_id}: {e}")
