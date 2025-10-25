@@ -5,12 +5,12 @@ services:
     env_file:
       - secrets/db.env
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql
     ports:
       - "5432:5432"
 
   mongodb:
-    image: mongo:8
+    image: mongodb-raspberrypi4-unofficial:7.0.14
     container_name: mongo_db
     env_file:
       - secrets/mongo.env
@@ -32,22 +32,13 @@ services:
       - MONGO_PORT=27017
     volumes:
       - ./:/workspace
+      - ./app:/app
     ports:
       - "8000:8000"
     depends_on:
       - db
       - mongodb
     command: bash -c "uvicorn main:server_app --host 0.0.0.0 --port 8000 --reload"
-
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: pgadmin
-    env_file:
-      - secrets/pgadmin.env
-    ports:
-      - "5050:80"
-    depends_on:
-      - db
 
   scraper:
     build: .
@@ -62,6 +53,7 @@ services:
       - MONGO_PORT=27017
     volumes:
       - ./:/workspace
+      - ./app:/app
     depends_on:
       - db
       - mongodb

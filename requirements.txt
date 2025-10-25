@@ -1,13 +1,9 @@
-fastapi
-uvicorn
-sqlalchemy
 psycopg2-binary
+uvicorn
 requests
 fastapi
-uvicorn
 tabulate
 beautifulsoup4
-pandas
 tqdm
 pymongo
-pillow
+# pillow
