@@ -6,4 +6,5 @@ tabulate
 beautifulsoup4
 tqdm
 pymongo
+pyzmq 
 # pillow

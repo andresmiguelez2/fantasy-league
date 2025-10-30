@@ -10,17 +10,20 @@ services:
       - "5432:5432"
 
   mongodb:
-    image: mongodb-raspberrypi4-unofficial:7.0.14
+    image: arm64v8/mongo:4.4.18
     container_name: mongo_db
+    platform: linux/arm64
     env_file:
       - secrets/mongo.env
     ports:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
-
+      
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.app
     container_name: backend_app
     env_file:
       - secrets/db.env
@@ -41,7 +44,9 @@ services:
     command: bash -c "uvicorn main:server_app --host 0.0.0.0 --port 8000 --reload"
 
   scraper:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.scraper
     container_name: scraper_app
     env_file:
       - secrets/db.env
@@ -51,12 +56,15 @@ services:
       - DB_PORT=5432
       - MONGO_HOST=mongodb
       - MONGO_PORT=27017
+      - SSH_USER=developer
     volumes:
       - ./:/workspace
-      - ./app:/app
+      - ./ssh/authorized_keys:/authorized_keys:ro
     depends_on:
       - db
       - mongodb
+    ports:
+      - "0.0.0.0:33000:22"
 
 volumes:
   pgdata:

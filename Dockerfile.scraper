@@ -1,0 +1,40 @@
+FROM python:3.13.9-slim
+
+# Install Git, SSH server and build tools
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    build-essential \
+    libpq-dev \
+    openssh-server \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create ssh runtime dir
+RUN mkdir -p /var/run/sshd
+
+# Create a non-root user for SSH (developer) and set up home
+ARG SSH_USER=developer
+RUN useradd -m -s /bin/bash ${SSH_USER}
+
+# Allow passing a public key at build time (or mount authorized_keys at runtime)
+ARG SSH_PUB_KEY=""
+RUN mkdir -p /home/${SSH_USER}/.ssh \
+ && if [ -n "${SSH_PUB_KEY}" ]; then echo "${SSH_PUB_KEY}" > /home/${SSH_USER}/.ssh/authorized_keys; fi \
+ && chown -R ${SSH_USER}:${SSH_USER} /home/${SSH_USER}/.ssh \
+ && chmod 700 /home/${SSH_USER}/.ssh \
+ && chmod 600 /home/${SSH_USER}/.ssh/authorized_keys || true
+
+WORKDIR /workspace
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# copy entrypoint that will ensure authorized_keys permissions and enforce key auth
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Expose SSH
+EXPOSE 22
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["/usr/sbin/sshd","-D"]
