@@ -1,5 +1,7 @@
+from xmlrpc import client
 from fastapi import FastAPI
 from pydantic import BaseModel
+from pymongo import MongoClient
 import requests
 from bs4 import BeautifulSoup
 import logging
@@ -29,13 +31,15 @@ def squad(player_id: int):
             port=os.getenv("DB_PORT", "5432"),
         )
 
+        client = MongoClient(f"mongodb://{os.getenv('MONGO_INITDB_ROOT_USERNAME')}:{os.getenv('MONGO_INITDB_ROOT_PASSWORD')}@mongodb:27017/fantasy_mongo_db?authSource=admin")
+        db = client["FantasyMDB"]
+
         cursor = conn.cursor()
         cursor.execute(
             """
-            SELECT 
-                name
-                , team
-                , value
+            SELECT
+                id
+                , name
                 , on_market
                 , on_market_since
             FROM footballer WHERE owner_id = %s ORDER BY id
@@ -45,7 +49,14 @@ def squad(player_id: int):
         players = cursor.fetchall()
         cursor.close()
         conn.close()
-        return {"players": players}
+
+        player_data = list()
+        for player in players:
+            value = db.footballer.find({"id": player[0]})[0]['market_details'][-1]['value']
+            team = db.footballer.find({"id": player[0]})[0]['team']
+            player_data.append((player[0], player[1], team, value, player[2], player[3]))
+
+        return {"players": player_data}
     except psycopg2.Error as e:
         logger.error(f"Database error: {e}")
         return {"players": []}
@@ -96,13 +107,15 @@ def player_market(player_id: int):
             port=os.getenv("DB_PORT", "5432"),
         )
 
+        client = MongoClient(f"mongodb://{os.getenv('MONGO_INITDB_ROOT_USERNAME')}:{os.getenv('MONGO_INITDB_ROOT_PASSWORD')}@mongodb:27017/fantasy_mongo_db?authSource=admin")
+        db = client["FantasyMDB"]
+
         cursor = conn.cursor()
         cursor.execute(
             """
             SELECT 
                 f.id
                 , f.name
-                , f.value
                 , f.owner_id
                 , date_trunc('second', f.on_market_since) AS on_market_since
                 , b.amount AS bid_amount
@@ -119,11 +132,16 @@ def player_market(player_id: int):
             """,
             (player_id,)
         )
-        
         players = cursor.fetchall()
+        
+        player_data = list()
+        for player in players:
+            value = db.footballer.find({"id": player[0]})[0]['market_details'][-1]['value']
+            player_data.append((player[0], player[1], value, player[2], player[3], player[4]))
+
         cursor.close()
         conn.close()
-        return {"players": players}
+        return {"players": player_data}
     except psycopg2.Error as e:
         logger.error(f"Database error: {e}")
         return {"players": []}
@@ -234,27 +252,44 @@ def leaderboard():
             port=os.getenv("DB_PORT", "5432"),
         )
 
+        client = MongoClient(f"mongodb://{os.getenv('MONGO_INITDB_ROOT_USERNAME')}:{os.getenv('MONGO_INITDB_ROOT_PASSWORD')}@mongodb:27017/fantasy_mongo_db?authSource=admin")
+        db = client["FantasyMDB"]
+
         cursor = conn.cursor()
         cursor.execute(
             """
-            SELECT 
-                row_number() OVER (ORDER BY p.score DESC) AS position
-                , p.name
-                , coalesce(p.score, 0) AS score
-                , coalesce(sv.squad_value, 0) AS squad_value
-            FROM player AS p LEFT JOIN (
-                SELECT owner_id, SUM(value) AS squad_value
-                FROM footballer
-                WHERE owner_id IS NOT NULL
-                GROUP BY owner_id
-            ) AS sv ON p.id = sv.owner_id
-            ORDER BY position
+            SELECT
+                id
+                , name
+                , points
+            FROM player
+            ORDER BY points DESC
             """
         )
         players = cursor.fetchall()
+
+        player_data = list()
+        for i, player in enumerate(players):
+            cursor.execute(
+                """
+                SELECT 
+                    id
+                FROM footballer
+                where owner_id = %s
+                """,
+                (player[0],)
+            )
+            footballers = cursor.fetchall()
+
+            team_value = 0
+            for footballer_id in footballers:
+                team_value += db.footballer.find({"id": footballer_id[0]})[0]['market_details'][-1]['value']
+
+            player_data.append((i+1, player[1], player[2], team_value))
+
         cursor.close()
         conn.close()
-        return {"leaderboard": players}
+        return {"leaderboard": player_data}
     except psycopg2.Error as e:
         logger.error(f"Database error: {e}")
         return {"leaderboard": []}

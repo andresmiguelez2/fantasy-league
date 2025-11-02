@@ -9,8 +9,8 @@ RELEASE_CLAUSE_DAYS = 14 # number of days until a footballer can be released aga
 
 
 ### Client app ###
-FOOTBALLER_COLUMNS = ["name", "team", "value", "on_market", "on_market_since"]
-PLAYER_MARKET_COLUMNS = ["id", "name", "value", "owner_id", "on_market_since", "bid_amount"]
+FOOTBALLER_COLUMNS = ["ID", "name", "team", "value", "on_market", "on_market_since"]
+PLAYER_MARKET_COLUMNS = ["ID", "name", "value", "owner_id", "on_market_since", "bid_amount"]
 
 
 ### Scraper ###
