@@ -249,16 +249,24 @@ def edit_player_status(market_footballer: MarketFootballer):
             SET 
                 on_market = %s
                 , on_market_since = %s
-            WHERE id = %s;
+            WHERE id = %s and owner_id = %s;
             """,
-            (market_footballer.on_market, on_market_since, market_footballer.footballer_id)
+            (market_footballer.on_market, on_market_since, market_footballer.footballer_id, market_footballer.player_id)
         )
-        logger.info(f"Player {market_footballer.player_id} {'placed on' if market_footballer.on_market else 'removed from'} market")
+        affected = cursor.rowcount
+
+        if affected == 0:
+            logger.warning(f"Player {market_footballer.player_id} not found or not owned by user.")
+            msg = {"status": "error", "message": "Player not found or not owned by user."}
+        else:
+            logger.info(f"Player {market_footballer.player_id} {'placed on' if market_footballer.on_market else 'removed from'} market")
+            msg = {"status": "success", "message": "Player status updated successfully."}
 
         conn.commit()
         cursor.close()
         conn.close()
-        return {"status": "success", "message": "Player status updated successfully."}
+        
+        return msg
     except psycopg2.Error as e:
         logger.error(f"Database error: {e}")
         return {"status": "error", "message": str(e)}
