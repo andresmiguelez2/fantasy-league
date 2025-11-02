@@ -3,10 +3,10 @@ import logging
 import re
 import requests
 from bson import Binary
-from aux.server_requests import scrape_page
+from aux.aux_functions import scrape_page
 from pymongo import MongoClient
 
-from aux.constants import FANTASY_PLAYER_URL, FANTASY_PLAYER_MARKET_URL, COMPETITION_NAME
+from aux.constants import FANTASY_PLAYER_URL, FANTASY_PLAYER_MARKET_URL, COMPETITION_NAME, UPDATE_MONGODB_INTERVAL
 
 
 logger = logging.getLogger(__name__)
@@ -218,7 +218,7 @@ class Footballer():
     def _get_player_data(self):
         """Fetches and parses player data from the fantasy football website."""
         search_url = FANTASY_PLAYER_URL + self.url_name
-        soup = scrape_page(search_url)
+        soup = scrape_page(search_url, logger)
 
         if COMPETITION_NAME not in soup.text:
             if '-1' not in self.url_name:
@@ -257,7 +257,7 @@ class Footballer():
         Returns a list of dicts with 'date' and 'value'.
         """
         url = FANTASY_PLAYER_MARKET_URL + str(player_id)
-        soup = scrape_page(url)
+        soup = scrape_page(url, logger)
         # Find all script tags and search for player_chartjs.push({...})
         chart_data = []
         script_tags = soup.find_all("script")
@@ -318,3 +318,34 @@ class Footballer():
             )
         except Exception as e:
             logger.error(f"Error setting release clause date for footballer {footballer_id}: {e}")
+
+    def update_in_db(self, client: MongoClient, override: bool = False):
+        db = client["FantasyMDB"]
+
+        doc = db.footballer.find_one({"id": self.id})
+        last_updated = doc.get('last_updated', None) if doc else None
+
+        if last_updated:
+            now = datetime.datetime.now(datetime.timezone.utc)
+            if last_updated.tzinfo is None:
+                last_updated = last_updated.replace(tzinfo=datetime.timezone.utc)
+            else:
+                last_updated = last_updated.astimezone(datetime.timezone.utc)
+
+            elapsed = (now - last_updated).total_seconds()
+            if not override and elapsed < UPDATE_MONGODB_INTERVAL:
+                logger.info(f"Skipping update for footballer {self.id} as it was updated {elapsed} seconds ago (< {UPDATE_MONGODB_INTERVAL}).")
+                return
+
+        self._get_player_data()
+        update_dict = self.data.copy()
+        update_dict['last_updated'] = datetime.datetime.now(datetime.timezone.utc)
+
+        try:
+            db.footballer.update_one(
+                {"id": self.id},
+                {"$set": update_dict},
+                upsert=True
+            )
+        except Exception as e:
+            logger.error(f"Error updating footballer {self.id} in DB: {e}")

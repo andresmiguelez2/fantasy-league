@@ -1,11 +1,8 @@
 from aux.constants import FANTASY_MAIN_URL, FOOTBALLER_NAME_DICT
-from aux.server_requests import scrape_page
 from classes.footballer import Footballer
-import unicodedata
+from aux.aux_functions import scrape_page
 import logging
 import pandas as pd
-import re
-from tqdm import tqdm
 
 
 logging.basicConfig(
@@ -48,7 +45,7 @@ def normalise_name(name):
 
 
 if __name__ == "__main__":
-    soup = scrape_page(FANTASY_MAIN_URL)
+    soup = scrape_page(FANTASY_MAIN_URL, logger)
     player_data_df = pd.DataFrame(get_all_players(soup), columns=["name", "full_name", "displayable_name"])
 
     for _, row in player_data_df.iterrows():

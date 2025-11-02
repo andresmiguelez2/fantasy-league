@@ -1,12 +1,10 @@
-from xmlrpc import client
 from fastapi import FastAPI
 from pydantic import BaseModel
 from pymongo import MongoClient
-import requests
-from bs4 import BeautifulSoup
 import logging
 import psycopg2
 import os
+from classes.footballer import Footballer
 
 
 logger = logging.getLogger(__name__)
@@ -168,10 +166,37 @@ def place_bid(bid: BidRequest):
         )
         cursor = conn.cursor()
 
+        client = MongoClient(f"mongodb://{os.getenv('MONGO_INITDB_ROOT_USERNAME')}:{os.getenv('MONGO_INITDB_ROOT_PASSWORD')}@mongodb:27017/fantasy_mongo_db?authSource=admin")
+
         cursor.execute(
-            """
-            DELETE FROM bid
-            WHERE footballer_id = %s AND bidder_id = %s
+                """
+                SELECT name, url_name, owner_id
+                FROM footballer
+                WHERE id = %s
+            """,
+            (bid.footballer_id,)
+        )
+        full_name, url_name, owner_id = cursor.fetchone()
+
+        footballer = Footballer(obtain_data=False, full_name=full_name)
+        footballer.url_name = url_name
+        footballer.id = bid.footballer_id
+        footballer.get_player_data()
+        footballer.update_in_db(client)
+
+        if bid.bid_amount < footballer.data['market_details'][-1]['value'] and bid.bid_amount != 0:
+            cursor.close()
+            conn.close()
+            return {"status": "error", "message": "Bid amount is less than the footballer's market value."}
+        elif bid.player_id == owner_id:
+            cursor.close()
+            conn.close()
+            return {"status": "error", "message": "Cannot bid on your own footballer."}
+        else:
+            cursor.execute(
+                """
+                DELETE FROM bid
+                WHERE footballer_id = %s AND bidder_id = %s
             """,
             (bid.footballer_id, bid.player_id)
         )
@@ -293,11 +318,3 @@ def leaderboard():
     except psycopg2.Error as e:
         logger.error(f"Database error: {e}")
         return {"leaderboard": []}
-
-
-def scrape_page(url):
-    logger.debug(f"Fetching {url}")
-    response = requests.get(url)
-    response.raise_for_status()
-    soup = BeautifulSoup(response.text, "html.parser")
-    return soup
