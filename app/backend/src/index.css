@@ -1,0 +1,91 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 20% 10%;
+    --foreground: 220 10% 98%;
+    --card: 220 18% 14%;
+    --card-foreground: 220 10% 98%;
+    --popover: 220 18% 16%;
+    --popover-foreground: 220 10% 98%;
+    --primary: 280 70% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 280 80% 70%;
+    --secondary: 200 70% 50%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 220 15% 25%;
+    --muted-foreground: 220 10% 65%;
+    --accent: 330 70% 55%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 70% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 15% 20%;
+    --input: 220 15% 20%;
+    --ring: 280 70% 60%;
+    --radius: 0.75rem;
+    
+    --gradient-primary: linear-gradient(135deg, hsl(280 70% 60%), hsl(200 70% 50%));
+    --gradient-card: linear-gradient(135deg, hsl(220 18% 16%), hsl(220 18% 14%));
+    --gradient-accent: linear-gradient(135deg, hsl(330 70% 55%), hsl(280 70% 60%));
+    
+    --sidebar-background: 220 18% 12%;
+    --sidebar-foreground: 220 10% 95%;
+    --sidebar-primary: 280 70% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 18%;
+    --sidebar-accent-foreground: 220 10% 98%;
+    --sidebar-border: 220 15% 18%;
+    --sidebar-ring: 280 70% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer utilities {
+  .page-transition {
+    @apply transition-all duration-300 ease-in-out;
+  }
+  
+  .hover-lift {
+    @apply transition-all duration-200 hover:scale-[1.02] hover:shadow-lg;
+  }
+  
+  .fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-card {
+    background: var(--gradient-card);
+  }
+  
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
