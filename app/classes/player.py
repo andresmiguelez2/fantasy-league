@@ -56,7 +56,8 @@ class Session():
         print("\t1. Squad")
         print("\t2. Market")
         print("\t3. Leaderboard")
-        print("\t4. Logout")
+        print("\t4. Other players' squad")
+        print("\t5. Logout")
         choice = input("Select an option: ")
 
         if choice == "1":
@@ -66,6 +67,8 @@ class Session():
         elif choice == "3":
             self._leaderboard_main()
         elif choice == "4":
+            self._other_players_squad()
+        elif choice == "5":
             self.logout()
         else:
             logger.info("Invalid choice.")
@@ -77,11 +80,15 @@ class Session():
         choice = input("Select an option: ")
 
         if choice == "1":
-            self._view_squad()
+            self._view_squad(self.player_id)
         elif choice == "2":
             self._edit_player_status()
         else:
             logger.info("Invalid choice.")
+
+    def _other_players_squad(self):
+        choice = input("Select a player ID: ")
+        self._view_squad(int(choice))
 
     def _market_main(self):
         print("\nMarket menu:")
@@ -147,9 +154,9 @@ class Session():
             logger.error(f"Failed to reach backend: {e}")
             return False
 
-    def _view_squad(self):
+    def _view_squad(self, player_id: int):
         try:
-            url = f"{os.environ['BACKEND_URL']}/squads/{self.player_id}"
+            url = f"{os.environ['BACKEND_URL']}/squads/{player_id}"
             response = requests.get(url)
             if response.status_code == 200:
                 data = response.json()
@@ -158,7 +165,7 @@ class Session():
                     print("\nYour Squad:")
                     print(tabulate(players, headers=FOOTBALLER_COLUMNS, tablefmt="grid"))
                 else:
-                    print("No players found in your squad.")
+                    print("No players found.")
             else:
                 logger.error(f"Failed to fetch squad: {response.status_code}")
         except Exception as e:
