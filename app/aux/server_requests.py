@@ -54,10 +54,10 @@ def squad(player_id: int):
             team = db.footballer.find({"id": player[0]})[0]['team']
             player_data.append((player[0], player[1], team, value, player[2], player[3]))
 
-        return {"players": player_data}
+        return {"footballers": player_data}
     except psycopg2.Error as e:
         logger.error(f"Database error: {e}")
-        return {"players": []}
+        return {"footballers": []}
     
 
 @server_app.get("/market")
@@ -84,10 +84,10 @@ def market():
         players = cursor.fetchall()
         cursor.close()
         conn.close()
-        return {"players": players}
+        return {"footballers": players}
     except psycopg2.Error as e:
         logger.error(f"Database error: {e}")
-        return {"players": []}
+        return {"footballers": []}
     
 
 @server_app.get("/market/{player_id}")
@@ -139,10 +139,10 @@ def player_market(player_id: int):
 
         cursor.close()
         conn.close()
-        return {"players": player_data}
+        return {"footballers": player_data}
     except psycopg2.Error as e:
         logger.error(f"Database error: {e}")
-        return {"players": []}
+        return {"footballers": []}
 
 
 class BidRequest(BaseModel):
