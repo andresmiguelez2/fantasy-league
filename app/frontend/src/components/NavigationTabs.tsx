@@ -10,9 +10,9 @@ export const NavigationTabs = ({ leagueId }: NavigationTabsProps) => {
   const location = useLocation();
   
   const tabs = [
-    { id: "league", label: "L", path: leagueId ? `/league/${leagueId}` : "/league/1" },
-    { id: "squad", label: "S", path: "/squad" },
-    { id: "market", label: "M", path: "/market" },
+    { id: "league", label: "Leaderboard", path: leagueId ? `/league/${leagueId}` : "/league/1" },
+    { id: "squad", label: "Squad", path: "/squad" },
+    { id: "market", label: "Market", path: "/market" },
   ];
   
   const isActive = (path: string) => location.pathname === path;
