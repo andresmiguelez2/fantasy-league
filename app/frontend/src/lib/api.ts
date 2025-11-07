@@ -6,10 +6,10 @@ export interface League {
 }
 
 export interface Player {
-  id: string;
+  id: number;
   name: string;
   points: number;
-  value: number;
+  budget: number;
 }
 
 export interface Footballer {
@@ -37,18 +37,16 @@ export const fetchLeagues = async (): Promise<League[]> => {
   ];
 };
 
-export const fetchPlayers = async (leagueId: string): Promise<Player[]> => {
-  await delay(800);
-  // TODO: Replace with actual API call
-  // const response = await fetch(`YOUR_API_ENDPOINT/leagues/${leagueId}/players`);
-  // return response.json();
+export const fetchLeaderboard = async (): Promise<Player[]> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leaderboard/`);
+  const data = await response.json();
   
-  return [
-    { id: '1', name: 'Player 1', points: 74, value: 145569014 },
-    { id: '2', name: 'Player 2', points: 57, value: 140569014 },
-    { id: '3', name: 'Player 3', points: 54, value: 145569014 },
-    { id: '4', name: 'Player 4', points: 21, value: 145569014 },
-  ];
+  return data.leaderboard.map((player: any[]) => ({
+    id: player[0],
+    name: player[1],
+    points: player[2],
+    budget: player[3],
+  }));
 };
 
 export const fetchSquadFootballers = async (playerId: string): Promise<Footballer[]> => {

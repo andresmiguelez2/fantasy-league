@@ -21,6 +21,7 @@ const App = () => (
           <Route path="/" element={<Landing />} />
           <Route path="/league/:leagueId" element={<League />} />
           <Route path="/squad" element={<Squad />} />
+          <Route path="/squad/:playerId" element={<Squad />} />
           <Route path="/market" element={<Market />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
 import { SquadRow } from "@/components/SquadRow";
@@ -7,21 +8,22 @@ import { fetchSquadFootballers, Footballer } from "@/lib/api";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const Squad = () => {
+  const { playerId } = useParams();
   const [footballers, setFootballers] = useState<Footballer[]>([]);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
     const loadFootballers = async () => {
       setLoading(true);
-      // TODO: Replace 'player_id' with actual player ID from auth or context
-      const playerId = '1';
-      const data = await fetchSquadFootballers(playerId);
+      // Use playerId from URL params or default to '1' for current user
+      const id = playerId || '1';
+      const data = await fetchSquadFootballers(id);
       setFootballers(data);
       setLoading(false);
     };
     
     loadFootballers();
-  }, []);
+  }, [playerId]);
   
   return (
     <div className="min-h-screen bg-background">

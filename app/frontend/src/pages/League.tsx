@@ -4,7 +4,7 @@ import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
 import { PlayerRow } from "@/components/PlayerRow";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
-import { fetchPlayers, Player } from "@/lib/api";
+import { fetchLeaderboard, Player } from "@/lib/api";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const League = () => {
@@ -14,15 +14,14 @@ const League = () => {
   
   useEffect(() => {
     const loadPlayers = async () => {
-      if (!leagueId) return;
       setLoading(true);
-      const data = await fetchPlayers(leagueId);
+      const data = await fetchLeaderboard();
       setPlayers(data);
       setLoading(false);
     };
     
     loadPlayers();
-  }, [leagueId]);
+  }, []);
   
   return (
     <div className="min-h-screen bg-background">
@@ -39,16 +38,17 @@ const League = () => {
                 <TableRow>
                   <TableHead>Player</TableHead>
                   <TableHead className="text-center">Points</TableHead>
-                  <TableHead className="text-center">Value</TableHead>
+                  <TableHead className="text-center">Budget</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {players.map((player) => (
                   <PlayerRow
                     key={player.id}
+                    playerId={player.id}
                     name={player.name}
                     points={player.points}
-                    value={player.value}
+                    budget={player.budget}
                   />
                 ))}
               </TableBody>

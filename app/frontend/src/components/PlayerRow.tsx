@@ -1,13 +1,17 @@
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useNavigate } from "react-router-dom";
 
 interface PlayerRowProps {
+  playerId: number;
   name: string;
   points: number;
-  value: number;
+  budget: number;
 }
 
-export const PlayerRow = ({ name, points, value }: PlayerRowProps) => {
+export const PlayerRow = ({ playerId, name, points, budget }: PlayerRowProps) => {
+  const navigate = useNavigate();
+  
   const formatValue = (val: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -22,7 +26,7 @@ export const PlayerRow = ({ name, points, value }: PlayerRowProps) => {
   };
   
   return (
-    <TableRow className="fade-in">
+    <TableRow className="fade-in cursor-pointer hover:bg-accent/10 transition-colors" onClick={() => navigate(`/squad/${playerId}`)}>
       <TableCell className="flex items-center gap-3">
         <Avatar className="h-10 w-10 border-2 border-secondary/30">
           <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`} />
@@ -36,7 +40,7 @@ export const PlayerRow = ({ name, points, value }: PlayerRowProps) => {
         <span className="text-accent font-semibold">{points} pts</span>
       </TableCell>
       <TableCell className="text-center">
-        <span className="text-secondary font-semibold">{formatValue(value)}</span>
+        <span className="text-secondary font-semibold">{formatValue(budget)}</span>
       </TableCell>
     </TableRow>
   );
