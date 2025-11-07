@@ -11,3 +11,4 @@ pandas
 tqdm
 pymongo
 pillow
+standard-imghdr
