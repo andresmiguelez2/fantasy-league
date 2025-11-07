@@ -62,7 +62,7 @@ services:
       dockerfile: Dockerfile.frontend
     container_name: frontend_app
     environment:
-      - VITE_BACKEND_URL=http://app:8000
+      - VITE_BACKEND_URL=http://localhost:8000
     volumes:
       - ./app/frontend:/app
       - /app/node_modules
