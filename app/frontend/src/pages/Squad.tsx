@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
-import { FootballerCard } from "@/components/FootballerCard";
+import { SquadRow } from "@/components/SquadRow";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { fetchSquadFootballers, Footballer } from "@/lib/api";
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const Squad = () => {
   const [footballers, setFootballers] = useState<Footballer[]>([]);
@@ -12,7 +13,9 @@ const Squad = () => {
   useEffect(() => {
     const loadFootballers = async () => {
       setLoading(true);
-      const data = await fetchSquadFootballers();
+      // TODO: Replace 'player_id' with actual player ID from auth or context
+      const playerId = '1';
+      const data = await fetchSquadFootballers(playerId);
       setFootballers(data);
       setLoading(false);
     };
@@ -29,13 +32,24 @@ const Squad = () => {
         {loading ? (
           <LoadingSkeleton type="footballers" />
         ) : (
-          <div className="space-y-3 max-w-2xl">
-            {footballers.map((footballer) => (
-              <FootballerCard
-                key={footballer.id}
-                name={footballer.name}
-              />
-            ))}
+          <div className="max-w-4xl">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Player</TableHead>
+                  <TableHead className="text-center">Value</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {footballers.map((footballer) => (
+                  <SquadRow
+                    key={footballer.id}
+                    name={footballer.name}
+                    value={footballer.value}
+                  />
+                ))}
+              </TableBody>
+            </Table>
           </div>
         )}
       </main>

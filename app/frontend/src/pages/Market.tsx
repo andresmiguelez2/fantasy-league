@@ -40,11 +40,11 @@ const Market = () => {
       description: `Your bid of €${amount.toLocaleString()} for ${selectedFootballer.name} has been placed.`,
     });
     
-    // Update the footballer's current bid
+    // Update the footballer's value with the new bid
     setFootballers(prev =>
       prev.map(f =>
         f.id === selectedFootballer.id
-          ? { ...f, currentBid: amount }
+          ? { ...f, value: amount }
           : f
       )
     );
@@ -64,7 +64,7 @@ const Market = () => {
               <FootballerCard
                 key={footballer.id}
                 name={footballer.name}
-                currentBid={footballer.currentBid}
+                currentBid={footballer.value}
                 showBidButton
                 onBid={() => handleBidClick(footballer)}
               />
@@ -78,7 +78,7 @@ const Market = () => {
           open={bidDialogOpen}
           onOpenChange={setBidDialogOpen}
           footballerName={selectedFootballer.name}
-          currentBid={selectedFootballer.currentBid}
+          currentBid={selectedFootballer.value}
           onSubmit={handleBidSubmit}
         />
       )}
