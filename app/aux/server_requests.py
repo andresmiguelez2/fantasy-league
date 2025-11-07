@@ -6,6 +6,9 @@ import psycopg2
 import os
 from classes.footballer import Footballer
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
+import imghdr
+from bson.binary import Binary
 
 
 logger = logging.getLogger(__name__)
@@ -338,3 +341,35 @@ def leaderboard():
     except psycopg2.Error as e:
         logger.error(f"Database error: {e}")
         return {"leaderboard": []}
+    
+
+@server_app.get("/images/{footballer_id}")
+def get_footballer_image(footballer_id: int):
+    """Return the footballer's image as raw bytes (with proper Content-Type)."""
+    try:
+        client = MongoClient(f"mongodb://{os.getenv('MONGO_INITDB_ROOT_USERNAME')}:{os.getenv('MONGO_INITDB_ROOT_PASSWORD')}@mongodb:27017/fantasy_mongo_db?authSource=admin")
+        db = client["FantasyMDB"]
+
+        footballer = db.footballer.find_one({"id": footballer_id})
+        if footballer is None:
+            client.close()
+            return {"status": "error", "message": "Footballer not found."}
+
+        img_field = footballer.get("image_binary")
+        if img_field is None:
+            client.close()
+            return {"status": "error", "message": "No image found for this footballer."}
+
+        # Convert bson.Binary to raw bytes if necessary
+        img_bytes = bytes(img_field)
+
+        # Try to detect image type
+        fmt = imghdr.what(None, img_bytes)
+        content_type = f"image/{fmt}" if fmt else "application/octet-stream"
+
+        client.close()
+        return Response(content=img_bytes, media_type=content_type)
+
+    except Exception as e:
+        logger.error(f"Error retrieving footballer image: {e}")
+        return {"status": "error", "message": str(e)}
