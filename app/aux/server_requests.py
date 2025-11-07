@@ -314,7 +314,7 @@ def leaderboard():
         players = cursor.fetchall()
 
         player_data = list()
-        for i, player in enumerate(players):
+        for player in players:
             cursor.execute(
                 """
                 SELECT 
@@ -330,7 +330,7 @@ def leaderboard():
             for footballer_id in footballers:
                 team_value += db.footballer.find({"id": footballer_id[0]})[0]['market_details'][-1]['value']
 
-            player_data.append((i+1, player[1], player[2], team_value))
+            player_data.append((player[0], player[1], player[2], team_value))
 
         cursor.close()
         conn.close()
