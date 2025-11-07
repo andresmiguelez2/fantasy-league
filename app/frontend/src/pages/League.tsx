@@ -38,7 +38,7 @@ const League = () => {
                 <TableRow>
                   <TableHead>Player</TableHead>
                   <TableHead className="text-center">Points</TableHead>
-                  <TableHead className="text-center">Budget</TableHead>
+                  <TableHead className="text-center">Team Value</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -48,7 +48,7 @@ const League = () => {
                     playerId={player.id}
                     name={player.name}
                     points={player.points}
-                    budget={player.budget}
+                    team_value={player.team_value}
                   />
                 ))}
               </TableBody>

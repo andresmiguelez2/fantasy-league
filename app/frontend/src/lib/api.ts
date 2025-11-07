@@ -9,7 +9,7 @@ export interface Player {
   id: number;
   name: string;
   points: number;
-  budget: number;
+  team_value: number;
 }
 
 export interface Footballer {
@@ -45,7 +45,7 @@ export const fetchLeaderboard = async (): Promise<Player[]> => {
     id: player[0],
     name: player[1],
     points: player[2],
-    budget: player[3],
+    team_value: player[3],
   }));
 };
 

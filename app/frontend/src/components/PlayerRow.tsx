@@ -6,10 +6,10 @@ interface PlayerRowProps {
   playerId: number;
   name: string;
   points: number;
-  budget: number;
+  team_value: number;
 }
 
-export const PlayerRow = ({ playerId, name, points, budget }: PlayerRowProps) => {
+export const PlayerRow = ({ playerId, name, points, team_value }: PlayerRowProps) => {
   const navigate = useNavigate();
   
   const formatValue = (val: number) => {
@@ -40,7 +40,7 @@ export const PlayerRow = ({ playerId, name, points, budget }: PlayerRowProps) =>
         <span className="text-accent font-semibold">{points} pts</span>
       </TableCell>
       <TableCell className="text-center">
-        <span className="text-secondary font-semibold">{formatValue(budget)}</span>
+        <span className="text-secondary font-semibold">{formatValue(team_value)}</span>
       </TableCell>
     </TableRow>
   );
