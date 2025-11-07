@@ -46,6 +46,7 @@ const Squad = () => {
                 {footballers.map((footballer) => (
                   <SquadRow
                     key={footballer.id}
+                    id={footballer.id}
                     name={footballer.name}
                     value={footballer.value}
                   />

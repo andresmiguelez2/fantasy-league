@@ -13,7 +13,7 @@ export const PlayerRow = ({ playerId, name, points, team_value }: PlayerRowProps
   const navigate = useNavigate();
   
   const formatValue = (val: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('es-ES', {
       style: 'currency',
       currency: 'EUR',
       minimumFractionDigits: 0,

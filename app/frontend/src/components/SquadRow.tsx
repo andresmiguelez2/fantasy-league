@@ -2,13 +2,14 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface SquadRowProps {
+  id: number;
   name: string;
   value: number;
 }
 
-export const SquadRow = ({ name, value }: SquadRowProps) => {
+export const SquadRow = ({ id, name, value }: SquadRowProps) => {
   const formatValue = (val: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('es-ES', {
       style: 'currency',
       currency: 'EUR',
       minimumFractionDigits: 0,
@@ -24,7 +25,7 @@ export const SquadRow = ({ name, value }: SquadRowProps) => {
     <TableRow className="fade-in">
       <TableCell className="flex items-center gap-3">
         <Avatar className="h-10 w-10 border-2 border-secondary/30">
-          <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`} />
+          <AvatarImage src={`${import.meta.env.VITE_BACKEND_URL}/images/${id}`} />
           <AvatarFallback className="bg-gradient-primary text-white font-semibold text-sm">
             {getInitials(name)}
           </AvatarFallback>
