@@ -5,11 +5,23 @@ import logging
 import psycopg2
 import os
 from classes.footballer import Footballer
+from fastapi.middleware.cors import CORSMiddleware
 
 
 logger = logging.getLogger(__name__)
 
 server_app = FastAPI()
+
+server_app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @server_app.get("/ping")
