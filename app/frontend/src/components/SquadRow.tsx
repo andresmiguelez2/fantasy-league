@@ -24,7 +24,7 @@ export const SquadRow = ({ id, name, value }: SquadRowProps) => {
   return (
     <TableRow className="fade-in">
       <TableCell className="flex items-center gap-3">
-        <Avatar className="h-10 w-10 border-2 border-secondary/30">
+        <Avatar className="h-14 w-14 border-2 border-secondary/30">
           <AvatarImage src={`${import.meta.env.VITE_BACKEND_URL}/images/${id}`} />
           <AvatarFallback className="bg-gradient-primary text-white font-semibold text-sm">
             {getInitials(name)}
