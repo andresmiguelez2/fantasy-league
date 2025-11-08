@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 import imghdr
 from bson.binary import Binary
+from aux.aux_functions import extract_fixture_points
 
 
 logger = logging.getLogger(__name__)
@@ -378,6 +379,38 @@ def get_player_info(player_id: int):
         }
     except psycopg2.Error as e:
         logger.error(f"Database error: {e}")
+        return {"status": "error", "message": str(e)}
+    
+
+@server_app.get("/footballers/{footballer_id}")
+def get_footballer_info(footballer_id: int):
+    """Get information about a specific footballer."""
+    try:
+        client = MongoClient(f"mongodb://{os.getenv('MONGO_INITDB_ROOT_USERNAME')}:{os.getenv('MONGO_INITDB_ROOT_PASSWORD')}@mongodb:27017/fantasy_mongo_db?authSource=admin")
+        db = client["FantasyMDB"]
+
+        footballer = db.footballer.find_one({"id": footballer_id})
+        client.close()
+
+        if footballer is None:
+            return {"status": "error", "message": "Footballer not found."}
+
+        del footballer['image_binary'] # Remove image binary data for efficiency
+
+        return {
+            "status": "success",
+            "footballer_info": {
+                "name": footballer['name'],
+                "team": footballer['team'],
+                "total_points": footballer['total_points'],
+                "average_points": footballer['average_points'],
+                "market_value": footballer['market_details'][-1]['value'],
+                "market_details": footballer['market_details'],
+                "fixture_breakdown": extract_fixture_points(footballer['fixture_breakdown']),
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving footballer info: {e}")
         return {"status": "error", "message": str(e)}
     
 
