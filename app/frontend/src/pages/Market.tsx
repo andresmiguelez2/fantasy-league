@@ -69,6 +69,7 @@ const Market = () => {
                 key={footballer.id}
                 id={footballer.id}
                 name={footballer.name}
+                owner={footballer.ownerId}
                 currentBid={footballer.value}
                 showBidButton
                 onBid={() => handleBidClick(footballer)}

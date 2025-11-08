@@ -5,12 +5,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 interface FootballerCardProps {
   id: number;
   name: string;
+  owner?: string;
   currentBid?: number;
   showBidButton?: boolean;
   onBid?: () => void;
 }
 
-export const FootballerCard = ({ id, name, currentBid, showBidButton = false, onBid }: FootballerCardProps) => {
+export const FootballerCard = ({ id, name, owner, currentBid, showBidButton = false, onBid }: FootballerCardProps) => {
   const formatBid = (amount: number) => {
     return new Intl.NumberFormat('en-ES', {
       style: 'currency',
@@ -33,7 +34,12 @@ export const FootballerCard = ({ id, name, currentBid, showBidButton = false, on
             {getInitials(name)}
           </AvatarFallback>
         </Avatar>
-        <span className="font-semibold text-foreground">{name}</span>
+        <div>
+          <span className="font-semibold text-foreground">{name}</span>
+          {owner ? (
+            <div className="text-sm text-secondary">Owner: {owner}</div>
+          ) : null}
+        </div>
       </div>
       {showBidButton && (
         <Button

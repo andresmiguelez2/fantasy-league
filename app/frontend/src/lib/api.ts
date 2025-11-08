@@ -74,8 +74,6 @@ export const fetchSquadFootballers = async (playerId: string): Promise<Footballe
 };
 
 export const fetchMarketFootballers = async (playerId: string): Promise<MarketFootballer[]> => {
-  await delay(800);
-
   const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/${playerId}`);
   const data = await response.json();
   
