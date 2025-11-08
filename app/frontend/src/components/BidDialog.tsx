@@ -33,6 +33,11 @@ export const BidDialog = ({
     onOpenChange(false);
   };
   
+  const handleDeleteBid = () => {
+    onSubmit(0);
+    onOpenChange(false);
+  };
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -62,10 +67,15 @@ export const BidDialog = ({
           </div>
         </div>
         
-        <DialogFooter>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
+          {currentBid && (
+            <Button variant="destructive" onClick={handleDeleteBid}>
+              Delete Bid
+            </Button>
+          )}
           <Button onClick={handleSubmit}>
             Place Bid
           </Button>

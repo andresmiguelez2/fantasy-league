@@ -88,13 +88,16 @@ export const fetchMarketFootballers = async (playerId: string): Promise<MarketFo
   }));
 };
 
-export const placeBid = async (footballerId: number, amount: number): Promise<void> => {
-  await delay(500);
-  // TODO: Replace with actual API call
-  // await fetch('YOUR_API_ENDPOINT/bid', {
-  //   method: 'POST',
-  //   body: JSON.stringify({ footballerId, amount })
-  // });
-  
-  console.log(`Bid placed: ${footballerId} - €${amount}`);
+export const placeBid = async (footballerId: number, playerId: string, amount: number): Promise<void> => {
+  await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/bids`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      footballer_id: footballerId,
+      player_id: playerId,
+      bid_amount: amount,
+    }),
+  });
 };

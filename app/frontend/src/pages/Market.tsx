@@ -37,18 +37,21 @@ const Market = () => {
   const handleBidSubmit = async (amount: number) => {
     if (!selectedFootballer) return;
     
-    await placeBid(selectedFootballer.id, amount);
+    const id = playerId || '1';
+    await placeBid(selectedFootballer.id, id, amount);
     
     toast({
-      title: "Bid placed successfully",
-      description: `Your bid of €${amount.toLocaleString()} for ${selectedFootballer.name} has been placed.`,
+      title: amount === 0 ? "Bid deleted successfully" : "Bid placed successfully",
+      description: amount === 0 
+        ? `Your bid for ${selectedFootballer.name} has been deleted.`
+        : `Your bid of €${amount.toLocaleString()} for ${selectedFootballer.name} has been placed.`,
     });
     
     // Update the footballer's value with the new bid
     setFootballers(prev =>
       prev.map(f =>
         f.id === selectedFootballer.id
-          ? { ...f, value: amount }
+          ? { ...f, value: amount, bidAmount: amount }
           : f
       )
     );
