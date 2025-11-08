@@ -3,15 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface FootballerCardProps {
+  id: number;
   name: string;
   currentBid?: number;
   showBidButton?: boolean;
   onBid?: () => void;
 }
 
-export const FootballerCard = ({ name, currentBid, showBidButton = false, onBid }: FootballerCardProps) => {
+export const FootballerCard = ({ id, name, currentBid, showBidButton = false, onBid }: FootballerCardProps) => {
   const formatBid = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-ES', {
       style: 'currency',
       currency: 'EUR',
       minimumFractionDigits: 0,
@@ -27,7 +28,7 @@ export const FootballerCard = ({ name, currentBid, showBidButton = false, onBid 
     <Card className="p-4 flex items-center justify-between fade-in hover-lift border-primary/20 bg-gradient-to-r from-card to-card/80">
       <div className="flex items-center gap-3">
         <Avatar className="h-14 w-14 border-2 border-secondary/30">
-          <AvatarImage src={`${import.meta.env.VITE_BACKEND_URL}/images/${25}`} />
+          <AvatarImage src={`${import.meta.env.VITE_BACKEND_URL}/images/${id}`} />
           <AvatarFallback className="bg-gradient-primary text-white font-semibold text-sm">
             {getInitials(name)}
           </AvatarFallback>

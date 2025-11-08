@@ -67,6 +67,7 @@ const Market = () => {
             {footballers.map((footballer) => (
               <FootballerCard
                 key={footballer.id}
+                id={footballer.id}
                 name={footballer.name}
                 currentBid={footballer.value}
                 showBidButton
