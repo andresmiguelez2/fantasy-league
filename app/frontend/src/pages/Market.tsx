@@ -70,7 +70,7 @@ const Market = () => {
                 id={footballer.id}
                 name={footballer.name}
                 owner={footballer.ownerId}
-                currentBid={footballer.value}
+                currentBid={footballer.bidAmount}
                 showBidButton
                 onBid={() => handleBidClick(footballer)}
               />

@@ -81,10 +81,10 @@ export const fetchMarketFootballers = async (playerId: string): Promise<MarketFo
   return data.footballers.map((footballer: any[]) => ({
     id: footballer[0],
     name: footballer[1],
-    team: footballer[2],
-    value: footballer[3],
-    onMarket: footballer[4],
-    onMarketSince: footballer[5],
+    value: footballer[2],
+    ownerId: footballer[3],
+    onMarketSince: footballer[4],
+    bidAmount: footballer[5],
   }));
 };
 
