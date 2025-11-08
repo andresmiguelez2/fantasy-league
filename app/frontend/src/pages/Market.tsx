@@ -4,20 +4,24 @@ import { NavigationTabs } from "@/components/NavigationTabs";
 import { FootballerCard } from "@/components/FootballerCard";
 import { BidDialog } from "@/components/BidDialog";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
-import { fetchMarketFootballers, placeBid, Footballer } from "@/lib/api";
+import { fetchMarketFootballers, placeBid, MarketFootballer } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { useParams } from "react-router-dom";
 
 const Market = () => {
-  const [footballers, setFootballers] = useState<Footballer[]>([]);
+  const { playerId } = useParams();
+  const [footballers, setFootballers] = useState<MarketFootballer[]>([]);
   const [loading, setLoading] = useState(true);
   const [bidDialogOpen, setBidDialogOpen] = useState(false);
-  const [selectedFootballer, setSelectedFootballer] = useState<Footballer | null>(null);
+  const [selectedFootballer, setSelectedFootballer] = useState<MarketFootballer | null>(null);
   const { toast } = useToast();
   
   useEffect(() => {
     const loadFootballers = async () => {
       setLoading(true);
-      const data = await fetchMarketFootballers();
+      // Use playerId from URL params or default to '1' for current user
+      const id = playerId || '1';
+      const data = await fetchMarketFootballers(id);
       setFootballers(data);
       setLoading(false);
     };
@@ -25,7 +29,7 @@ const Market = () => {
     loadFootballers();
   }, []);
   
-  const handleBidClick = (footballer: Footballer) => {
+  const handleBidClick = (footballer: MarketFootballer) => {
     setSelectedFootballer(footballer);
     setBidDialogOpen(true);
   };

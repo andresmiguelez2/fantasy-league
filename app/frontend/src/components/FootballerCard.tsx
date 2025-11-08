@@ -26,9 +26,9 @@ export const FootballerCard = ({ name, currentBid, showBidButton = false, onBid 
   return (
     <Card className="p-4 flex items-center justify-between fade-in hover-lift border-primary/20 bg-gradient-to-r from-card to-card/80">
       <div className="flex items-center gap-3">
-        <Avatar className="h-12 w-12 border-2 border-primary/30">
-          <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`} />
-          <AvatarFallback className="bg-gradient-primary text-white font-semibold">
+        <Avatar className="h-14 w-14 border-2 border-secondary/30">
+          <AvatarImage src={`${import.meta.env.VITE_BACKEND_URL}/images/${25}`} />
+          <AvatarFallback className="bg-gradient-primary text-white font-semibold text-sm">
             {getInitials(name)}
           </AvatarFallback>
         </Avatar>

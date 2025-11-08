@@ -21,6 +21,15 @@ export interface Footballer {
   onMarketSince: string | null;
 }
 
+export interface MarketFootballer {
+  id: number;
+  name: string;
+  value: number;
+  ownerId: string;
+  onMarketSince: string;
+  bidAmount: number;
+}
+
 // Simulate API delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -64,19 +73,21 @@ export const fetchSquadFootballers = async (playerId: string): Promise<Footballe
   }));
 };
 
-export const fetchMarketFootballers = async (): Promise<Footballer[]> => {
+export const fetchMarketFootballers = async (playerId: string): Promise<MarketFootballer[]> => {
   await delay(800);
-  // TODO: Replace with actual API call
-  // const response = await fetch('YOUR_API_ENDPOINT/market');
-  // return response.json();
+
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/${playerId}`);
+  const data = await response.json();
   
-  return [
-    { id: 1, name: 'Footballer 1', team: 'Team A', value: 587000, onMarket: true, onMarketSince: new Date().toISOString() },
-    { id: 2, name: 'Footballer 2', team: 'Team B', value: 450000, onMarket: true, onMarketSince: null },
-    { id: 3, name: 'Footballer 3', team: 'Team C', value: 320000, onMarket: true, onMarketSince: null },
-    { id: 4, name: 'Footballer 4', team: 'Team D', value: 680000, onMarket: true, onMarketSince: null },
-    { id: 5, name: 'Footballer 5', team: 'Team E', value: 520000, onMarket: true, onMarketSince: null },
-  ];
+  // Transform the array format to objects
+  return data.footballers.map((footballer: any[]) => ({
+    id: footballer[0],
+    name: footballer[1],
+    team: footballer[2],
+    value: footballer[3],
+    onMarket: footballer[4],
+    onMarketSince: footballer[5],
+  }));
 };
 
 export const placeBid = async (footballerId: number, amount: number): Promise<void> => {
