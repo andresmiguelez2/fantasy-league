@@ -88,8 +88,12 @@ export const fetchMarketFootballers = async (playerId: string): Promise<MarketFo
   }));
 };
 
-export const placeBid = async (footballerId: number, playerId: string, amount: number): Promise<void> => {
-  await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/bids`, {
+export const placeBid = async (
+  footballerId: number,
+  playerId: string,
+  amount: number
+): Promise<any> => {
+  const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/bids`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -100,4 +104,17 @@ export const placeBid = async (footballerId: number, playerId: string, amount: n
       bid_amount: amount,
     }),
   });
+
+  // Try to parse JSON response; if none, return status info
+  const text = await res.text();
+  if (!text) {
+    return { status: res.status, ok: res.ok };
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    // not JSON, return raw text
+    return { status: res.status, ok: res.ok, text };
+  }
 };

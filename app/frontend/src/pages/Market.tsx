@@ -38,13 +38,23 @@ const Market = () => {
     if (!selectedFootballer) return;
     
     const id = playerId || '1';
-    await placeBid(selectedFootballer.id, id, amount);
-    
+    const resp = await placeBid(selectedFootballer.id, id, amount);
+
+    // Determine message from API response
+    let message = '';
+    if (resp) {
+      if (typeof resp === 'string') message = resp;
+      else if (resp.message) message = resp.message;
+      else if (resp.detail) message = resp.detail;
+      else if (resp.text) message = resp.text;
+      else message = JSON.stringify(resp);
+    }
+
     toast({
-      title: amount === 0 ? "Bid deleted successfully" : "Bid placed successfully",
-      description: amount === 0 
+      // title: amount === 0 ? "Bid deleted" : "Bid response",
+      description: message || (amount === 0
         ? `Your bid for ${selectedFootballer.name} has been deleted.`
-        : `Your bid of €${amount.toLocaleString()} for ${selectedFootballer.name} has been placed.`,
+        : `Your bid of €${amount.toLocaleString()} for ${selectedFootballer.name} has been placed.`),
     });
     
     // Update the footballer's value with the new bid

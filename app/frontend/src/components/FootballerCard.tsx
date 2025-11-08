@@ -45,7 +45,6 @@ export const FootballerCard = ({
          </Avatar>
          <div>
            <span className="font-semibold text-foreground">{name}</span>
-           {/* owner moved to its own button; keep optional owner label if you still want small text */}
            {owner ? <div className="text-sm text-secondary">{owner}</div> : null}
          </div>
        </div>
