@@ -129,16 +129,17 @@ def player_market(player_id: int):
             SELECT 
                 f.id
                 , f.name
-                , f.owner_id
+                , player.name
                 , date_trunc('second', f.on_market_since) AS on_market_since
                 , b.amount AS bid_amount
             FROM 
-                footballer AS f LEFT JOIN (
-                SELECT *
-                FROM bid
-                WHERE bidder_id = %s
-                ) AS b
-            ON f.id = b.footballer_id
+                footballer AS f
+                LEfT JOIN player ON f.owner_id = player.id
+                LEFT JOIN (
+                    SELECT *
+                    FROM bid
+                    WHERE bidder_id = %s
+                ) AS b ON f.id = b.footballer_id
             WHERE
                 on_market = TRUE
             ORDER BY owner_id, on_market_since 
