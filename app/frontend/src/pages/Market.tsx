@@ -4,6 +4,7 @@ import { NavigationTabs } from "@/components/NavigationTabs";
 import { FootballerCard } from "@/components/FootballerCard";
 import { BidDialog } from "@/components/BidDialog";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
+import { PlayerInfoRibbon } from "@/components/PlayerInfoRibbon";
 import { fetchMarketFootballers, placeBid, MarketFootballer } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useParams } from "react-router-dom";
@@ -68,7 +69,7 @@ const Market = () => {
   };
   
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20">
       <Header showBackButton />
       <NavigationTabs />
       
@@ -101,6 +102,7 @@ const Market = () => {
           onSubmit={handleBidSubmit}
         />
       )}
+      <PlayerInfoRibbon />
     </div>
   );
 };

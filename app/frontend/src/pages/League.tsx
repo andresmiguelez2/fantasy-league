@@ -4,6 +4,7 @@ import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
 import { PlayerRow } from "@/components/PlayerRow";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
+import { PlayerInfoRibbon } from "@/components/PlayerInfoRibbon";
 import { fetchLeaderboard, Player } from "@/lib/api";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -24,7 +25,7 @@ const League = () => {
   }, []);
   
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20">
       <Header showBackButton />
       <NavigationTabs leagueId={leagueId} />
       
@@ -56,6 +57,7 @@ const League = () => {
           </div>
         )}
       </main>
+      <PlayerInfoRibbon />
     </div>
   );
 };

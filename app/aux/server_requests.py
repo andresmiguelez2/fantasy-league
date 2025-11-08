@@ -344,6 +344,43 @@ def leaderboard():
         return {"leaderboard": []}
     
 
+@server_app.get("/players/{player_id}")
+def get_player_info(player_id: int):
+    """Get information about a specific player."""
+    try:
+        conn = psycopg2.connect(
+            host=os.getenv("DB_HOST", "postgres_db"),
+            database=os.getenv("DB_NAME", "postgres"),
+            user=os.getenv("DB_USER", "postgres"),
+            password=os.getenv("DB_PASSWORD", "password"),
+            port=os.getenv("DB_PORT", "5432"),
+        )
+
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT *
+            FROM player
+            WHERE id = %s
+            """,
+            (player_id,)
+        )
+        player = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if player is None:
+            return {"status": "error", "message": "Player not found."}
+
+        return {
+            "status": "success",
+            "player": player
+        }
+    except psycopg2.Error as e:
+        logger.error(f"Database error: {e}")
+        return {"status": "error", "message": str(e)}
+    
+
 @server_app.get("/images/{footballer_id}")
 def get_footballer_image(footballer_id: int):
     """Return the footballer's image as raw bytes (with proper Content-Type)."""

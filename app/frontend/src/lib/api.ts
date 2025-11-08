@@ -8,6 +8,7 @@ export interface League {
 export interface Player {
   id: number;
   name: string;
+  budget: number;
   points: number;
   team_value: number;
 }
@@ -86,6 +87,41 @@ export const fetchMarketFootballers = async (playerId: string): Promise<MarketFo
     onMarketSince: footballer[4],
     bidAmount: footballer[5],
   }));
+};
+
+export interface PlayerInfo {
+  id: number;
+  name: string;
+  points: number;
+  budget: number;
+}
+
+// Return a `Player` shape for UI convenience (maps budget -> team_value)
+export const fetchPlayerInfo = async (playerId: string): Promise<Player> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/players/${playerId}`);
+  const data = await response.json();
+
+  // The API returns [id, name, budget, points]
+  const arr = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.player)
+    ? data.player
+    : null;
+
+  if (!arr || arr.length < 4) {
+    throw new Error('Unexpected player response format');
+  }
+
+  const [id, name, budget, points] = arr;
+
+  // Map API [id, name, budget, points] -> Player { id, name, points, team_value }
+  return {
+    id: Number(id),
+    name: String(name),
+    points: Number(points ?? 0),
+    budget: Number(budget ?? 0),
+    team_value: Number(budget ?? 0),
+  };
 };
 
 export const placeBid = async (
