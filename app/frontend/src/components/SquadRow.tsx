@@ -5,9 +5,10 @@ interface SquadRowProps {
   id: number;
   name: string;
   value: number;
+  onClick?: () => void;
 }
 
-export const SquadRow = ({ id, name, value }: SquadRowProps) => {
+export const SquadRow = ({ id, name, value, onClick }: SquadRowProps) => {
   const formatValue = (val: number) => {
     return new Intl.NumberFormat('en-ES', {
       style: 'currency',
@@ -22,7 +23,7 @@ export const SquadRow = ({ id, name, value }: SquadRowProps) => {
   };
   
   return (
-    <TableRow className="fade-in">
+    <TableRow className="fade-in cursor-pointer hover:bg-accent/50" onClick={onClick}>
       <TableCell className="flex items-center gap-3">
         <Avatar className="h-14 w-14 border-2 border-secondary/30">
           <AvatarImage src={`${import.meta.env.VITE_BACKEND_URL}/images/${id}`} />

@@ -36,7 +36,10 @@ export const FootballerCard = ({
    
    return (
      <Card className="p-4 flex items-center justify-between fade-in hover-lift border-primary/20 bg-gradient-to-r from-card to-card/80">
-       <div className="flex items-center gap-3">
+       <div 
+         className="flex items-center gap-3 flex-1 cursor-pointer" 
+         onClick={() => onOwnerClick?.()}
+       >
          <Avatar className="h-14 w-14 border-2 border-secondary/30">
            <AvatarImage src={`${import.meta.env.VITE_BACKEND_URL}/images/${id}`} />
            <AvatarFallback className="bg-gradient-primary text-white font-semibold text-sm">

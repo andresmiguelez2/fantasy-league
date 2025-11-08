@@ -154,3 +154,19 @@ export const placeBid = async (
     return { status: res.status, ok: res.ok, text };
   }
 };
+
+export interface FootballerInfo {
+  name: string;
+  team: string;
+  total_points: number;
+  average_points: number;
+  market_value: number;
+  market_details: { date: string; value: number }[];
+  fixture_breakdown: { fixture: number; points: number }[];
+}
+
+export const fetchFootballerInfo = async (footballerId: number): Promise<FootballerInfo> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/footballers/${footballerId}`);
+  const data = await response.json();
+  return data.footballer_info;
+};

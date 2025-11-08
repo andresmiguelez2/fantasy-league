@@ -5,6 +5,7 @@ import { NavigationTabs } from "@/components/NavigationTabs";
 import { SquadRow } from "@/components/SquadRow";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { PlayerInfoRibbon } from "@/components/PlayerInfoRibbon";
+import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
 import { fetchSquadFootballers, Footballer } from "@/lib/api";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -12,6 +13,8 @@ const Squad = () => {
   const { playerId } = useParams();
   const [footballers, setFootballers] = useState<Footballer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedFootballer, setSelectedFootballer] = useState<Footballer | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
   
   useEffect(() => {
     const loadFootballers = async () => {
@@ -25,6 +28,11 @@ const Squad = () => {
     
     loadFootballers();
   }, [playerId]);
+
+  const handleFootballerClick = (footballer: Footballer) => {
+    setSelectedFootballer(footballer);
+    setDialogOpen(true);
+  };
   
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -47,16 +55,27 @@ const Squad = () => {
                 {footballers.map((footballer) => (
                   <SquadRow
                     key={footballer.id}
-                    id={footballer.id}
-                    name={footballer.name}
-                    value={footballer.value}
-                  />
+                  id={footballer.id}
+                  name={footballer.name}
+                  value={footballer.value}
+                  onClick={() => handleFootballerClick(footballer)}
+                />
                 ))}
               </TableBody>
             </Table>
           </div>
         )}
       </main>
+      
+      {selectedFootballer && (
+        <FootballerInfoDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          footballerId={selectedFootballer.id}
+          footballerName={selectedFootballer.name}
+        />
+      )}
+      
       <PlayerInfoRibbon />
     </div>
   );

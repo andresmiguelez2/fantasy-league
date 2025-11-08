@@ -5,6 +5,7 @@ import { FootballerCard } from "@/components/FootballerCard";
 import { BidDialog } from "@/components/BidDialog";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { PlayerInfoRibbon } from "@/components/PlayerInfoRibbon";
+import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
 import { fetchMarketFootballers, placeBid, MarketFootballer } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useParams } from "react-router-dom";
@@ -14,6 +15,7 @@ const Market = () => {
   const [footballers, setFootballers] = useState<MarketFootballer[]>([]);
   const [loading, setLoading] = useState(true);
   const [bidDialogOpen, setBidDialogOpen] = useState(false);
+  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
   const [selectedFootballer, setSelectedFootballer] = useState<MarketFootballer | null>(null);
   const { toast } = useToast();
   
@@ -33,6 +35,11 @@ const Market = () => {
   const handleBidClick = (footballer: MarketFootballer) => {
     setSelectedFootballer(footballer);
     setBidDialogOpen(true);
+  };
+
+  const handleFootballerClick = (footballer: MarketFootballer) => {
+    setSelectedFootballer(footballer);
+    setInfoDialogOpen(true);
   };
   
   const handleBidSubmit = async (amount: number) => {
@@ -87,6 +94,7 @@ const Market = () => {
                 currentBid={footballer.bidAmount}
                 showBidButton
                 onBid={() => handleBidClick(footballer)}
+                onOwnerClick={() => handleFootballerClick(footballer)}
               />
             ))}
           </div>
@@ -94,13 +102,21 @@ const Market = () => {
       </main>
       
       {selectedFootballer && (
-        <BidDialog
-          open={bidDialogOpen}
-          onOpenChange={setBidDialogOpen}
-          footballerName={selectedFootballer.name}
-          currentBid={selectedFootballer.value}
-          onSubmit={handleBidSubmit}
-        />
+        <>
+          <BidDialog
+            open={bidDialogOpen}
+            onOpenChange={setBidDialogOpen}
+            footballerName={selectedFootballer.name}
+            currentBid={selectedFootballer.value}
+            onSubmit={handleBidSubmit}
+          />
+          <FootballerInfoDialog
+            open={infoDialogOpen}
+            onOpenChange={setInfoDialogOpen}
+            footballerId={selectedFootballer.id}
+            footballerName={selectedFootballer.name}
+          />
+        </>
       )}
       <PlayerInfoRibbon />
     </div>
