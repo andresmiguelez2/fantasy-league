@@ -5,7 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+// Use a regular img for full-bleed avatar in the dialog (no rounded avatar component)
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { fetchFootballerInfo, FootballerInfo } from "@/lib/api";
@@ -27,6 +27,7 @@ export const FootballerInfoDialog = ({
 }: FootballerInfoDialogProps) => {
   const [info, setInfo] = useState<FootballerInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -82,14 +83,22 @@ export const FootballerInfoDialog = ({
 
         {/* Top Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          {/* Left: Footballer Image */}
-          <Card className="p-6 flex items-center justify-center">
-            <Avatar className="h-48 w-48 border-4 border-secondary/30">
-              <AvatarImage src={`${import.meta.env.VITE_BACKEND_URL}/images/${footballerId}`} />
-              <AvatarFallback className="bg-gradient-primary text-white font-semibold text-4xl">
-                {getInitials(info.name)}
-              </AvatarFallback>
-            </Avatar>
+          {/* Left: Footballer Image (full rectangular, not rounded) */}
+          <Card className="p-6 flex items-center justify-center w-full">
+            <div className="h-48 w-full max-w-md border-4 border-secondary/30 overflow-hidden flex items-center justify-center bg-background">
+              {!imgError ? (
+                <img
+                  src={`${import.meta.env.VITE_BACKEND_URL}/images/${footballerId}`}
+                  alt={info.name}
+                  className="max-h-full max-w-full object-contain object-center"
+                  onError={() => setImgError(true)}
+                />
+              ) : (
+                <div className="h-full w-full bg-gradient-primary text-white font-semibold text-4xl flex items-center justify-center">
+                  {getInitials(info.name)}
+                </div>
+              )}
+            </div>
           </Card>
 
           {/* Right: Info Boxes */}
