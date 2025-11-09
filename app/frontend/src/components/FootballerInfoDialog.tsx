@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { fetchFootballerInfo, FootballerInfo } from "@/lib/api";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush } from "recharts";
 import { X } from "lucide-react";
 
 interface FootballerInfoDialogProps {
@@ -65,6 +65,13 @@ export const FootballerInfoDialog = ({
 
   // Sort fixture breakdown by fixture number ascending
   const sortedFixtures = [...info.fixture_breakdown].sort((a, b) => a.fixture - b.fixture);
+
+  // Y axis ticks at intervals of 3 up to the fixed max (15)
+  const yTicks = Array.from({ length: Math.floor(15 / 3) + 1 }, (_, i) => i * 3);
+
+  // Initial brush window: show last 5 fixtures by default
+  const initialStartIndex = Math.max(0, sortedFixtures.length - 5);
+  const initialEndIndex = Math.max(0, sortedFixtures.length - 1);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -124,8 +131,11 @@ export const FootballerInfoDialog = ({
               />
               <YAxis 
                 label={{ value: 'Points', angle: -90, position: 'insideLeft' }}
+                domain={[0, 15]}
+                ticks={yTicks}
               />
               <Tooltip />
+              <Brush dataKey="fixture" height={30} stroke="hsl(var(--primary))" startIndex={initialStartIndex} endIndex={initialEndIndex} travellerWidth={10} />
               <Bar dataKey="points" fill="hsl(var(--primary))" />
             </BarChart>
           </ResponsiveContainer>
@@ -145,7 +155,7 @@ export const FootballerInfoDialog = ({
               />
               <YAxis 
                 label={{ value: 'Value (€)', angle: -90, position: 'insideLeft' }}
-                tickFormatter={(value) => `€${(value / 1000).toFixed(0)}k`}
+                tickFormatter={(value) => `€${(value / 1000000).toFixed(1)} M`}
               />
               <Tooltip 
                 formatter={(value: number) => formatValue(value)}
@@ -161,18 +171,6 @@ export const FootballerInfoDialog = ({
             </LineChart>
           </ResponsiveContainer>
         </Card>
-
-        {/* Bottom Close Button */}
-        <div className="flex justify-center pt-4 border-t">
-          <Button 
-            onClick={() => onOpenChange(false)} 
-            variant="outline"
-            className="gap-2"
-          >
-            <X className="h-4 w-4" />
-            Close
-          </Button>
-        </div>
       </DialogContent>
     </Dialog>
   );
