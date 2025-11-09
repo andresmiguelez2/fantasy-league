@@ -416,6 +416,91 @@ def get_footballer_info(footballer_id: int):
         return {"status": "error", "message": str(e)}
     
 
+@server_app.get("/footballers")
+def get_all_footballers(limit: int = 50, offset: int = 0):
+    """Get footballers with pagination and a compact payload.
+
+    Query params:
+      - limit: number of items to return (default 50, clamped 1..1000)
+      - offset: offset into the result set (default 0)
+    """
+    try:
+        # clamp input
+        limit = max(1, min(limit, 30))
+        offset = max(0, offset)
+
+        conn = psycopg2.connect(
+            host=os.getenv("DB_HOST", "postgres_db"),
+            database=os.getenv("DB_NAME", "postgres"),
+            user=os.getenv("DB_USER", "postgres"),
+            password=os.getenv("DB_PASSWORD", "password"),
+            port=os.getenv("DB_PORT", "5432"),
+        )
+
+        client = MongoClient(f"mongodb://{os.getenv('MONGO_INITDB_ROOT_USERNAME')}:{os.getenv('MONGO_INITDB_ROOT_PASSWORD')}@mongodb:27017/fantasy_mongo_db?authSource=admin")
+        db = client["FantasyMDB"]
+
+        cursor = conn.cursor()
+
+        # total count for pagination
+        cursor.execute("SELECT COUNT(*) FROM footballer")
+        total = cursor.fetchone()[0]
+
+        cursor.execute(
+            """
+            SELECT
+                id
+                , name
+                , on_market
+                , on_market_since
+            FROM footballer
+            ORDER BY id
+            LIMIT %s OFFSET %s
+            """,
+            (limit, offset),
+        )
+        players = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        # Bulk fetch Mongo docs for these ids to avoid N queries
+        ids = [p[0] for p in players]
+        mongo_docs = {}
+        if ids:
+            for doc in db.footballer.find({"id": {"$in": ids}}, {"id": 1, "team": 1, "market_details": 1}):
+                mongo_docs[doc["id"]] = doc
+
+        result = []
+        for p in players:
+            fid = p[0]
+            name = p[1]
+            on_market = p[2]
+            on_market_since = p[3]
+
+            doc = mongo_docs.get(fid)
+            team = doc.get("team") if doc else None
+            market_value = None
+            if doc and doc.get("market_details"):
+                md = doc["market_details"]
+                if isinstance(md, list) and len(md) > 0:
+                    market_value = md[-1].get("value")
+
+            result.append({
+                "id": fid,
+                "name": name,
+                "team": team,
+                "market_value": market_value,
+                "on_market": on_market,
+                "on_market_since": on_market_since,
+            })
+
+        client.close()
+        return {"footballers": result, "meta": {"total": total, "limit": limit, "offset": offset}}
+    except psycopg2.Error as e:
+        logger.error(f"Database error: {e}")
+        return {"footballers": [], "meta": {"total": 0, "limit": limit, "offset": offset}}
+    
+
 @server_app.get("/images/{footballer_id}")
 def get_footballer_image(footballer_id: int):
     """Return the footballer's image as raw bytes (with proper Content-Type)."""
