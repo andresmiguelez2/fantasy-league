@@ -10,6 +10,18 @@ import { fetchMarketFootballers, placeBid, MarketFootballer } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useParams } from "react-router-dom";
 
+// Sample placeholder data for visualization
+const sampleFootballers: MarketFootballer[] = [
+  { id: 151, name: "Sofyan Amrabat", value: 7433594, ownerId: "Alice", onMarketSince: "2025-11-02T11:29:59+00:00", bidAmount: 8000000, averagePoints: 3.67, totalPoints: 22 },
+  { id: 134, name: "Pablo Fornals", value: 71021079, ownerId: "Charlotte", onMarketSince: "2025-11-08T10:00:00+00:00", bidAmount: 75000000, averagePoints: 7.27, totalPoints: 80 },
+  { id: 241, name: "Carlos Álvarez", value: 10314687, ownerId: "Daniel", onMarketSince: "2025-11-08T10:45:00+00:00", bidAmount: 0, averagePoints: 4.64, totalPoints: 51 },
+  { id: 270, name: "Samú Costa", value: 2140263, ownerId: "Bob", onMarketSince: "2025-11-08T21:59:55+00:00", bidAmount: 2500000, averagePoints: 4.0, totalPoints: 36 },
+  { id: 185, name: "Javi Puado", value: 14581650, ownerId: "Emma", onMarketSince: "2025-11-08T21:59:55+00:00", bidAmount: 0, averagePoints: 5.13, totalPoints: 41 },
+  { id: 177, name: "Joseph Aidoo", value: 655543, ownerId: "Frank", onMarketSince: "2025-11-08T21:59:55+00:00", bidAmount: 0, averagePoints: "", totalPoints: 0 },
+  { id: 158, name: "Coke Carrillo", value: 1567556, ownerId: "Grace", onMarketSince: "2025-11-08T21:59:55+00:00", bidAmount: 0, averagePoints: "", totalPoints: 0 },
+  { id: 133, name: "Cédric Bakambu", value: 920371, ownerId: "Henry", onMarketSince: "2025-11-08T21:59:55+00:00", bidAmount: 950000, averagePoints: 1.88, totalPoints: 15 },
+];
+
 const Market = () => {
   const { playerId } = useParams();
   const [footballers, setFootballers] = useState<MarketFootballer[]>([]);
@@ -22,11 +34,18 @@ const Market = () => {
   useEffect(() => {
     const loadFootballers = async () => {
       setLoading(true);
-      // Use playerId from URL params or default to '1' for current user
-      const id = playerId || '1';
-      const data = await fetchMarketFootballers(id);
-      setFootballers(data);
-      setLoading(false);
+      try {
+        // Use playerId from URL params or default to '1' for current user
+        const id = playerId || '1';
+        const data = await fetchMarketFootballers(id);
+        setFootballers(data);
+      } catch (error) {
+        console.log('Failed to fetch market data, using sample data for visualization');
+        // Use sample data when API is not available
+        setFootballers(sampleFootballers);
+      } finally {
+        setLoading(false);
+      }
     };
     
     loadFootballers();

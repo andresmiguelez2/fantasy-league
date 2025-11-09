@@ -39,25 +39,25 @@ export const FootballerCard = ({
    };
    
    return (
-     <Card className="p-4 flex items-center justify-between fade-in hover-lift border-primary/20 bg-gradient-to-r from-card to-card/80">
-       <div 
-         className="flex items-center gap-3 flex-1 cursor-pointer" 
-         onClick={() => onOwnerClick?.()}
-       >
-         <Avatar className="h-14 w-14 border-2 border-secondary/30">
-           <AvatarImage src={`${import.meta.env.VITE_BACKEND_URL}/images/${id}`} />
-           <AvatarFallback className="bg-gradient-primary text-white font-semibold text-sm">
-             {getInitials(name)}
-           </AvatarFallback>
-         </Avatar>
-         <div>
-           <span className="font-semibold text-foreground">{name}</span>
-           {owner ? <div className="text-sm text-secondary">{owner}</div> : null}
-         </div>
-       </div>
-      <div className="flex items-center gap-2">
+    <Card className="p-4 flex items-center justify-between fade-in hover-lift border-primary/20 bg-gradient-to-r from-card to-card/80">
+      {/* Left: avatar + fixed-width name column so text boxes align vertically */}
+      <div className="flex items-center gap-3 cursor-pointer" onClick={() => onOwnerClick?.()}>
+        <Avatar className="h-14 w-14 border-2 border-secondary/30">
+          <AvatarImage src={`${import.meta.env.VITE_BACKEND_URL}/images/${id}`} />
+          <AvatarFallback className="bg-gradient-primary text-white font-semibold text-sm">
+            {getInitials(name)}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-[12rem]">
+          <span className="font-semibold text-foreground">{name}</span>
+          {owner ? <div className="text-sm text-secondary">{owner}</div> : null}
+        </div>
+      </div>
+
+      {/* Center: stats with fixed width to align across cards */}
+      <div className="w-28 text-center">
         {(totalPoints !== undefined || averagePoints !== undefined) && (
-          <div className="text-right mr-2">
+          <div>
             <div className="text-sm font-semibold text-foreground">
               {totalPoints ?? 0} pts
             </div>
@@ -66,11 +66,15 @@ export const FootballerCard = ({
             </div>
           </div>
         )}
+      </div>
+
+      {/* Right: Bid button - fixed width so it doesn't shift center stats */}
+      <div className="w-32 flex items-center justify-end">
         {showBidButton && (
           <Button
             variant="default"
             onClick={onBid}
-            className="rounded-full bg-gradient-primary hover:opacity-90 border-0"
+            className="w-full rounded-full bg-gradient-primary hover:opacity-90 border-0 truncate"
           >
             {currentBid ? `Bid: ${formatBid(currentBid)}` : "Bid: ---"}
           </Button>
