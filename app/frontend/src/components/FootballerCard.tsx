@@ -5,11 +5,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 interface FootballerCardProps {
   id: number;
   name: string;
-  owner?: string;        // renamed to avoid confusion
+  owner?: string;
   currentBid?: number;
   showBidButton?: boolean;
   onBid?: () => void;
-  onOwnerClick?: () => void; // optional handler for owner button
+  onOwnerClick?: () => void;
+  totalPoints?: number;
+  averagePoints?: number | string;
 }
 
 export const FootballerCard = ({
@@ -20,6 +22,8 @@ export const FootballerCard = ({
   showBidButton = false,
   onBid,
   onOwnerClick,
+  totalPoints,
+  averagePoints,
 }: FootballerCardProps) => {
    const formatBid = (amount: number) => {
      return new Intl.NumberFormat('en-ES', {
@@ -52,6 +56,16 @@ export const FootballerCard = ({
          </div>
        </div>
       <div className="flex items-center gap-2">
+        {(totalPoints !== undefined || averagePoints !== undefined) && (
+          <div className="text-right mr-2">
+            <div className="text-sm font-semibold text-foreground">
+              {totalPoints ?? 0} pts
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Avg: {averagePoints || '0'}
+            </div>
+          </div>
+        )}
         {showBidButton && (
           <Button
             variant="default"

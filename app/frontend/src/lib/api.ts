@@ -29,6 +29,8 @@ export interface MarketFootballer {
   ownerId: string;
   onMarketSince: string;
   bidAmount: number;
+  averagePoints: number | string;
+  totalPoints: number;
 }
 
 // Simulate API delay
@@ -86,6 +88,8 @@ export const fetchMarketFootballers = async (playerId: string): Promise<MarketFo
     ownerId: footballer[3],
     onMarketSince: footballer[4],
     bidAmount: footballer[5],
+    averagePoints: footballer[6],
+    totalPoints: footballer[7],
   }));
 };
 

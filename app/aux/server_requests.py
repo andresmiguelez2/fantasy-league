@@ -152,7 +152,9 @@ def player_market(player_id: int):
         player_data = list()
         for player in players:
             value = db.footballer.find({"id": player[0]})[0]['market_details'][-1]['value']
-            player_data.append((player[0], player[1], value, player[2], player[3], player[4]))
+            average_points = db.footballer.find({"id": player[0]})[0]['average_points']
+            total_points = db.footballer.find({"id": player[0]})[0]['total_points']
+            player_data.append((player[0], player[1], value, player[2], player[3], player[4], average_points, total_points))
 
         cursor.close()
         conn.close()
