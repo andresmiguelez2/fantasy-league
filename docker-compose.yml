@@ -20,7 +20,9 @@ services:
       - mongo_data:/data/db
 
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
     container_name: backend_app
     env_file:
       - secrets/db.env
@@ -40,17 +42,32 @@ services:
       - mongodb
     command: bash -c "uvicorn main:server_app --host 0.0.0.0 --port 8000 --reload"
 
-  userapp:
-    build: .
-    container_name: user_app
+  # userapp:
+  #   build: .
+  #   container_name: user_app
+  #   environment:
+  #     - BACKEND_URL=http://backend_app:8000
+  #     - BACKEND_HOST=app
+  #     - BACKEND_PORT=8000
+  #   volumes:
+  #     - ./:/workspace
+  #     - ./app:/app
+  #     - ./secrets/users.env:/secrets/users.env
+  #   depends_on:
+  #     - app
+
+  frontend:
+    build:
+      context: . 
+      dockerfile: Dockerfile.frontend
+    container_name: frontend_app
     environment:
-      - BACKEND_URL=http://backend_app:8000
-      - BACKEND_HOST=app
-      - BACKEND_PORT=8000
+      - VITE_BACKEND_URL=http://localhost:8000
     volumes:
-      - ./:/workspace
-      - ./app:/app
-      - ./secrets/users.env:/secrets/users.env
+      - ./app/frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:8080"
     depends_on:
       - app
 
@@ -65,7 +82,9 @@ services:
       - db
 
   scraper:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
     container_name: scraper_app
     env_file:
       - secrets/db.env
