@@ -156,7 +156,7 @@ class Session():
 
     def _view_squad(self, player_id: int):
         try:
-            url = f"{os.environ['BACKEND_URL']}/squads/{player_id}"
+            url = f"{os.environ['BACKEND_URL']}/squad/{player_id}"
             response = requests.get(url)
             if response.status_code == 200:
                 data = response.json()

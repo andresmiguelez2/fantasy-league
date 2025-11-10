@@ -4,7 +4,7 @@ from .logger import logger
 from pydantic import BaseModel
 
 
-router = APIRouter(prefix="/squads", tags=["squad"])
+router = APIRouter(prefix="/squad", tags=["squad"])
 
 
 @router.get("/{player_id}")
@@ -13,18 +13,19 @@ def squad(player_id: int):
     try:
         conn = pg_connect()
 
-        client = mongo_client()
-        db = client["FantasyMDB"]
-
         cursor = conn.cursor()
         cursor.execute(
             """
             SELECT
-                id
-                , name
-                , on_market
-                , on_market_since
-            FROM footballer WHERE owner_id = %s ORDER BY id
+                f.id
+                , fd.name
+                , fd.team
+                , fd.value
+                , f.on_market
+                , f.on_market_since
+            FROM footballer f LEFT JOIN footballer_data fd ON f.id = fd.id
+            WHERE f.owner_id = %s
+            ORDER BY id
             """,
             (player_id,),
         )
@@ -32,13 +33,7 @@ def squad(player_id: int):
         cursor.close()
         conn.close()
 
-        player_data = list()
-        for player in players:
-            value = db.footballer.find({"id": player[0]})[0]['market_details'][-1]['value']
-            team = db.footballer.find({"id": player[0]})[0]['team']
-            player_data.append((player[0], player[1], team, value, player[2], player[3]))
-
-        return {"players": player_data}
+        return {"players": players}
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"players": []}

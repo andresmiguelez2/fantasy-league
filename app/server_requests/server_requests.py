@@ -7,6 +7,7 @@ from . import market
 from . import leaderboard
 from . import footballer
 from . import squad
+from . import player
 
 
 server_app = FastAPI()
@@ -32,3 +33,4 @@ server_app.include_router(market.router)
 server_app.include_router(leaderboard.router)
 server_app.include_router(footballer.router)
 server_app.include_router(squad.router)
+server_app.include_router(player.router)
