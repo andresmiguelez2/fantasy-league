@@ -8,7 +8,7 @@ from fastapi.responses import Response
 
 
 
-router = APIRouter(prefix="/footballers", tags=["footballer"])
+router = APIRouter(prefix="/footballer", tags=["footballer"])
 
 
 @router.get("/{footballer_id}")

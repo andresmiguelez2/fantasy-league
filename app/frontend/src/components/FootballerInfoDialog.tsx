@@ -88,7 +88,7 @@ export const FootballerInfoDialog = ({
             <div className="h-48 w-full max-w-md border-4 border-secondary/30 overflow-hidden flex items-center justify-center bg-background">
               {!imgError ? (
                 <img
-                  src={`${import.meta.env.VITE_BACKEND_URL}/images/${footballerId}`}
+                  src={`${import.meta.env.VITE_BACKEND_URL}/footballer/image/${footballerId}`}
                   alt={info.name}
                   className="max-h-full max-w-full object-contain object-center"
                   onError={() => setImgError(true)}

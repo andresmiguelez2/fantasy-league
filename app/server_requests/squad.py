@@ -29,14 +29,14 @@ def squad(player_id: int):
             """,
             (player_id,),
         )
-        players = cursor.fetchall()
+        footballers = cursor.fetchall()
         cursor.close()
         conn.close()
 
-        return {"players": players}
+        return {"status": "success", "footballers": footballers}
     except Exception as e:
         logger.error(f"Error: {e}")
-        return {"players": []}
+        return {"status": "error", "footballers": []}
     
 
 class MarketFootballer(BaseModel):

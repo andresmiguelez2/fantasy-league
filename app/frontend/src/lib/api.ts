@@ -62,7 +62,7 @@ export const fetchLeaderboard = async (): Promise<Player[]> => {
 };
 
 export const fetchSquadFootballers = async (playerId: string): Promise<Footballer[]> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/squads/${playerId}`);
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/squad/${playerId}`);
   const data = await response.json();
   
   // Transform the array format to objects
@@ -102,7 +102,7 @@ export interface PlayerInfo {
 
 // Return a `Player` shape for UI convenience (maps budget -> team_value)
 export const fetchPlayerInfo = async (playerId: string): Promise<Player> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/players/${playerId}`);
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/player/${playerId}`);
   const data = await response.json();
 
   // The API returns [id, name, budget, points]
@@ -170,7 +170,7 @@ export interface FootballerInfo {
 }
 
 export const fetchFootballerInfo = async (footballerId: number): Promise<FootballerInfo> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/footballers/${footballerId}`);
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/footballer/${footballerId}`);
   const data = await response.json();
   return data.footballer_info;
 };
@@ -189,7 +189,7 @@ export const fetchAllFootballers = async (
   sortBy: 'name' | 'points' | 'value' = 'name'
 ): Promise<AllFootballer[]> => {
   const response = await fetch(
-    `${import.meta.env.VITE_BACKEND_URL}/footballers?page=${page}&limit=${limit}&sort=${sortBy}`
+    `${import.meta.env.VITE_BACKEND_URL}/footballer?page=${page}&limit=${limit}&sort=${sortBy}`
   );
   const data = await response.json();
   

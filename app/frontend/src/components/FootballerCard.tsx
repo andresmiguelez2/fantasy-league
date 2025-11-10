@@ -43,7 +43,7 @@ export const FootballerCard = ({
       {/* Left: avatar + fixed-width name column so text boxes align vertically */}
       <div className="flex items-center gap-3 cursor-pointer" onClick={() => onOwnerClick?.()}>
         <Avatar className="h-14 w-14 border-2 border-secondary/30">
-          <AvatarImage src={`${import.meta.env.VITE_BACKEND_URL}/images/${id}`} />
+          <AvatarImage src={`${import.meta.env.VITE_BACKEND_URL}/footballer/image/${id}`} />
           <AvatarFallback className="bg-gradient-primary text-white font-semibold text-sm">
             {getInitials(name)}
           </AvatarFallback>

@@ -10,7 +10,7 @@ router = APIRouter(prefix="/market", tags=["market"])
 
 @router.get("")
 def market():
-    """Get all players currently on the market."""
+    """Get all footballers currently on the market."""
     try:
         conn = pg_connect()
 
@@ -23,18 +23,19 @@ def market():
             ORDER BY owner_id, on_market_since 
             """
         )
-        players = cursor.fetchall()
+        footballers = cursor.fetchall()
+
         cursor.close()
         conn.close()
-        return {"players": players}
+        return {"status": "success", "footballers": footballers}
     except Exception as e:
         logger.error(f"Error: {e}")
-        return {"players": []}
-    
+        return {"status": "error", "footballers": []}
+
 
 @router.get("/{player_id}")
 def player_market(player_id: int):
-    """Get all players currently on the market with bid info for a specific player.
+    """Get all footballers currently on the market with bid info for a specific player.
     
     Args:
         player_id (int): The ID of the player to get bid info for."""
@@ -66,14 +67,14 @@ def player_market(player_id: int):
                         """,
             (player_id,)
         )
-        players = cursor.fetchall()
+        footballers = cursor.fetchall()
 
         cursor.close()
         conn.close()
-        return {"players": players}
+        return {"status": "success", "footballers": footballers}
     except Exception as e:
         logger.error(f"Error: {e}")
-        return {"players": []}
+        return {"status": "error", "footballers": []}
 
 
 class BidRequest(BaseModel):
@@ -81,7 +82,7 @@ class BidRequest(BaseModel):
     footballer_id: int
     bid_amount: int
 
-@router.post("/bids")
+@router.post("/bid")
 def place_bid(bid: BidRequest):
     """Place or remove a bid on a footballer. To remove a bid, bid an amount of 0.
     Args:
@@ -139,7 +140,7 @@ def place_bid(bid: BidRequest):
                 """,
                 (bid.footballer_id, bid.player_id, bid.bid_amount)
             )
-            logger.info(f"Received bid: Player {bid.player_id} bids {bid.bid_amount} on tootballer {bid.footballer_id}")
+            logger.info(f"Received bid: Player {bid.player_id} bids {bid.bid_amount} on footballer {bid.footballer_id}")
             conn.commit()
             cursor.close()
             conn.close()
