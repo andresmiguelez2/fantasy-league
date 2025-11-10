@@ -51,6 +51,8 @@ def player_market(player_id: int):
                 , f.owner_id
                 , date_trunc('second', f.on_market_since) AS on_market_since
                 , b.amount AS bid_amount
+                , f_data.average_points
+                , f_data.total_points
             FROM footballer AS f 
             LEFT JOIN footballer_data AS f_data ON f.id = f_data.id
             LEFT JOIN (
