@@ -194,7 +194,7 @@ class Session():
         bid_amount = input("Enter your bid amount: ")
 
         try:
-            url = f"{os.environ['BACKEND_URL']}/market/bids"
+            url = f"{os.environ['BACKEND_URL']}/market/bid"
             response = requests.post(url, json={"footballer_id": footballer_id, "player_id": self.player_id, "bid_amount": bid_amount})
             if response.status_code == 200:
                 logger.info(response.json()['message'])

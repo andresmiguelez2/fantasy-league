@@ -97,13 +97,17 @@ def get_all_footballers(limit: int = 20, offset: int = 0, page: int | None = Non
 
         query = f"""
             SELECT
-                id
-                , name
-                , team
-                , value
-                , average_points
-                , total_points AS points
-            FROM footballer_data
+                f.id
+                , fd.name
+                , fd.value
+                , p.name AS owner_name
+                , NULL as on_market_since
+                , NULL as bid_amount
+                , fd.average_points
+                , fd.total_points AS points
+            FROM footballer_data fd
+            LEFT JOIN footballer f ON fd.id = f.id
+            LEFT JOIN player p on f.owner_id = p.id
             ORDER BY {sort_col} {direction}
             LIMIT %s
             OFFSET %s

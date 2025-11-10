@@ -98,7 +98,7 @@ def place_bid(bid: BidRequest):
                 """
                 SELECT footballer_data.FULL_name, footballer.url_name, footballer.owner_id
                 FROM footballer LEFT JOIN footballer_data ON footballer.id = footballer_data.id
-                WHERE id = %s
+                WHERE footballer.id = %s
             """,
             (bid.footballer_id,)
         )

@@ -133,7 +133,7 @@ export const placeBid = async (
   playerId: string,
   amount: number
 ): Promise<any> => {
-  const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/bids`, {
+  const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/bid`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
