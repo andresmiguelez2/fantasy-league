@@ -175,32 +175,35 @@ export const fetchFootballerInfo = async (footballerId: number): Promise<Footbal
   return data.footballer_info;
 };
 
-export interface AllFootballer {
-  id: number;
-  name: string;
-  team: string;
-  value: number;
-  averagePoints: number;
-  totalPoints: number;
-}
-
 export const fetchAllFootballers = async (
   page: number = 1,
   limit: number = 25,
-  sortBy: 'name' | 'points' | 'value' = 'name'
-): Promise<AllFootballer[]> => {
+  sortBy: 'name' | 'points' | 'value' = 'name',
+  sortOrder: 'asc' | 'desc' = 'asc',
+  search: string = ''
+): Promise<MarketFootballer[]> => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+    sort: sortBy,
+    order: sortOrder,
+    search: search,
+  });
+  
   const response = await fetch(
-    `${import.meta.env.VITE_BACKEND_URL}/footballers?page=${page}&limit=${limit}&sort=${sortBy}`
+    `${import.meta.env.VITE_BACKEND_URL}/footballers?${params}`
   );
   const data = await response.json();
   
-  // Assuming API returns array of [id, name, team, value, points]
+  // Map to MarketFootballer format
   return data.footballers.map((footballer: any[]) => ({
     id: footballer[0],
     name: footballer[1],
-    team: footballer[2],
-    value: footballer[3],
-    averagePoints: footballer[4],
-    totalPoints: footballer[5],
+    value: footballer[2],
+    ownerId: footballer[3] || '',
+    onMarketSince: footballer[4] || '',
+    bidAmount: footballer[5] || 0,
+    averagePoints: footballer[6],
+    totalPoints: footballer[7],
   }));
 };

@@ -2,23 +2,34 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { SquadRow } from "@/components/SquadRow";
+import { FootballerInfoRow } from "@/components/FootballerInfoRow";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
-import { fetchAllFootballers, AllFootballer } from "@/lib/api";
+import { fetchAllFootballers, MarketFootballer } from "@/lib/api";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ArrowUpDown } from "lucide-react";
 
 const FootballerInfo = () => {
-  const [footballers, setFootballers] = useState<AllFootballer[]>([]);
+  const [footballers, setFootballers] = useState<MarketFootballer[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [sortBy, setSortBy] = useState<'name' | 'points' | 'value'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [search, setSearch] = useState('');
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
   const observerTarget = useRef<HTMLDivElement>(null);
 
-  const loadFootballers = useCallback(async (pageNum: number, sort: 'name' | 'points' | 'value', reset = false) => {
+  const loadFootballers = useCallback(async (
+    pageNum: number, 
+    sort: 'name' | 'points' | 'value', 
+    order: 'asc' | 'desc',
+    searchTerm: string,
+    reset = false
+  ) => {
     try {
       if (pageNum === 1) {
         setLoading(true);
@@ -26,7 +37,7 @@ const FootballerInfo = () => {
         setLoadingMore(true);
       }
 
-      const data = await fetchAllFootballers(pageNum, 50, sort);
+      const data = await fetchAllFootballers(pageNum, 50, sort, order, searchTerm);
       
       if (data.length < 50) {
         setHasMore(false);
@@ -45,8 +56,8 @@ const FootballerInfo = () => {
     setFootballers([]);
     setPage(1);
     setHasMore(true);
-    loadFootballers(1, sortBy, true);
-  }, [sortBy, loadFootballers]);
+    loadFootballers(1, sortBy, sortOrder, search, true);
+  }, [sortBy, sortOrder, search, loadFootballers]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -72,9 +83,9 @@ const FootballerInfo = () => {
 
   useEffect(() => {
     if (page > 1) {
-      loadFootballers(page, sortBy);
+      loadFootballers(page, sortBy, sortOrder, search);
     }
-  }, [page, sortBy, loadFootballers]);
+  }, [page, sortBy, sortOrder, search, loadFootballers]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
@@ -82,18 +93,33 @@ const FootballerInfo = () => {
       <NavigationTabs />
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col gap-4 mb-6">
           <h1 className="text-3xl font-bold text-foreground">All Footballers</h1>
-          <Select value={sortBy} onValueChange={(value: 'name' | 'points' | 'value') => setSortBy(value)}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="name">Sort by Name</SelectItem>
-              <SelectItem value="points">Sort by Points</SelectItem>
-              <SelectItem value="value">Sort by Value</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex gap-2 items-center flex-wrap">
+            <Input
+              placeholder="Search footballers..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="max-w-xs"
+            />
+            <Select value={sortBy} onValueChange={(value: 'name' | 'points' | 'value') => setSortBy(value)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name">Sort by Name</SelectItem>
+                <SelectItem value="points">Sort by Points</SelectItem>
+                <SelectItem value="value">Sort by Value</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+            >
+              <ArrowUpDown className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         {loading ? (
@@ -106,15 +132,20 @@ const FootballerInfo = () => {
                   <TableRow className="hover:bg-transparent border-border/50">
                     <TableHead className="text-muted-foreground font-semibold">Player</TableHead>
                     <TableHead className="text-center text-muted-foreground font-semibold">Value</TableHead>
+                    <TableHead className="text-center text-muted-foreground font-semibold">Total Points</TableHead>
+                    <TableHead className="text-center text-muted-foreground font-semibold">Avg Points</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {footballers.map((footballer) => (
-                    <SquadRow
+                    <FootballerInfoRow
                       key={footballer.id}
                       id={footballer.id}
                       name={footballer.name}
                       value={footballer.value}
+                      ownerId={footballer.ownerId}
+                      averagePoints={footballer.averagePoints}
+                      totalPoints={footballer.totalPoints}
                       onClick={() => setSelectedFootballerId(footballer.id)}
                     />
                   ))}
