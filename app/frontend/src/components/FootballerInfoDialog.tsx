@@ -16,7 +16,7 @@ interface FootballerInfoDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   footballerId: number;
-  footballerName: string;
+  footballerName?: string;
 }
 
 export const FootballerInfoDialog = ({

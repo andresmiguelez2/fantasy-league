@@ -174,3 +174,31 @@ export const fetchFootballerInfo = async (footballerId: number): Promise<Footbal
   const data = await response.json();
   return data.footballer_info;
 };
+
+export interface AllFootballer {
+  id: number;
+  name: string;
+  team: string;
+  value: number;
+  points: number;
+}
+
+export const fetchAllFootballers = async (
+  page: number = 1,
+  limit: number = 50,
+  sortBy: 'name' | 'points' | 'value' = 'name'
+): Promise<AllFootballer[]> => {
+  const response = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/footballers?page=${page}&limit=${limit}&sort=${sortBy}`
+  );
+  const data = await response.json();
+  
+  // Assuming API returns array of [id, name, team, value, points]
+  return data.footballers.map((footballer: any[]) => ({
+    id: footballer[0],
+    name: footballer[1],
+    team: footballer[2],
+    value: footballer[3],
+    points: footballer[4],
+  }));
+};

@@ -13,6 +13,7 @@ export const NavigationTabs = ({ leagueId }: NavigationTabsProps) => {
     { id: "league", label: "Leaderboard", path: leagueId ? `/league/${leagueId}` : "/league/1" },
     { id: "squad", label: "Squad", path: "/squad" },
     { id: "market", label: "Market", path: "/market" },
+    { id: "footballer-info", label: "Footballer Info", path: "/footballer-info" },
   ];
   
   const isActive = (path: string) => location.pathname === path;
