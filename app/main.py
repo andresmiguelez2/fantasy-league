@@ -2,7 +2,7 @@ import logging
 import time
 from classes.market import load_market, load_last_market
 from aux.constants import LOOP_TIME_SECONDS, SLEEP_TIME
-from app.server_requests.server_requests import server_app
+from server_requests.server_requests import server_app
 
 
 logging.basicConfig(

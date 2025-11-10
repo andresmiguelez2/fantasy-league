@@ -61,7 +61,7 @@ def get_footballer_info(footballer_id: int):
         return {"status": "error", "message": str(e)}
 
 
-@router.get("/images/{footballer_id}")
+@router.get("/image/{footballer_id}")
 def get_footballer_image(footballer_id: int):
     """Return the footballer's image as raw bytes (with proper Content-Type)."""
     try:

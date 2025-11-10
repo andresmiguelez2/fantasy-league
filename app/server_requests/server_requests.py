@@ -2,6 +2,12 @@ from fastapi import FastAPI
 from .logger import logger
 from fastapi.middleware.cors import CORSMiddleware
 
+# import sub-routers
+from . import market
+from . import leaderboard
+from . import footballer
+from . import squad
+
 
 server_app = FastAPI()
 
@@ -23,7 +29,6 @@ def ping():
 
 
 server_app.include_router(market.router)
-server_app.include_router(bids.router)
 server_app.include_router(leaderboard.router)
-
-
+server_app.include_router(footballer.router)
+server_app.include_router(squad.router)
