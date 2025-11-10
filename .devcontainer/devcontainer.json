@@ -1,7 +1,7 @@
 {
     "name": "Fantasy App Development",
     "dockerComposeFile": "../docker-compose.yml",
-    "service": "userapp",
+    "service": "scraper",
     "workspaceFolder": "/workspace",
     "shutdownAction": "none",
     "mounts": [
