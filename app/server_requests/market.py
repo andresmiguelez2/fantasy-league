@@ -1,0 +1,148 @@
+from fastapi import APIRouter
+from aux.database import pg_connect, mongo_client
+from .logger import logger
+from pydantic import BaseModel
+from classes.footballer import Footballer
+
+
+router = APIRouter(prefix="/market", tags=["market"])
+
+
+@router.get("")
+def market():
+    """Get all players currently on the market."""
+    try:
+        conn = pg_connect()
+
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT *
+            FROM footballer
+            WHERE on_market = TRUE
+            ORDER BY owner_id, on_market_since 
+            """
+        )
+        players = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return {"players": players}
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return {"players": []}
+    
+
+@router.get("/{player_id}")
+def player_market(player_id: int):
+    """Get all players currently on the market with bid info for a specific player.
+    
+    Args:
+        player_id (int): The ID of the player to get bid info for."""
+    try:
+        conn = pg_connect()
+
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT 
+                f.id
+                , f_data.name
+                , f_data.value
+                , f.owner_id
+                , date_trunc('second', f.on_market_since) AS on_market_since
+                , b.amount AS bid_amount
+            FROM footballer AS f 
+            LEFT JOIN footballer_data AS f_data ON f.id = f_data.id
+            LEFT JOIN (
+                SELECT *
+                FROM bid
+                WHERE bidder_id = %s
+            ) AS b ON f.id = b.footballer_id
+            WHERE
+                on_market = TRUE
+            ORDER BY owner_id, on_market_since 
+                        """,
+            (player_id,)
+        )
+        players = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+        return {"players": players}
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return {"players": []}
+
+
+class BidRequest(BaseModel):
+    player_id: int
+    footballer_id: int
+    bid_amount: int
+
+@router.post("/bids")
+def place_bid(bid: BidRequest):
+    """Place or remove a bid on a footballer. To remove a bid, bid an amount of 0.
+    Args:
+        bid (BidRequest): The bid request containing player_id, footballer_id, and bid_amount.
+    """
+    try:
+        conn = pg_connect()        
+        cursor = conn.cursor()
+
+        client = mongo_client()
+
+        cursor.execute(
+                """
+                SELECT footballer_data.FULL_name, footballer.url_name, footballer.owner_id
+                FROM footballer LEFT JOIN footballer_data ON footballer.id = footballer_data.id
+                WHERE id = %s
+            """,
+            (bid.footballer_id,)
+        )
+        full_name, url_name, owner_id = cursor.fetchone()
+
+        footballer = Footballer(obtain_data=False, full_name=full_name)
+        footballer.url_name = url_name
+        footballer.id = bid.footballer_id
+        footballer.get_player_data()
+        footballer.update_in_db(client)
+
+        if bid.bid_amount < footballer.data['market_details'][-1]['value'] and bid.bid_amount != 0:
+            cursor.close()
+            conn.close()
+            return {"status": "error", "message": "Bid amount is less than the footballer's market value."}
+        elif bid.player_id == owner_id:
+            cursor.close()
+            conn.close()
+            return {"status": "error", "message": "Cannot bid on your own footballer."}
+        else:
+            cursor.execute(
+                """
+                DELETE FROM bid
+                WHERE footballer_id = %s AND bidder_id = %s
+            """,
+            (bid.footballer_id, bid.player_id)
+        )
+
+        if bid.bid_amount == 0:
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return {"status": "success", "message": "Bid removed successfully."}
+        else:
+            cursor.execute(
+                """
+                INSERT INTO bid (footballer_id, bidder_id, amount, timestamp)
+                VALUES (%s, %s, %s, now())
+                """,
+                (bid.footballer_id, bid.player_id, bid.bid_amount)
+            )
+            logger.info(f"Received bid: Player {bid.player_id} bids {bid.bid_amount} on tootballer {bid.footballer_id}")
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return {"status": "success", "message": "Bid placed successfully."}
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return {"status": "error", "message": str(e)}
+ 
