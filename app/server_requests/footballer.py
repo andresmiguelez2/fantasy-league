@@ -59,6 +59,75 @@ def get_footballer_info(footballer_id: int):
     except Exception as e:
         logger.error(f"Error retrieving footballer info: {e}")
         return {"status": "error", "message": str(e)}
+    
+
+@router.get("s")
+def get_all_footballers(limit: int = 20, offset: int = 0, page: int | None = None, sort_by: str = 'name'):
+    """Get all footballers with pagination and total count.
+
+    Supports either `offset` or `page` (1-based). If `page` is provided it takes precedence and offset is computed as (page-1)*limit.
+    Returns SQL tuples in `footballers` for backward compatibility and a `meta` object with `total`, `limit`, `offset`, and `page`.
+    """
+    # whitelist allowed sort columns
+    sort_map = {
+        'name': 'name',
+        'points': 'total_points',
+        'value': 'value'
+    }
+    if sort_by not in sort_map:
+        sort_by = 'name'
+
+    limit = max(1, min(int(limit), 100))
+    if page is not None:
+        page = max(1, int(page))
+        offset = (page - 1) * limit
+    else:
+        offset = max(0, int(offset))
+
+    sort_col = sort_map[sort_by]
+    direction = 'ASC' if sort_by == 'name' else 'DESC'
+
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        # total count for pagination meta
+        cursor.execute("SELECT COUNT(*) FROM footballer_data")
+        total = cursor.fetchone()[0]
+
+        query = f"""
+            SELECT
+                id
+                , name
+                , team
+                , value
+                , average_points
+                , total_points AS points
+            FROM footballer_data
+            ORDER BY {sort_col} {direction}
+            LIMIT %s
+            OFFSET %s
+            """
+
+        cursor.execute(query, (limit, offset))
+        footballers = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return {
+            "status": "success",
+            "footballers": footballers,
+            "meta": {
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+                "page": page if page is not None else None
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving footballer info: {e}")
+        return {"status": "error", "message": str(e)}
 
 
 @router.get("/image/{footballer_id}")

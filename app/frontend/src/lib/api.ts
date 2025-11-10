@@ -180,16 +180,17 @@ export interface AllFootballer {
   name: string;
   team: string;
   value: number;
-  points: number;
+  averagePoints: number;
+  totalPoints: number;
 }
 
 export const fetchAllFootballers = async (
   page: number = 1,
-  limit: number = 50,
+  limit: number = 25,
   sortBy: 'name' | 'points' | 'value' = 'name'
 ): Promise<AllFootballer[]> => {
   const response = await fetch(
-    `${import.meta.env.VITE_BACKEND_URL}/footballer?page=${page}&limit=${limit}&sort=${sortBy}`
+    `${import.meta.env.VITE_BACKEND_URL}/footballers?page=${page}&limit=${limit}&sort=${sortBy}`
   );
   const data = await response.json();
   
@@ -199,6 +200,7 @@ export const fetchAllFootballers = async (
     name: footballer[1],
     team: footballer[2],
     value: footballer[3],
-    points: footballer[4],
+    averagePoints: footballer[4],
+    totalPoints: footballer[5],
   }));
 };
