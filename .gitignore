@@ -36,3 +36,24 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Frontend
+app/frontend/node_modules/
+app/frontend/.vite/
+app/frontend/dist/
+app/frontend/build/
+app/frontend/.cache/
+app/frontend/.parcel-cache/
+app/frontend/.turbo/
+app/frontend/.next/            # in case Next.js is used later
+app/frontend/.pnp.*            # pnpm
+app/frontend/.env.local
+app/frontend/.env.*.local
+app/frontend/coverage/
+app/frontend/coverage-final.json
+app/frontend/npm-debug.log*
+app/frontend/yarn-debug.log*
+app/frontend/yarn-error.log*
+app/frontend/.DS_Store
+app/frontend/.idea/
+app/frontend/.vscode/
