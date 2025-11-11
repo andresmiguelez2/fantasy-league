@@ -94,7 +94,8 @@ def get_all_footballers(limit: int = 20, offset: int = 0, page: int | None = Non
         conn = pg_connect()
         cursor = conn.cursor()
 
-        # total count for pagination meta
+        # total count for pagination meta (respect search filter)
+        # Use unaccent() so searches are accent-insensitive (e -> é matches)
         cursor.execute("SELECT COUNT(*) FROM footballer_data")
         total = cursor.fetchone()[0]
 
@@ -111,7 +112,7 @@ def get_all_footballers(limit: int = 20, offset: int = 0, page: int | None = Non
             FROM footballer_data fd
             LEFT JOIN footballer f ON fd.id = f.id
             LEFT JOIN player p on f.owner_id = p.id
-            WHERE fd.name ILIKE %s
+            WHERE unaccent(fd.full_name) ILIKE unaccent(%s)
             ORDER BY {sort_col} {direction}
             LIMIT %s
             OFFSET %s

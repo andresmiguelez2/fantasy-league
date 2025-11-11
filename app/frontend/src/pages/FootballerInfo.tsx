@@ -37,9 +37,9 @@ const FootballerInfo = () => {
         setLoadingMore(true);
       }
 
-      const data = await fetchAllFootballers(pageNum, 50, sort, order, searchTerm);
+      const data = await fetchAllFootballers(pageNum, 30, sort, order, searchTerm);
       
-      if (data.length < 50) {
+      if (data.length < 30) {
         setHasMore(false);
       }
 
