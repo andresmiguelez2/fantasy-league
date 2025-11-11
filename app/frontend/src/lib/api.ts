@@ -186,7 +186,7 @@ export const fetchAllFootballers = async (
     page: page.toString(),
     limit: limit.toString(),
     sort: sortBy,
-    order: sortOrder,
+    invert: sortOrder === 'desc' ? 'true' : 'false',
     search: search,
   });
   

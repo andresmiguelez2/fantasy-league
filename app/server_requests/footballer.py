@@ -62,7 +62,7 @@ def get_footballer_info(footballer_id: int):
     
 
 @router.get("s")
-def get_all_footballers(limit: int = 20, offset: int = 0, page: int | None = None, sort_by: str = 'name'):
+def get_all_footballers(limit: int = 20, offset: int = 0, page: int | None = None, sort: str = 'name', invert: str = "false", search: str = ""):
     """Get all footballers with pagination and total count.
 
     Supports either `offset` or `page` (1-based). If `page` is provided it takes precedence and offset is computed as (page-1)*limit.
@@ -74,8 +74,8 @@ def get_all_footballers(limit: int = 20, offset: int = 0, page: int | None = Non
         'points': 'total_points',
         'value': 'value'
     }
-    if sort_by not in sort_map:
-        sort_by = 'name'
+    if sort not in sort_map:
+        sort = 'name'
 
     limit = max(1, min(int(limit), 100))
     if page is not None:
@@ -84,8 +84,11 @@ def get_all_footballers(limit: int = 20, offset: int = 0, page: int | None = Non
     else:
         offset = max(0, int(offset))
 
-    sort_col = sort_map[sort_by]
-    direction = 'ASC' if sort_by == 'name' else 'DESC'
+    sort_col = sort_map[sort]
+    if sort_col in ['total_points', 'value']:
+        direction = 'ASC' if invert == 'true' else 'DESC'
+    elif sort_col == 'name':
+        direction = 'DESC' if invert == 'true' else 'ASC'
 
     try:
         conn = pg_connect()
@@ -104,16 +107,17 @@ def get_all_footballers(limit: int = 20, offset: int = 0, page: int | None = Non
                 , NULL as on_market_since
                 , NULL as bid_amount
                 , fd.average_points
-                , fd.total_points AS points
+                , fd.total_points
             FROM footballer_data fd
             LEFT JOIN footballer f ON fd.id = f.id
             LEFT JOIN player p on f.owner_id = p.id
+            WHERE fd.name ILIKE %s
             ORDER BY {sort_col} {direction}
             LIMIT %s
             OFFSET %s
             """
 
-        cursor.execute(query, (limit, offset))
+        cursor.execute(query, (f"%{search}%", limit, offset,))
         footballers = cursor.fetchall()
 
         cursor.close()
