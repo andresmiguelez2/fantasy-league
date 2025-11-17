@@ -169,8 +169,6 @@ class Market:
                 (bidder_id, footballer_id, footballer_id)
             )
 
-            Footballer.set_release_clause_date(int(footballer_id), datetime.datetime.now() + datetime.timedelta(days=RELEASE_CLAUSE_DAYS), mongoclient)
-
             logger.info(f"Footballer {footballer_id} assigned to bidder {bidder_id} with amount {amount}.")
             
             
