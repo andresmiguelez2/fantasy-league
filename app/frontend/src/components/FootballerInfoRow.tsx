@@ -44,7 +44,7 @@ export const FootballerInfoRow = ({
         </Avatar>
         <div className="flex flex-col">
           <span className="font-semibold">{name}</span>
-          {ownerId && <span className="text-xs text-muted-foreground">Owner: {ownerId}</span>}
+          {ownerId && <span className="text-xs text-muted-foreground">{ownerId}</span>}
         </div>
       </TableCell>
       <TableCell className="text-center">

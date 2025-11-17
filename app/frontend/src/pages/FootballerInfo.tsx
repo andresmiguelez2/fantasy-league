@@ -107,9 +107,9 @@ const FootballerInfo = () => {
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="name">Sort by Name</SelectItem>
-                <SelectItem value="points">Sort by Points</SelectItem>
-                <SelectItem value="value">Sort by Value</SelectItem>
+                <SelectItem value="name">Name</SelectItem>
+                <SelectItem value="points">Points</SelectItem>
+                <SelectItem value="value">Value</SelectItem>
               </SelectContent>
             </Select>
             <Button
@@ -133,7 +133,7 @@ const FootballerInfo = () => {
                     <TableHead className="text-muted-foreground font-semibold">Player</TableHead>
                     <TableHead className="text-center text-muted-foreground font-semibold">Value</TableHead>
                     <TableHead className="text-center text-muted-foreground font-semibold">Total Points</TableHead>
-                    <TableHead className="text-center text-muted-foreground font-semibold">Avg Points</TableHead>
+                    <TableHead className="text-center text-muted-foreground font-semibold">Average Points</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
