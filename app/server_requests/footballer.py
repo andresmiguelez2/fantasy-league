@@ -5,7 +5,8 @@ from pydantic import BaseModel
 from aux.aux_functions import extract_fixture_points
 import imghdr
 from fastapi.responses import Response
-
+from classes.footballer import Footballer
+import time
 
 
 router = APIRouter(prefix="/footballer", tags=["footballer"])
@@ -159,4 +160,71 @@ def get_footballer_image(footballer_id: int):
 
     except Exception as e:
         logger.error(f"Error retrieving footballer image: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+@router.post("/update/{footballer_id}")
+def update_footballer_info(footballer_id: int):
+    init_time = time.time()
+
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT url_name
+            FROM footballer
+            WHERE id = %s
+            """,
+            (footballer_id,)
+        )
+
+        row = cursor.fetchone()
+
+        if not row or not row[0]:
+            return {"status": "error", "message": "url_name not found for footballer"}
+
+        url_name = row[0]
+
+        fb = Footballer(obtain_data=False)
+        fb.id = footballer_id
+        fb.url_name = url_name
+        fb.get_player_data()
+
+        cursor.execute(
+            """
+            UPDATE footballer_data
+            SET (last_updated, total_points, average_points, value) = (SELECT NOW(), %s, %s, %s)
+            WHERE id = %s
+            """,
+            (fb.data['total_points'], fb.data['average_points'], fb.data['market_details'][-1]['value'], footballer_id)
+        )
+
+        client = mongo_client()
+        db = client["FantasyMDB"]
+
+        update_fields = {}
+        if fb.data is not None:
+            if fb.data.get("market_details") is not None:
+                update_fields["market_details"] = fb.data["market_details"]
+            if fb.data.get("fixture_breakdown") is not None:
+                update_fields["fixture_breakdown"] = fb.data["fixture_breakdown"]
+            # if fb.data.get("image_binary") is not None:
+            #     update_fields["image_binary"] = fb.data["image_binary"]
+
+        if update_fields:
+            db.footballer.update_one({"id": footballer_id}, {"$set": update_fields}, upsert=True)
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+        client.close()
+
+        elapsed_time = time.time() - init_time
+
+        logger.info(f"Updated footballer {footballer_id}. Elapsed time: {elapsed_time:.4f} seconds.")
+        return {"status": "success", "elapsed_time": round(elapsed_time, 4)}
+    except Exception as e:
+        logger.error(f"Error updating footballer data: {e}")
         return {"status": "error", "message": str(e)}
