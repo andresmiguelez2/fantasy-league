@@ -7,10 +7,39 @@ import imghdr
 from fastapi.responses import Response
 from classes.footballer import Footballer
 import time
-from aux.constants import FANTASY_PLAYER_URL, FOOTBALLER_POSITIONS
+import datetime
+from aux.constants import FANTASY_PLAYER_URL, FOOTBALLER_POSITIONS, UPDATE_DB_INTERVAL
 
 
 router = APIRouter(prefix="/footballer", tags=["footballer"])
+
+
+def get_last_updated_time(footballer_id: int):
+    """Get the last updated time of a footballer from PostgreSQL."""
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT COALESCE(last_updated, '1970-01-01 00:00:00'::timestamp)
+            FROM footballer_data
+            WHERE id = %s
+            """,
+            (footballer_id,)
+        )
+
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if row:
+            return row[0]
+        else:
+            return None
+    except Exception as e:
+        logger.error(f"Error retrieving last updated time: {e}")
+        return None
 
 
 @router.get("/{footballer_id}")
@@ -20,6 +49,11 @@ def get_footballer_info(footballer_id: int):
         conn = pg_connect()
         client = mongo_client()
         db = client["FantasyMDB"]
+
+        if (datetime.datetime.now(tz=datetime.timezone.utc) - get_last_updated_time(footballer_id)).seconds > UPDATE_DB_INTERVAL:
+            update_footballer_info(footballer_id)
+        else:
+            logger.info(f"Footballer {footballer_id} data is up-to-date; no update needed.")
 
         document = db.footballer.find_one({"id": footballer_id})
         cursor = conn.cursor()
