@@ -23,6 +23,7 @@ class Footballer():
         self._owner_id: int = None
         self._data: dict = None
         self._team: str = None
+        self._position: str = None
         
         if obtain_data and name:
             self._name = name
@@ -121,6 +122,16 @@ class Footballer():
     def team(self, value):
         """Set the footballer team."""
         self._team = value
+
+    @property
+    def position(self):
+        """Get the footballer position."""
+        return self._position
+
+    @position.setter
+    def position(self, value):
+        """Set the footballer position."""
+        self._position = value
 
     def __str__(self):
         attrs = [attr for attr in dir(self) if attr.startswith('_') and not attr.startswith('__')]
@@ -235,10 +246,12 @@ class Footballer():
         player_id = int(image_url.split('/')[-1].split('.')[0]) if image_url else None
         market_details = self._get_market_details(player_id) if player_id else None
         self.team = self._get_team(soup)
+        self.position = self._get_position(soup)
 
         self.data = {
             "player_source_id": player_id,
             "team": self.team,
+            "position": self.position,
             "total_points": total_points,
             "average_points": average_points,
             "fixture_breakdown": fixture_breakdown,
@@ -305,6 +318,36 @@ class Footballer():
                 return img["alt"]
         logger.warning(f"Team not found for player {self.name}.")
         return None
+
+    def _get_position(self, soup):
+        """Extracts the player's position code from the page.
+
+        Looks for the first occurrence of a span with class containing `position-box`.
+        Example HTML: <span class="position-box x ">X</span>
+
+        Returns the class token (e.g. 'x') if present, otherwise the span text lowercased.
+        Returns None if no position is found.
+        """
+        try:
+            # find the first span whose class list contains 'position-box'
+            span = soup.find("span", class_=re.compile(r"\bposition-box\b"))
+            if not span:
+                return None
+
+            # BeautifulSoup exposes the class attribute as a list when available
+            class_attr = span.get("class") or []
+            # return the first token that is not 'position-box'
+            for token in class_attr:
+                if token and token != 'position-box':
+                    return str(token).lower()
+
+            # fallback to the inner text (e.g. 'X')
+            text = span.get_text(strip=True)
+            return text.lower() if text else None
+        except Exception as e:
+            logger.debug(f"Error extracting position: {e}")
+            return None
+        
 
     @classmethod
     def set_release_clause_date(cls, footballer_id: int, release_clause_date: datetime.datetime, client: MongoClient):

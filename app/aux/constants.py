@@ -58,3 +58,9 @@ FOOTBALLER_NAME_DICT = {
     'karl etta eyong': 'etta-eyong',
 }
 COMPETITION_NAME = 'LaLiga 2025/26'
+FOOTBALLER_POSITIONS = {
+    'def': 'DF',
+    'med': 'MD',
+    'del': 'FW',
+    'por': 'GK',
+}

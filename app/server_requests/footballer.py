@@ -2,11 +2,12 @@ from fastapi import APIRouter
 from aux.database import pg_connect, mongo_client
 from .logger import logger
 from pydantic import BaseModel
-from aux.aux_functions import extract_fixture_points
+from aux.aux_functions import extract_fixture_points, scrape_page
 import imghdr
 from fastapi.responses import Response
 from classes.footballer import Footballer
 import time
+from aux.constants import FANTASY_PLAYER_URL, FOOTBALLER_POSITIONS
 
 
 router = APIRouter(prefix="/footballer", tags=["footballer"])
@@ -165,6 +166,8 @@ def get_footballer_image(footballer_id: int):
 
 @router.post("/update/{footballer_id}")
 def update_footballer_info(footballer_id: int):
+    """Update footballer information in the database.
+    The method will fetch the source for the footballer and update relevant fields in both PostgreSQL and MongoDB."""
     init_time = time.time()
 
     try:
@@ -225,6 +228,70 @@ def update_footballer_info(footballer_id: int):
 
         logger.info(f"Updated footballer {footballer_id}. Elapsed time: {elapsed_time:.4f} seconds.")
         return {"status": "success", "elapsed_time": round(elapsed_time, 4)}
+    except Exception as e:
+        logger.error(f"Error updating footballer data: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+@router.post("/update_field/{footballer_id}")
+def update_footballer_field(footballer_id: int, field: str = None):
+    """Update a specific field of footballer data in the database."""
+    init_time = time.time()
+
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT url_name
+            FROM footballer
+            WHERE id = %s
+            """,
+            (footballer_id,)
+        )
+
+        row = cursor.fetchone()
+
+        if not row or not row[0]:
+            return {"status": "error", "message": "url_name not found for footballer"}
+
+        url_name = row[0]
+
+        fb = Footballer(obtain_data=False)
+        search_url = FANTASY_PLAYER_URL + url_name
+        soup = scrape_page(search_url, logger)
+        
+        if field == 'total_points':
+            value = fb._get_total_points(soup)
+        elif field == 'average_points':
+            value = fb._get_average_points(soup)
+        elif field == 'team':
+            value = fb._get_team(soup)
+        elif field == 'position':
+            value = FOOTBALLER_POSITIONS[fb._get_position(soup)]
+        else:
+            cursor.close()
+            conn.close()
+            return {"status": "error", "message": "Invalid field specified"}
+
+        cursor.execute(
+            f"""
+            UPDATE footballer_data
+            SET {field} = %s
+            WHERE id = %s
+            """,
+            (value, footballer_id)
+        )
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        elapsed_time = time.time() - init_time
+
+        logger.info(f"Updated field {field} for footballer {footballer_id}. Elapsed time: {elapsed_time:.4f} seconds.")
+        return {"status": "success", "field": field, "elapsed_time": round(elapsed_time, 4)}
     except Exception as e:
         logger.error(f"Error updating footballer data: {e}")
         return {"status": "error", "message": str(e)}
