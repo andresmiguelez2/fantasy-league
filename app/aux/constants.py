@@ -1,6 +1,7 @@
 ### Server app ###
 LOOP_TIME_SECONDS = 10 # Bucle de scan
 SLEEP_TIME = 0.001 # Sleep time in seconds
+UPDATE_DB_INTERVAL = 1800  # in seconds (30 minutes)
 
 
 ### Market ####
@@ -58,3 +59,9 @@ FOOTBALLER_NAME_DICT = {
     'karl etta eyong': 'etta-eyong',
 }
 COMPETITION_NAME = 'LaLiga 2025/26'
+FOOTBALLER_POSITIONS = {
+    'def': 'DF',
+    'med': 'MD',
+    'del': 'FW',
+    'por': 'GK',
+}

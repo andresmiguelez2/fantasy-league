@@ -2,13 +2,44 @@ from fastapi import APIRouter
 from aux.database import pg_connect, mongo_client
 from .logger import logger
 from pydantic import BaseModel
-from aux.aux_functions import extract_fixture_points
+from aux.aux_functions import extract_fixture_points, scrape_page
 import imghdr
 from fastapi.responses import Response
-
+from classes.footballer import Footballer
+import time
+import datetime
+from aux.constants import FANTASY_PLAYER_URL, FOOTBALLER_POSITIONS, UPDATE_DB_INTERVAL
 
 
 router = APIRouter(prefix="/footballer", tags=["footballer"])
+
+
+def get_last_updated_time(footballer_id: int):
+    """Get the last updated time of a footballer from PostgreSQL."""
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT COALESCE(last_updated, '1970-01-01 00:00:00'::timestamp)
+            FROM footballer_data
+            WHERE id = %s
+            """,
+            (footballer_id,)
+        )
+
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if row:
+            return row[0]
+        else:
+            return None
+    except Exception as e:
+        logger.error(f"Error retrieving last updated time: {e}")
+        return None
 
 
 @router.get("/{footballer_id}")
@@ -18,6 +49,11 @@ def get_footballer_info(footballer_id: int):
         conn = pg_connect()
         client = mongo_client()
         db = client["FantasyMDB"]
+
+        if (datetime.datetime.now(tz=datetime.timezone.utc) - get_last_updated_time(footballer_id)).seconds > UPDATE_DB_INTERVAL:
+            update_footballer_info(footballer_id)
+        else:
+            logger.info(f"Footballer {footballer_id} data is up-to-date; no update needed.")
 
         document = db.footballer.find_one({"id": footballer_id})
         cursor = conn.cursor()
@@ -168,4 +204,137 @@ def get_footballer_image(footballer_id: int):
 
     except Exception as e:
         logger.error(f"Error retrieving footballer image: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+@router.post("/update/{footballer_id}")
+def update_footballer_info(footballer_id: int):
+    """Update footballer information in the database.
+    The method will fetch the source for the footballer and update relevant fields in both PostgreSQL and MongoDB."""
+    init_time = time.time()
+
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT url_name
+            FROM footballer
+            WHERE id = %s
+            """,
+            (footballer_id,)
+        )
+
+        row = cursor.fetchone()
+
+        if not row or not row[0]:
+            return {"status": "error", "message": "url_name not found for footballer"}
+
+        url_name = row[0]
+
+        fb = Footballer(obtain_data=False)
+        fb.id = footballer_id
+        fb.url_name = url_name
+        fb.get_player_data()
+
+        cursor.execute(
+            """
+            UPDATE footballer_data
+            SET (last_updated, total_points, average_points, value) = (SELECT NOW(), %s, %s, %s)
+            WHERE id = %s
+            """,
+            (fb.data['total_points'], fb.data['average_points'], fb.data['market_details'][-1]['value'], footballer_id)
+        )
+
+        client = mongo_client()
+        db = client["FantasyMDB"]
+
+        update_fields = {}
+        if fb.data is not None:
+            if fb.data.get("market_details") is not None:
+                update_fields["market_details"] = fb.data["market_details"]
+            if fb.data.get("fixture_breakdown") is not None:
+                update_fields["fixture_breakdown"] = fb.data["fixture_breakdown"]
+            # if fb.data.get("image_binary") is not None:
+            #     update_fields["image_binary"] = fb.data["image_binary"]
+
+        if update_fields:
+            db.footballer.update_one({"id": footballer_id}, {"$set": update_fields}, upsert=True)
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+        client.close()
+
+        elapsed_time = time.time() - init_time
+
+        logger.info(f"Updated footballer {footballer_id}. Elapsed time: {elapsed_time:.4f} seconds.")
+        return {"status": "success", "elapsed_time": round(elapsed_time, 4)}
+    except Exception as e:
+        logger.error(f"Error updating footballer data: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+@router.post("/update_field/{footballer_id}")
+def update_footballer_field(footballer_id: int, field: str = None):
+    """Update a specific field of footballer data in the database."""
+    init_time = time.time()
+
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT url_name
+            FROM footballer
+            WHERE id = %s
+            """,
+            (footballer_id,)
+        )
+
+        row = cursor.fetchone()
+
+        if not row or not row[0]:
+            return {"status": "error", "message": "url_name not found for footballer"}
+
+        url_name = row[0]
+
+        fb = Footballer(obtain_data=False)
+        search_url = FANTASY_PLAYER_URL + url_name
+        soup = scrape_page(search_url, logger)
+        
+        if field == 'total_points':
+            value = fb._get_total_points(soup)
+        elif field == 'average_points':
+            value = fb._get_average_points(soup)
+        elif field == 'team':
+            value = fb._get_team(soup)
+        elif field == 'position':
+            value = FOOTBALLER_POSITIONS[fb._get_position(soup)]
+        else:
+            cursor.close()
+            conn.close()
+            return {"status": "error", "message": "Invalid field specified"}
+
+        cursor.execute(
+            f"""
+            UPDATE footballer_data
+            SET {field} = %s
+            WHERE id = %s
+            """,
+            (value, footballer_id)
+        )
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        elapsed_time = time.time() - init_time
+
+        logger.info(f"Updated field {field} for footballer {footballer_id}. Elapsed time: {elapsed_time:.4f} seconds.")
+        return {"status": "success", "field": field, "elapsed_time": round(elapsed_time, 4)}
+    except Exception as e:
+        logger.error(f"Error updating footballer data: {e}")
         return {"status": "error", "message": str(e)}
