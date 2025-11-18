@@ -1,5 +1,7 @@
 ### Server app ###
 LOOP_TIME_SECONDS = 10 # Bucle de scan
+LOOP_TIME_BUFFER = 2
+N_REQUEST_BUFFER = 2 # número de peticiones API a saltar
 SLEEP_TIME = 0.001 # Sleep time in seconds
 UPDATE_DB_INTERVAL = 1800  # in seconds (30 minutes)
 
@@ -12,7 +14,6 @@ RELEASE_CLAUSE_DAYS = 14 # number of days until a footballer can be released aga
 ### Client app ###
 FOOTBALLER_COLUMNS = ["ID", "name", "team", "value", "on_market", "on_market_since"]
 PLAYER_MARKET_COLUMNS = ["ID", "name", "value", "owner_id", "on_market_since", "bid_amount"]
-UPDATE_MONGODB_INTERVAL = 1800  # in seconds (30 minutes)
 
 
 ### Scraper ###
