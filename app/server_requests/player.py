@@ -34,3 +34,61 @@ def get_player_info(player_id: int):
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "player": None}
+
+
+@router.get('/lineup/{player_id}')
+def get_player_lineup(player_id: int):
+    """Get the player lineup
+    """
+    try:
+        conn = pg_connect()
+
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT
+                lineup
+            FROM player
+            WHERE id = %s
+            """,
+            (player_id,),
+        )
+        lineup = cursor.fetchone()[0]
+
+        cursor.close()
+        conn.close()
+        return {"status": "success", "lineup": lineup}
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return {"status": "error", "lineup": None}
+    
+
+@router.post('/update/lineup/{player_id}')
+def update_player_lineup(player_id: int, lineup: list[int]):
+    """Update the player lineup
+    """
+    assert len(lineup) == 3, "Lineup must contain exactly 3 elements: [DF, MD, FW]"
+    assert all(isinstance(x, int) for x in lineup), "All elements in lineup must be integers"
+    assert all(0 <= x <= 10 for x in lineup), "All elements in lineup must be between 0 and 10"
+    assert sum(lineup) == 10, "The sum of the lineup elements must be 10"
+
+    try:
+        conn = pg_connect()
+
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            UPDATE player
+            SET lineup = %s
+            WHERE id = %s
+            """,
+            (lineup, player_id),
+        )
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+        return {"status": "success"}
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return {"status": "error"}
