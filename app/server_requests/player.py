@@ -67,10 +67,10 @@ def get_player_lineup(player_id: int):
 def update_player_lineup(player_id: int, lineup: list[int]):
     """Update the player lineup
     """
-    assert len(lineup) == 3, "Lineup must contain exactly 3 elements: [DF, MD, FW]"
-    assert all(isinstance(x, int) for x in lineup), "All elements in lineup must be integers"
-    assert all(0 <= x <= 10 for x in lineup), "All elements in lineup must be between 0 and 10"
-    assert sum(lineup) == 10, "The sum of the lineup elements must be 10"
+    assert len(lineup) == 3, logger.error("Lineup must contain exactly 3 elements: [DF, MD, FW]")
+    assert all(isinstance(x, int) for x in lineup), logger.error("All elements in lineup must be integers")
+    assert all(0 <= x <= 10 for x in lineup), logger.error("All elements in lineup must be between 0 and 10")
+    assert sum(lineup) == 10, logger.error("The sum of the lineup elements must be 10")
 
     try:
         conn = pg_connect()
