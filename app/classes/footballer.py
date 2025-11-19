@@ -24,6 +24,7 @@ class Footballer():
         self._data: dict = None
         self._team: str = None
         self._position: str = None
+        self._availability: str = None
         
         if obtain_data and name:
             self._name = name
@@ -132,6 +133,16 @@ class Footballer():
     def position(self, value):
         """Set the footballer position."""
         self._position = value
+
+    @property
+    def availability(self):
+        """Get the footballer availability."""
+        return self._availability
+    
+    @availability.setter
+    def availability(self, value):
+        """Set the footballer availability."""
+        self._availability = value
 
     def __str__(self):
         attrs = [attr for attr in dir(self) if attr.startswith('_') and not attr.startswith('__')]
@@ -247,6 +258,7 @@ class Footballer():
         market_details = self._get_market_details(player_id) if player_id else None
         self.team = self._get_team(soup)
         self.position = self._get_position(soup)
+        self.availability = self._get_availability(soup)
 
         self.data = {
             "player_source_id": player_id,
@@ -256,7 +268,8 @@ class Footballer():
             "average_points": average_points,
             "fixture_breakdown": fixture_breakdown,
             "image_binary": image_binary,
-            "market_details": market_details
+            "market_details": market_details,
+            "availability": self.availability,
         }
 
     def get_player_data(self):
@@ -347,3 +360,36 @@ class Footballer():
         except Exception as e:
             logger.debug(f"Error extracting position: {e}")
             return None
+
+    def _get_availability(self, soup):
+        """
+        Determine availability using BeautifulSoup:
+        - 'suspended' if the word 'Sancionado' appears inside a <strong> or <b> tag
+        - 'uncertain' if an <img> alt contains 'duda'
+        - 'injured' ONLY if an <img> alt contains 'lesionado' or 'lesión'
+        - otherwise 'available'
+        """
+        try:
+            # Suspended: word 'sancionado' inside a bold tag (<strong> or <b>)
+            bold_tag = soup.find(
+                lambda tag: tag.name in ("strong")
+                and tag.get_text(strip=True)
+                and "sancionado" in tag.get_text(strip=True).lower()
+            )
+            if bold_tag:
+                return "suspended"
+
+            # Uncertain: image with alt containing 'duda' (case-insensitive)
+            img_duda = soup.find("img", alt=lambda v: v and "duda" in v.lower())
+            if img_duda:
+                return "uncertain"
+
+            # Injured: ONLY if an <img> alt contains 'lesionado' or 'lesión'
+            img_les = soup.find("img", alt=lambda v: v and re.search(r"Lesionado", v, re.I))
+            if img_les:
+                return "injured"
+
+            return "available"
+        except Exception as e:
+            logger.debug(f"_get_availability error: {e}")
+            return "available"

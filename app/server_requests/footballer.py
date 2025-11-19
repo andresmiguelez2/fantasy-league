@@ -241,10 +241,10 @@ def update_footballer_info(footballer_id: int):
         cursor.execute(
             """
             UPDATE footballer_data
-            SET (last_updated, total_points, average_points, value) = (SELECT NOW(), %s, %s, %s)
+            SET (last_updated, total_points, average_points, value, availability) = (SELECT NOW(), %s, %s, %s, CAST(%s AS AVAILABILITY_TYPE))
             WHERE id = %s
             """,
-            (fb.data['total_points'], fb.data['average_points'], fb.data['market_details'][-1]['value'], footballer_id)
+            (fb.data['total_points'], fb.data['average_points'], fb.data['market_details'][-1]['value'], fb.availability, footballer_id)
         )
 
         client = mongo_client()
