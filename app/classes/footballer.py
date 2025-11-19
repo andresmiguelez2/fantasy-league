@@ -366,7 +366,7 @@ class Footballer():
         Determine availability using BeautifulSoup:
         - 'suspended' if the word 'Sancionado' appears inside a <strong> or <b> tag
         - 'uncertain' if an <img> alt contains 'duda'
-        - 'injured' ONLY if an <img> alt contains 'lesionado' or 'lesión'
+        - 'injured' ONLY if an <img> alt contains 'lesionado'
         - otherwise 'available'
         """
         try:
@@ -384,7 +384,7 @@ class Footballer():
             if img_duda:
                 return "uncertain"
 
-            # Injured: ONLY if an <img> alt contains 'lesionado' or 'lesión'
+            # Injured: ONLY if an <img> alt contains 'lesionado'
             img_les = soup.find("img", alt=lambda v: v and re.search(r"Lesionado", v, re.I))
             if img_les:
                 return "injured"
