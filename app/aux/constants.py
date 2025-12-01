@@ -66,3 +66,6 @@ FOOTBALLER_POSITIONS = {
     'del': 'FW',
     'por': 'GK',
 }
+
+# Game
+LINEUP_POSITIONS = ['GK', 'DF', 'MD', 'FW']
