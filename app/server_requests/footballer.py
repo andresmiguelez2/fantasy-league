@@ -8,7 +8,7 @@ from fastapi.responses import Response
 from classes.footballer import Footballer
 import time
 import datetime
-from aux.constants import FANTASY_PLAYER_URL, FOOTBALLER_POSITIONS, UPDATE_DB_INTERVAL
+from aux.constants import FANTASY_PLAYER_URL, FOOTBALLER_POSITIONS, UPDATE_DB_INTERVAL, LINEUP_POSITIONS
 
 
 router = APIRouter(prefix="/footballer", tags=["footballer"])
@@ -337,4 +337,97 @@ def update_footballer_field(footballer_id: int, field: str = None):
         return {"status": "success", "field": field, "elapsed_time": round(elapsed_time, 4)}
     except Exception as e:
         logger.error(f"Error updating footballer data: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+def count_footballers_per_position(player_id: int):
+    """Count the number of footballers per position in a player's lineup."""
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT
+                footballer_data.position
+                , COUNT(footballer.id)
+            FROM footballer JOIN footballer_data ON footballer.id = footballer_data.id
+            WHERE
+                footballer.owner_id = %s
+                AND footballer.on_lineup = TRUE
+            GROUP BY footballer_data.position
+            """,
+            (player_id,)
+        )
+
+        counts = dict(cursor.fetchall())
+
+        cursor.close()
+        conn.close()
+
+        return counts
+    except Exception as e:
+        logger.error(f"Error counting footballers per position: {e}")
+        return {}
+    
+
+class LineUpFotballer(BaseModel):
+    player_id: int
+    footballer_id: int
+    on_lineup: bool
+@router.post("/set_lineup/")
+def set_footballer_on_lineup(data: LineUpFotballer):
+    """Set or unset a footballer in a player's lineup."""
+    try:
+        update_footballer_field(data.footballer_id, 'position')
+
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT lineup
+            FROM player join footballer
+            ON player.id = footballer.owner_id
+            WHERE
+                player.id = %s
+                AND footballer.id = %s
+            """
+        , (data.player_id, data.footballer_id))
+
+        lineup = cursor.fetchone()
+
+        if not lineup:
+            cursor.close()
+            conn.close()
+            return {"status": "error", "message": "Footballer not owned by player."}
+        else:
+            lineup = lineup[0]
+        
+        cursor.execute(
+            """
+            UPDATE footballer
+            SET on_lineup = %s
+            WHERE id = %s
+            """,
+            (data.on_lineup, data.footballer_id)
+        )
+
+        footballers_per_position = count_footballers_per_position(data.player_id)
+        logger.info(footballers_per_position)
+
+        for n_spots, pos_name in zip([1] + lineup, LINEUP_POSITIONS):
+            if n_spots < footballers_per_position.get(pos_name, 0):
+                conn.rollback()
+                cursor.close()
+                conn.close()
+                return {"status": "error", "message": f"Too many {pos_name} in lineup."}
+        else:
+            conn.commit()
+            cursor.close()
+            conn.close()
+
+        return {"status": "success", "message": f"Footballer {'added to' if data.on_lineup else 'removed from'} lineup."}
+    except Exception as e:
+        logger.error(f"Error setting footballer lineup: {e}")
         return {"status": "error", "message": str(e)}
