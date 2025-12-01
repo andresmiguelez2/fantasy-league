@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Landing from "./pages/Landing";
 import League from "./pages/League";
 import Squad from "./pages/Squad";
+import Lineup from "./pages/Lineup";
 import Market from "./pages/Market";
 import FootballerInfo from "./pages/FootballerInfo";
 import NotFound from "./pages/NotFound";
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/league/:leagueId" element={<League />} />
           <Route path="/squad" element={<Squad />} />
           <Route path="/squad/:playerId" element={<Squad />} />
+          <Route path="/lineup" element={<Lineup />} />
           <Route path="/market" element={<Market />} />
           <Route path="/footballer-info" element={<FootballerInfo />} />
           <Route path="*" element={<NotFound />} />

@@ -207,3 +207,14 @@ export const fetchAllFootballers = async (
     totalPoints: footballer[7],
   }));
 };
+
+export interface LineupFormation {
+  status: string;
+  lineup: number[];
+}
+
+export const fetchLineupFormation = async (playerId: string): Promise<number[]> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/player/lineup/${playerId}`);
+  const data: LineupFormation = await response.json();
+  return data.lineup;
+};

@@ -12,6 +12,7 @@ export const NavigationTabs = ({ leagueId }: NavigationTabsProps) => {
   const tabs = [
     { id: "league", label: "Leaderboard", path: leagueId ? `/league/${leagueId}` : "/league/1" },
     { id: "squad", label: "Squad", path: "/squad" },
+    { id: "lineup", label: "Lineup", path: "/lineup" },
     { id: "market", label: "Market", path: "/market" },
     { id: "footballer-info", label: "Footballer Info", path: "/footballer-info" },
   ];
