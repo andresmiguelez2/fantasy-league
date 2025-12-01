@@ -1,47 +1,79 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
-import { fetchLineupFormation } from "@/lib/api";
+import { fetchLineupFormation, fetchLineupFootballers } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
+
+const API_ENDPOINT = import.meta.env.VITE_BACKEND_URL;
 
 const Lineup = () => {
   const [formation, setFormation] = useState<number[]>([]);
+  const [lineupFootballers, setLineupFootballers] = useState<number[][]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const playerId = localStorage.getItem("playerId") || "1";
 
   useEffect(() => {
-    const loadFormation = async () => {
+    const loadLineupData = async () => {
       try {
-        const data = await fetchLineupFormation(playerId);
-        setFormation(data);
+        const [formationData, footballersData] = await Promise.all([
+          fetchLineupFormation(playerId),
+          fetchLineupFootballers(playerId)
+        ]);
+        setFormation(formationData);
+        setLineupFootballers(footballersData);
       } catch (error) {
         console.error("Error fetching lineup:", error);
         // Default formation if API fails
         setFormation([4, 4, 2]);
+        setLineupFootballers([]);
       } finally {
         setLoading(false);
       }
     };
 
-    loadFormation();
+    loadLineupData();
   }, [playerId]);
+
+  const handleFootballerClick = (footballerId: number) => {
+    setSelectedFootballerId(footballerId);
+    setDialogOpen(true);
+  };
 
   const getFormationString = () => {
     return formation.join('-');
   };
 
   const renderRow = (count: number, rowIndex: number) => {
+    const footballersInRow = lineupFootballers[rowIndex] || [];
+    
     return (
       <div className="flex justify-center gap-6 w-full" style={{ marginBottom: rowIndex === 0 ? '3rem' : '2rem' }}>
-        {Array.from({ length: count }).map((_, index) => (
-          <div
-            key={`${rowIndex}-${index}`}
-            className="w-24 h-28 bg-card border-2 border-primary rounded-lg flex items-center justify-center hover:bg-primary/10 transition-colors cursor-pointer shadow-lg"
-          >
-            <span className="text-sm text-muted-foreground font-medium">Empty</span>
-          </div>
-        ))}
+        {Array.from({ length: count }).map((_, index) => {
+          const footballerId = footballersInRow[index];
+          const hasFootballer = footballerId !== undefined;
+          
+          return (
+            <div
+              key={`${rowIndex}-${index}`}
+              className="w-24 h-28 bg-card border-2 border-primary rounded-lg flex items-center justify-center hover:bg-primary/10 transition-colors cursor-pointer shadow-lg overflow-hidden"
+              onClick={() => hasFootballer && handleFootballerClick(footballerId)}
+            >
+              {hasFootballer ? (
+                <img
+                  src={`${API_ENDPOINT}/footballer/image/${footballerId}`}
+                  alt="Footballer"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-sm text-muted-foreground font-medium">Empty</span>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -107,6 +139,12 @@ const Lineup = () => {
           )}
         </div>
       </main>
+
+      <FootballerInfoDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        footballerId={selectedFootballerId || 0}
+      />
     </div>
   );
 };
