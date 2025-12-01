@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
-import { fetchLineupFormation, fetchLineupFootballers } from "@/lib/api";
+import { fetchLineupFormation, fetchLineupFootballers, fetchFootballerShortName } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
@@ -11,6 +11,7 @@ const API_ENDPOINT = import.meta.env.VITE_BACKEND_URL;
 const Lineup = () => {
   const [formation, setFormation] = useState<number[]>([]);
   const [lineupFootballers, setLineupFootballers] = useState<number[][]>([]);
+  const [footballerNames, setFootballerNames] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -25,6 +26,18 @@ const Lineup = () => {
         ]);
         setFormation(formationData);
         setLineupFootballers(footballersData);
+
+        // Fetch short names for all footballers
+        const allFootballerIds = footballersData.flat().filter(id => id !== undefined);
+        const namePromises = allFootballerIds.map(id => 
+          fetchFootballerShortName(id).then(name => ({ id, name }))
+        );
+        const names = await Promise.all(namePromises);
+        const namesMap = names.reduce((acc, { id, name }) => {
+          acc[id] = name;
+          return acc;
+        }, {} as Record<number, string>);
+        setFootballerNames(namesMap);
       } catch (error) {
         console.error("Error fetching lineup:", error);
         // Default formation if API fails
@@ -55,21 +68,31 @@ const Lineup = () => {
         {Array.from({ length: count }).map((_, index) => {
           const footballerId = footballersInRow[index];
           const hasFootballer = footballerId !== undefined;
+          const shortName = hasFootballer ? footballerNames[footballerId] : null;
           
           return (
             <div
               key={`${rowIndex}-${index}`}
-              className="w-24 h-28 bg-card border-2 border-primary rounded-lg flex items-center justify-center hover:bg-primary/10 transition-colors cursor-pointer shadow-lg overflow-hidden"
-              onClick={() => hasFootballer && handleFootballerClick(footballerId)}
+              className="flex flex-col items-center gap-1"
             >
-              {hasFootballer ? (
-                <img
-                  src={`${API_ENDPOINT}/footballer/image/${footballerId}`}
-                  alt="Footballer"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-sm text-muted-foreground font-medium">Empty</span>
+              <div
+                className="w-32 h-36 bg-card border-2 border-primary rounded-lg flex items-center justify-center hover:bg-primary/10 transition-colors cursor-pointer shadow-lg overflow-hidden"
+                onClick={() => hasFootballer && handleFootballerClick(footballerId)}
+              >
+                {hasFootballer ? (
+                  <img
+                    src={`${API_ENDPOINT}/footballer/image/${footballerId}`}
+                    alt="Footballer"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-sm text-muted-foreground font-medium">Empty</span>
+                )}
+              </div>
+              {shortName && (
+                <span className="text-xs font-semibold text-white drop-shadow-md">
+                  {shortName}
+                </span>
               )}
             </div>
           );

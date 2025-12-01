@@ -224,3 +224,9 @@ export const fetchLineupFootballers = async (playerId: string): Promise<number[]
   const data = await response.json();
   return data.lineup_footballers || [];
 };
+
+export const fetchFootballerShortName = async (footballerId: number): Promise<string> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/footballer/short_name/${footballerId}`);
+  const data = await response.json();
+  return data.name;
+};
