@@ -64,6 +64,7 @@ def get_player_lineup(player_id: int):
         logger.error(f"Error: {e}")
         return {"status": "error", "lineup": None}
 
+
 @router.get('/lineup_footballers/{player_id}')
 def get_footballers_on_lineup(player_id: int):
     """
@@ -90,13 +91,47 @@ def get_footballers_on_lineup(player_id: int):
 
         lineup = [[], [], [], []]
         for id, position in footballers_on_lineup:
-            # image = get_footballer_image(id)
             lineup[POSITION_ORDER[position]].append(id)
 
         return {"status": "success", "lineup_footballers": lineup}
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "lineup": None}
+
+
+@router.get('/benched_footballers/{player_id}')
+def get_footballers_not_on_lineup(player_id: int):
+    """
+    """
+    try:
+        conn = pg_connect()
+
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT
+                f.id
+                , fd.position
+            FROM footballer AS f JOIN footballer_data AS fd ON f.id = fd.id
+            WHERE
+                f.owner_id = %s
+                AND f.on_lineup = false
+            ORDER BY fd.position, f.id
+            """,
+            (player_id,),
+        )
+
+        footballers_on_lineup = cursor.fetchall()
+
+        lineup = [[], [], [], []]
+        for id, position in footballers_on_lineup:
+            lineup[POSITION_ORDER[position]].append(id)
+
+        return {"status": "success", "lineup_footballers": lineup}
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return {"status": "error", "lineup": None}
+
     
 
 @router.post('/update/lineup/{player_id}')
