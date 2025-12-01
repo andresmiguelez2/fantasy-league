@@ -97,6 +97,31 @@ def get_footballer_info(footballer_id: int):
         return {"status": "error", "message": str(e)}
     
 
+@router.get("/short_name/{footballer_id}")
+def squad(footballer_id: int):
+    """Get the footballer's short name."""
+    try:
+        conn = pg_connect()
+
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT name
+            FROM footballer_data
+            WHERE id = %s
+            """,
+            (footballer_id,),
+        )
+        name = cursor.fetchone()[0]
+        cursor.close()
+        conn.close()
+
+        return {"status": "success", "name": name}
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return {"status": "error", "footballers": []}
+    
+
 @router.get("s")
 def get_all_footballers(limit: int = 20, offset: int = 0, page: int | None = None, sort: str = 'name', invert: str = "false", search: str = ""):
     """Get all footballers with pagination and total count.
