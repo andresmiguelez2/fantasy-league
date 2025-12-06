@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from aux.database import pg_connect, mongo_client
-from aux.constants import POSITION_ORDER
+from aux.constants import POSITION_ORDER, LINEUP_POSITIONS
 from .footballer import get_footballer_image
 from .logger import logger
 
@@ -143,6 +143,11 @@ def get_available_substitutes(player_id: int, position: str):
     """
     try:
         conn = pg_connect()
+
+        try:
+            position = LINEUP_POSITIONS[int(position)]
+        except ValueError:
+            pass
 
         cursor = conn.cursor()
         cursor.execute(
