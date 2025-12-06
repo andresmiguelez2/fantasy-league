@@ -100,7 +100,7 @@ def get_footballers_on_lineup(player_id: int):
 
 
 @router.get('/benched_footballers/{player_id}')
-def get_footballers_not_on_lineup(player_id: int):
+def get_footballers_not_on_lineup(player_id: int, target_position: str = None):
     """
     """
     try:
@@ -116,9 +116,10 @@ def get_footballers_not_on_lineup(player_id: int):
             WHERE
                 f.owner_id = %s
                 AND f.on_lineup = false
+                AND (%s IS NULL OR fd.position = %s)
             ORDER BY fd.position, f.id
             """,
-            (player_id,),
+            (player_id, target_position, target_position),
         )
 
         footballers_on_lineup = cursor.fetchall()
@@ -127,7 +128,10 @@ def get_footballers_not_on_lineup(player_id: int):
         for id, position in footballers_on_lineup:
             lineup[POSITION_ORDER[position]].append(id)
 
-        return {"status": "success", "lineup_footballers": lineup}
+        if not target_position:
+            return {"status": "success", "benched_footballers": lineup}
+        else:
+            return {"status": "success", "benched_footballers": lineup[POSITION_ORDER[target_position]]}
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "lineup": None}
