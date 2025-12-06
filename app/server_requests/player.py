@@ -135,7 +135,42 @@ def get_footballers_not_on_lineup(player_id: int, target_position: str = None):
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "lineup": None}
+    
 
+@router.get('/available_subs/{player_id}')
+def get_available_substitutes(player_id: int, position: str):
+    """Get the available substitutes for a given position
+    """
+    try:
+        conn = pg_connect()
+
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT
+                f.id
+                , fd.name
+                , fd.value
+                , fd.total_points
+                , fd.average_points
+            FROM footballer f LEFT JOIN footballer_data fd ON f.id = fd.id
+            WHERE
+                f.owner_id = %s
+                AND f.on_lineup = false
+                AND fd.position = %s
+            ORDER BY id
+            """,
+            (player_id, position),
+        )
+
+        substitutes = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+        return {"status": "success", "substitutes": substitutes}
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return {"status": "error", "substitutes": []}
     
 
 @router.post('/update/lineup/{player_id}')
