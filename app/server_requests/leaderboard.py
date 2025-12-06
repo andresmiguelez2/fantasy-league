@@ -17,7 +17,8 @@ def leaderboard():
         cursor.execute(
             """
             SELECT
-                row_number() OVER (ORDER BY points DESC) AS rank
+                -- row_number() OVER (ORDER BY points DESC) AS rank
+                player.id
                 , player.name
                 , player.points
                 , f.team_value
