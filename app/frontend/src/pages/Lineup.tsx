@@ -13,7 +13,8 @@ const Lineup = () => {
   const [lineupFootballers, setLineupFootballers] = useState<number[][]>([]);
   const [footballerNames, setFootballerNames] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
-  const [selectedPosition, setSelectedPosition] = useState<number>(0);
+const [selectedPosition, setSelectedPosition] = useState<number>(0);
+  const [selectedFootballerId, setSelectedFootballerId] = useState<number | undefined>();
   const [dialogOpen, setDialogOpen] = useState(false);
   const playerId = localStorage.getItem("playerId") || "1";
 
@@ -51,9 +52,38 @@ const Lineup = () => {
     loadLineupData();
   }, [playerId]);
 
-  const handleFootballerClick = (rowIndex: number) => {
+const handleFootballerClick = (rowIndex: number, footballerId?: number) => {
+    if (!footballerId) return; // Only allow clicking on actual footballers
     setSelectedPosition(rowIndex);
+    setSelectedFootballerId(footballerId);
     setDialogOpen(true);
+  };
+
+  const handleSwapComplete = async () => {
+    setLoading(true);
+    try {
+      const [formationData, footballersData] = await Promise.all([
+        fetchLineupFormation(playerId),
+        fetchLineupFootballers(playerId)
+      ]);
+      setFormation(formationData);
+      setLineupFootballers(footballersData);
+
+      const allFootballerIds = footballersData.flat().filter(id => id !== undefined);
+      const namePromises = allFootballerIds.map(id => 
+        fetchFootballerShortName(id).then(name => ({ id, name }))
+      );
+      const names = await Promise.all(namePromises);
+      const namesMap = names.reduce((acc, { id, name }) => {
+        acc[id] = name;
+        return acc;
+      }, {} as Record<string, string>);
+      setFootballerNames(namesMap);
+    } catch (error) {
+      console.error("Error refreshing lineup:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getFormationString = () => {
@@ -76,8 +106,8 @@ const Lineup = () => {
               className="flex flex-col items-center gap-1"
             >
               <div
-                className="w-32 h-36 bg-card border-2 border-primary rounded-lg flex items-center justify-center hover:bg-primary/10 transition-colors cursor-pointer shadow-lg overflow-hidden"
-                onClick={() => handleFootballerClick(rowIndex)}
+                className={`w-32 h-36 bg-card border-2 border-primary rounded-lg flex items-center justify-center transition-colors shadow-lg overflow-hidden ${hasFootballer ? 'hover:bg-primary/10 cursor-pointer' : ''}`}
+                onClick={() => hasFootballer && handleFootballerClick(rowIndex, footballerId)}
               >
                 {hasFootballer ? (
                   <img
@@ -168,6 +198,8 @@ const Lineup = () => {
         onOpenChange={setDialogOpen}
         playerId={playerId}
         position={selectedPosition}
+        currentFootballerId={selectedFootballerId}
+        onSwapComplete={handleSwapComplete}
       />
     </div>
   );

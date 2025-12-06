@@ -8,7 +8,7 @@ import {
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SquadRow } from "@/components/SquadRow";
 import { Loader2 } from "lucide-react";
-import { fetchAvailableSubs } from "@/lib/api";
+import { fetchAvailableSubs, setLineup } from "@/lib/api";
 
 interface Substitute {
   id: number;
@@ -23,7 +23,8 @@ interface SubstitutesDialogProps {
   onOpenChange: (open: boolean) => void;
   playerId: string;
   position: number;
-  onSelectSubstitute?: (footballerId: number) => void;
+  currentFootballerId?: number;
+  onSwapComplete?: () => void;
 }
 
 export const SubstitutesDialog = ({
@@ -31,10 +32,12 @@ export const SubstitutesDialog = ({
   onOpenChange,
   playerId,
   position,
-  onSelectSubstitute,
+  currentFootballerId,
+  onSwapComplete,
 }: SubstitutesDialogProps) => {
   const [substitutes, setSubstitutes] = useState<Substitute[]>([]);
   const [loading, setLoading] = useState(true);
+  const [swapping, setSwapping] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -53,9 +56,23 @@ export const SubstitutesDialog = ({
     }
   }, [open, playerId, position]);
 
-  const handleSubstituteClick = (footballerId: number) => {
-    onSelectSubstitute?.(footballerId);
-    onOpenChange(false);
+  const handleSubstituteClick = async (newFootballerId: number) => {
+    if (!currentFootballerId || swapping) return;
+    
+    setSwapping(true);
+    try {
+      // Remove current footballer from lineup
+      await setLineup(playerId, currentFootballerId, false);
+      // Add new footballer to lineup
+      await setLineup(playerId, newFootballerId, true);
+      
+      onSwapComplete?.();
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error swapping footballer:", error);
+    } finally {
+      setSwapping(false);
+    }
   };
 
   return (

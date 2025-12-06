@@ -257,3 +257,19 @@ export const fetchAvailableSubs = async (playerId: string, position: number): Pr
     averagePoints: sub[4],
   }));
 };
+
+export const setLineup = async (playerId: string, footballerId: number, onLineup: boolean): Promise<boolean> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/footballer/set_lineup/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      player_id: parseInt(playerId),
+      footballer_id: footballerId,
+      on_lineup: onLineup,
+    }),
+  });
+  const data = await response.json();
+  return data.status === "success";
+};
