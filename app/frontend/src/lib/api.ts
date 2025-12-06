@@ -18,6 +18,8 @@ export interface Footballer {
   name: string;
   team: string;
   value: number;
+  totalPoints: number;
+  averagePoints: number | string;
   onMarket: boolean;
   onMarketSince: string | null;
 }
@@ -71,8 +73,10 @@ export const fetchSquadFootballers = async (playerId: string): Promise<Footballe
     name: footballer[1],
     team: footballer[2],
     value: footballer[3],
-    onMarket: footballer[4],
-    onMarketSince: footballer[5],
+    totalPoints: footballer[4],
+    averagePoints: footballer[5],
+    onMarket: footballer[6],
+    onMarketSince: footballer[7],
   }));
 };
 

@@ -21,6 +21,8 @@ def squad(player_id: int):
                 , fd.name
                 , fd.team
                 , fd.value
+                , fd.total_points
+                , fd.average_points
                 , f.on_market
                 , f.on_market_since
             FROM footballer f LEFT JOIN footballer_data fd ON f.id = fd.id

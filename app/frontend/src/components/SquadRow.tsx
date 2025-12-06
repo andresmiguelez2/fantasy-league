@@ -5,10 +5,12 @@ interface SquadRowProps {
   id: number;
   name: string;
   value: number;
+  totalPoints: number;
+  averagePoints: number | string;
   onClick?: () => void;
 }
 
-export const SquadRow = ({ id, name, value, onClick }: SquadRowProps) => {
+export const SquadRow = ({ id, name, value, totalPoints, averagePoints, onClick }: SquadRowProps) => {
   const formatValue = (val: number) => {
     return new Intl.NumberFormat('en-ES', {
       style: 'currency',
@@ -32,6 +34,12 @@ export const SquadRow = ({ id, name, value, onClick }: SquadRowProps) => {
           </AvatarFallback>
         </Avatar>
         <span className="font-semibold">{name}</span>
+      </TableCell>
+      <TableCell className="text-center">
+        <span className="font-semibold text-green-600">{totalPoints}</span>
+      </TableCell>
+      <TableCell className="text-center">
+        <span className="font-semibold">{averagePoints}</span>
       </TableCell>
       <TableCell className="text-center">
         <span className="text-secondary font-semibold">{formatValue(value)}</span>
