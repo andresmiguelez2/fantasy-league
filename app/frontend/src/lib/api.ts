@@ -234,3 +234,26 @@ export const fetchFootballerShortName = async (footballerId: number): Promise<st
   const data = await response.json();
   return data.name;
 };
+
+export interface Substitute {
+  id: number;
+  name: string;
+  value: number;
+  totalPoints: number;
+  averagePoints: number;
+}
+
+export const fetchAvailableSubs = async (playerId: string, position: number): Promise<Substitute[]> => {
+  const response = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/player/available_subs/${playerId}?position=${position}`
+  );
+  const data = await response.json();
+  
+  return data.substitutes.map((sub: any[]) => ({
+    id: sub[0],
+    name: sub[1],
+    value: sub[2],
+    totalPoints: sub[3],
+    averagePoints: sub[4],
+  }));
+};

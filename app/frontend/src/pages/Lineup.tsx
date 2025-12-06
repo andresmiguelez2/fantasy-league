@@ -4,7 +4,7 @@ import { NavigationTabs } from "@/components/NavigationTabs";
 import { fetchLineupFormation, fetchLineupFootballers, fetchFootballerShortName } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
+import { SubstitutesDialog } from "@/components/SubstitutesDialog";
 
 const API_ENDPOINT = import.meta.env.VITE_BACKEND_URL;
 
@@ -13,7 +13,7 @@ const Lineup = () => {
   const [lineupFootballers, setLineupFootballers] = useState<number[][]>([]);
   const [footballerNames, setFootballerNames] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
-  const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
+  const [selectedPosition, setSelectedPosition] = useState<number>(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const playerId = localStorage.getItem("playerId") || "1";
 
@@ -51,8 +51,8 @@ const Lineup = () => {
     loadLineupData();
   }, [playerId]);
 
-  const handleFootballerClick = (footballerId: number) => {
-    setSelectedFootballerId(footballerId);
+  const handleFootballerClick = (rowIndex: number) => {
+    setSelectedPosition(rowIndex);
     setDialogOpen(true);
   };
 
@@ -77,7 +77,7 @@ const Lineup = () => {
             >
               <div
                 className="w-32 h-36 bg-card border-2 border-primary rounded-lg flex items-center justify-center hover:bg-primary/10 transition-colors cursor-pointer shadow-lg overflow-hidden"
-                onClick={() => hasFootballer && handleFootballerClick(footballerId)}
+                onClick={() => handleFootballerClick(rowIndex)}
               >
                 {hasFootballer ? (
                   <img
@@ -163,10 +163,11 @@ const Lineup = () => {
         </div>
       </main>
 
-      <FootballerInfoDialog
+      <SubstitutesDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        footballerId={selectedFootballerId || 0}
+        playerId={playerId}
+        position={selectedPosition}
       />
     </div>
   );
