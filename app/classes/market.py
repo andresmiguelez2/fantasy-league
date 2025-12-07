@@ -203,6 +203,7 @@ class Market:
                 self._open_new_market(cursor)
                 removed_from_market = self._cleanup_market(cursor)
                 self._place_footballers_into_market(cursor, N_NEW_FOOTBALLERS_INTO_MARKET, removed_from_market)
+                self._place_bid_on_footballers(cursor)
 
                 conn.commit()
                 cursor.close()
@@ -212,12 +213,44 @@ class Market:
                 logger.error(f"Database error while fulfilling market {self._id}: {e}")
                 self._has_been_closed = False# Rollback the local state change if database update failed
 
+    def _place_bid_on_footballers(self, cursor):
+        cursor.execute(
+            """
+            SELECT
+                f.id
+                , fd.value
+            FROM footballer f LEFT JOIN footballer_data fd ON f.id = fd.id
+            WHERE
+                owner_id IS NOT NULL
+                AND on_market = true
+            """
+        )
+        footballers_on_market = cursor.fetchall()
+
+        for id, value in footballers_on_market:
+            bid_amount = Market.get_random_bid(value)
+            cursor.execute(
+                """
+                INSERT INTO bid (footballer_id, bidder_id, amount, timestamp)
+                VALUES (%s, %s, %s, now())
+                """,
+                (id, None, bid_amount)
+            )
+            logger.info(f"League placed bid of amount {bid_amount} on footballer {id}.")
+
+
     def shift_closing_ts(self):
         """Shift the market closing timestamp far into the future."""
         self.closing_ts += datetime.timedelta(days=9999)
 
     def __str__(self):
         return f"Market(id={self._id}, closing_ts={self._closing_ts}, has_been_closed={self._has_been_closed})"
+    
+    @classmethod
+    def get_random_bid(cls, market_value):
+        """Generate a random bid based on the market value."""
+        bid_multiplier = random.uniform(0.9, 1.1)
+        return int(market_value * bid_multiplier)
     
 
 def load_market():
