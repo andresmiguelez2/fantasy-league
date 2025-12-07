@@ -57,19 +57,21 @@ export const SubstitutesDialog = ({
   }, [open, playerId, position]);
 
   const handleSubstituteClick = async (newFootballerId: number) => {
-    if (!currentFootballerId || swapping) return;
+    if (swapping) return;
     
     setSwapping(true);
     try {
-      // Remove current footballer from lineup
-      await setLineup(playerId, currentFootballerId, false);
+      // Only remove current footballer if one exists (swapping)
+      if (currentFootballerId) {
+        await setLineup(playerId, currentFootballerId, false);
+      }
       // Add new footballer to lineup
       await setLineup(playerId, newFootballerId, true);
       
       onSwapComplete?.();
       onOpenChange(false);
     } catch (error) {
-      console.error("Error swapping footballer:", error);
+      console.error("Error updating lineup:", error);
     } finally {
       setSwapping(false);
     }

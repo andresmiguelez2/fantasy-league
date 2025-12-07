@@ -53,7 +53,6 @@ const [selectedPosition, setSelectedPosition] = useState<number>(0);
   }, [playerId]);
 
 const handleFootballerClick = (rowIndex: number, footballerId?: number) => {
-    if (!footballerId) return; // Only allow clicking on actual footballers
     setSelectedPosition(rowIndex);
     setSelectedFootballerId(footballerId);
     setDialogOpen(true);
@@ -106,8 +105,8 @@ const handleFootballerClick = (rowIndex: number, footballerId?: number) => {
               className="flex flex-col items-center gap-1"
             >
               <div
-                className={`w-32 h-36 bg-card border-2 border-primary rounded-lg flex items-center justify-center transition-colors shadow-lg overflow-hidden ${hasFootballer ? 'hover:bg-primary/10 cursor-pointer' : ''}`}
-                onClick={() => hasFootballer && handleFootballerClick(rowIndex, footballerId)}
+                className="w-32 h-36 bg-card border-2 border-primary rounded-lg flex items-center justify-center transition-colors shadow-lg overflow-hidden hover:bg-primary/10 cursor-pointer"
+                onClick={() => handleFootballerClick(rowIndex, footballerId)}
               >
                 {hasFootballer ? (
                   <img
