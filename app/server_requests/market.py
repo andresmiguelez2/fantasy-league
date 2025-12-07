@@ -108,7 +108,6 @@ def place_bid(bid: BidRequest):
         footballer.url_name = url_name
         footballer.id = bid.footballer_id
         footballer.get_player_data()
-        footballer.update_in_db(client)
 
         if bid.bid_amount < footballer.data['market_details'][-1]['value'] and bid.bid_amount != 0:
             cursor.close()
