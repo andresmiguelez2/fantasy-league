@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from aux.database import pg_connect, mongo_client
 from aux.constants import POSITION_ORDER, LINEUP_POSITIONS
-from .footballer import get_footballer_image
+from .footballer import get_footballer_image, set_footballer_on_lineup
 from .logger import logger
 
 
@@ -68,6 +68,13 @@ def get_player_lineup(player_id: int):
 @router.get('/lineup_footballers/{player_id}')
 def get_footballers_on_lineup(player_id: int):
     """
+    Get the footballers on the player's lineup
+
+    Args:
+        player_id (int): The player ID
+
+    API Returns:
+        list[list[int]]: A list of lists containing the footballer IDs on the lineup. Includes GK, DF, MD, FW
     """
     try:
         conn = pg_connect()
@@ -180,7 +187,7 @@ def get_available_substitutes(player_id: int, position: str):
 
 @router.post('/update/lineup/{player_id}')
 def update_player_lineup(player_id: int, lineup: list[int]):
-    """Update the player lineup
+    """Update the player lineup. This should be a list of three integers representing the number of defenders, midfielders, and forwards.
     """
     assert len(lineup) == 3, logger.error("Lineup must contain exactly 3 elements: [DF, MD, FW]")
     assert all(isinstance(x, int) for x in lineup), logger.error("All elements in lineup must be integers")
@@ -201,9 +208,69 @@ def update_player_lineup(player_id: int, lineup: list[int]):
         )
         conn.commit()
 
+        validate_lineup(player_id, lineup)
+
         cursor.close()
         conn.close()
         return {"status": "success"}
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error"}
+    
+
+def validate_lineup(player_id: int, lineup: list[int]):
+    """
+    Validate the player's lineup and remove incompatible footballers
+    """
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        # Get current footballers on lineup (from DB, not from API)
+        cursor.execute(
+            """
+            SELECT
+                f.id
+                , fd.position
+            FROM footballer AS f JOIN footballer_data AS fd ON f.id = fd.id
+            WHERE
+                f.owner_id = %s
+                AND f.on_lineup = true
+            ORDER BY fd.position, f.id
+            """,
+            (player_id,),
+        )
+
+        footballers_on_lineup = cursor.fetchall()
+        
+        # Organize by position
+        lineup_by_pos = [[], [], [], []]
+        for f_id, position in footballers_on_lineup:
+            lineup_by_pos[POSITION_ORDER[position]].append(f_id)
+
+        # Identify footballers to remove
+        footballers_to_remove = []
+        for pos_idx, (f_list, n_spots) in enumerate(zip(lineup_by_pos, [1] + lineup)):
+            if len(f_list) > n_spots:
+                # Remove excess footballers from this position
+                footballers_to_remove.extend(f_list[n_spots:])
+
+        # Remove excess footballers
+        for footballer_id in footballers_to_remove:
+            cursor.execute(
+                """
+                UPDATE footballer
+                SET on_lineup = FALSE
+                WHERE id = %s
+                """,
+                (footballer_id,)
+            )
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        if footballers_to_remove:
+            logger.info(f"Footballers removed from player's {player_id} lineup due to incompatibilities: {footballers_to_remove}")
+    except Exception as e:
+        logger.error(f"Error validating lineup: {e}")
