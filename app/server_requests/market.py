@@ -49,7 +49,7 @@ def player_market(player_id: int):
                 f.id
                 , f_data.name
                 , f_data.value
-                , f.owner_id
+                , player.name
                 , date_trunc('second', f.on_market_since) AS on_market_since
                 , b.amount AS bid_amount
                 , f_data.average_points
@@ -61,11 +61,13 @@ def player_market(player_id: int):
                 FROM bid
                 WHERE bidder_id = %s
             ) AS b ON f.id = b.footballer_id
+            LEFT JOIN player ON player.id = f.owner_id
             WHERE
                 on_market = TRUE
-            ORDER BY owner_id, on_market_since 
-                        """,
-            (player_id,)
+                AND (f.owner_id IS NULL OR f.owner_id != %s)
+            ORDER BY on_market_since, owner_id 
+            """,
+            (player_id, player_id)
         )
         footballers = cursor.fetchall()
 
