@@ -456,3 +456,30 @@ def set_footballer_on_lineup(data: LineUpFotballer):
     except Exception as e:
         logger.error(f"Error setting footballer lineup: {e}")
         return {"status": "error", "message": str(e)}
+    
+
+@router.post("/change_market_status/{footballer_id}")
+def change_market_status(footballer_id: int, on_market: bool):
+    """Change the market status of a footballer."""
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            UPDATE footballer
+            SET on_market = %s
+            WHERE id = %s
+            """,
+            (on_market, footballer_id)
+        )
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        logger.info(f"Footballer {footballer_id} market status changed to {'on market' if on_market else 'off market'}.")
+        return {"status": "success", "footballer_id": footballer_id, "on_market": on_market}
+    except Exception as e:
+        logger.error(f"Error changing footballer market status: {e}")
+        return {"status": "error", "message": str(e)}
