@@ -468,10 +468,12 @@ def change_market_status(footballer_id: int, on_market: bool):
         cursor.execute(
             """
             UPDATE footballer
-            SET on_market = %s
+            SET
+                on_market = %s
+                , on_market_since = CASE WHEN %s THEN NOW() ELSE NULL END
             WHERE id = %s
             """,
-            (on_market, footballer_id)
+            (on_market, on_market, footballer_id)
         )
 
         conn.commit()

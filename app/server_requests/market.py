@@ -93,9 +93,7 @@ def place_bid(bid: BidRequest):
     try:
         conn = pg_connect()        
         cursor = conn.cursor()
-
-        client = mongo_client()
-
+        
         cursor.execute(
                 """
                 SELECT footballer_data.FULL_name, footballer.url_name, footballer.owner_id
