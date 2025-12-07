@@ -5,6 +5,14 @@ import { fetchLineupFormation, fetchLineupFootballers, fetchFootballerShortName 
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { SubstitutesDialog } from "@/components/SubstitutesDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { POSSIBLE_FORMATIONS } from "@/lib/constants";
 
 const API_ENDPOINT = import.meta.env.VITE_BACKEND_URL;
 
@@ -85,6 +93,30 @@ const handleFootballerClick = (rowIndex: number, footballerId?: number) => {
     }
   };
 
+  const handleFormationChange = async (newFormation: number[]) => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_ENDPOINT}/player/update/lineup/${playerId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newFormation),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update lineup");
+      }
+
+      // Refresh the lineup data
+      await handleSwapComplete();
+    } catch (error) {
+      console.error("Error updating formation:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getFormationString = () => {
     return formation.join('-');
   };
@@ -137,16 +169,28 @@ const handleFootballerClick = (rowIndex: number, footballerId?: number) => {
       
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold">Lineup</h1>
-            {!loading && formation.length > 0 && (
-              <div className="bg-primary text-primary-foreground px-4 py-2 rounded-full font-bold text-lg shadow-md">
-                {getFormationString()}
-              </div>
-            )}
-          </div>
-          
-          {loading ? (
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold">Lineup</h1>
+          {!loading && formation.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="default" size="lg" className="font-bold text-lg">
+                  {getFormationString()}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {POSSIBLE_FORMATIONS.map((form) => (
+                  <DropdownMenuItem
+                    key={form.join('-')}
+                    onClick={() => handleFormationChange(form)}
+                  >
+                    {form[0]}-{form[1]}-{form[2]}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>          {loading ? (
             <div className="flex justify-center items-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
