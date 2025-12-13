@@ -231,7 +231,7 @@ def get_player_incoming_bids(player_id: int):
                 LEFT JOIN footballer AS f ON b.footballer_id = f.id
                 LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
             WHERE f.owner_id = %s
-            ORDER BY b.timestamp DESC
+            ORDER BY footballer_id, b.timestamp DESC
             """,
             (player_id,)
         )
@@ -269,7 +269,7 @@ def get_player_outgoing_bids(player_id: int):
                 LEFT JOIN footballer AS f ON b.footballer_id = f.id
                 LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
             WHERE b.bidder_id = %s
-            ORDER BY b.timestamp DESC
+            ORDER BY footballer_id, b.timestamp DESC
             """,
             (player_id,)
         )
