@@ -83,7 +83,7 @@ const IncomingBids = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Footballer</TableHead>
-                  <TableHead className="text-center">Bidder ID</TableHead>
+                  <TableHead className="text-center">Bidder</TableHead>
                   <TableHead className="text-center">Timestamp</TableHead>
                   <TableHead className="text-center">Bid Value</TableHead>
                   <TableHead className="w-[80px]"></TableHead>

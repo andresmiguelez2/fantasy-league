@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from aux.database import pg_connect, mongo_client
+from aux.constants import BANK_NAME
 from .logger import logger
 from pydantic import BaseModel
 from classes.footballer import Footballer
@@ -250,22 +251,23 @@ def get_player_incoming_bids(player_id: int):
                 b.id AS bid_id
                 , b.timestamp
                 , f.id AS footballer_id
-                , b.bidder_id
-                , fd.name
+                , COALESCE(p.name, %s) AS bidder_name
+                , fd.name AS footballer_name
                 , b.amount
             FROM bid AS b
                 LEFT JOIN footballer AS f ON b.footballer_id = f.id
                 LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
+                LEFT JOIN player AS p on f.owner_id = p.id
             WHERE f.owner_id = %s
             ORDER BY footballer_id, b.timestamp DESC
             """,
-            (player_id,)
+            (BANK_NAME, player_id)
         )
         bids = cursor.fetchall()
 
         cursor.close()
         conn.close()
-        return {"status": "success", "bids": bids, "columns": ["bid_id", "timestamp", "footballer_id", "bidder_id", "footballer_name", "amount"]}
+        return {"status": "success", "bids": bids, "columns": ["bid_id", "timestamp", "footballer_id", "bidder_name", "footballer_name", "amount"]}
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "bids": []}
@@ -288,22 +290,23 @@ def get_player_outgoing_bids(player_id: int):
                 b.id AS bid_id
                 , b.timestamp
                 , f.id AS footballer_id
-                , f.owner_id
-                , fd.name
+                , COALESCE(p.name, %s) AS owner_name
+                , fd.name AS footballer_name
                 , b.amount
             FROM bid AS b
                 LEFT JOIN footballer AS f ON b.footballer_id = f.id
                 LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
+                LEFT JOIN player AS p on f.owner_id = p.id
             WHERE b.bidder_id = %s
             ORDER BY footballer_id, b.timestamp DESC
             """,
-            (player_id,)
+            (BANK_NAME, player_id)
         )
         bids = cursor.fetchall()
 
         cursor.close()
         conn.close()
-        return {"status": "success", "bids": bids, "columns": ["bid_id", "timestamp", "footballer_id", "owner_id", "footballer_name", "amount"]}
+        return {"status": "success", "bids": bids, "columns": ["bid_id", "timestamp", "footballer_id", "owner_name", "footballer_name", "amount"]}
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "bids": []}
