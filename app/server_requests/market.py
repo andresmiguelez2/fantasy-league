@@ -148,3 +148,60 @@ def place_bid(bid: BidRequest):
         logger.error(f"Error: {e}")
         return {"status": "error", "message": str(e)}
  
+
+@router.post("/reply_to_bid/{bid_id}")
+def reply_to_bid(bid_id: int, accept: bool):
+    """Accept or reject a bid on a footballer.
+    
+    Args:
+        bid_id (int): The ID of the bid to reply to.
+        accept (bool): True to accept the bid, False to reject it.
+    """
+    try:
+        conn = pg_connect()        
+        cursor = conn.cursor()
+        
+        cursor.execute(
+                """
+                SELECT footballer_id, bidder_id, amount
+                FROM bid
+                WHERE id = %s
+            """,
+            (bid_id,)
+        )
+        bid = cursor.fetchone()
+        if not bid:
+            cursor.close()
+            conn.close()
+            return {"status": "error", "message": "Bid not found."}
+        
+        footballer_id, bidder_id, amount = bid
+
+        if accept:
+            cursor.execute(
+                """
+                UPDATE footballer
+                SET owner_id = %s, on_market = FALSE, on_market_since = NULL
+                WHERE id = %s
+            """,
+            (bidder_id, footballer_id)
+        )
+            logger.info(f"Bid accepted: Footballer {footballer_id} sold to Player {bidder_id} for {amount}")
+        else:
+            logger.info(f"Bid rejected: Footballer {footballer_id} bid from Player {bidder_id} for {amount} rejected")
+
+        cursor.execute(
+            """
+            DELETE FROM bid
+            WHERE id = %s
+            """,
+            (bid_id,)
+        )
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return {"status": "success", "message": "Bid reply processed successfully."}
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return {"status": "error", "message": str(e)}

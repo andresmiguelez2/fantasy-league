@@ -214,6 +214,7 @@ class Market:
                 self._has_been_closed = False# Rollback the local state change if database update failed
 
     def _place_bid_on_footballers(self, cursor):
+        """Place bids on all footballers owned by someone on the market by the league."""
         cursor.execute(
             """
             SELECT
