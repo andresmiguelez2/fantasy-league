@@ -8,6 +8,8 @@ import League from "./pages/League";
 import Squad from "./pages/Squad";
 import Lineup from "./pages/Lineup";
 import Market from "./pages/Market";
+import IncomingBids from "./pages/IncomingBids";
+import OutgoingBids from "./pages/OutgoingBids";
 import FootballerInfo from "./pages/FootballerInfo";
 import NotFound from "./pages/NotFound";
 
@@ -26,6 +28,8 @@ const App = () => (
           <Route path="/squad/:playerId" element={<Squad />} />
           <Route path="/lineup" element={<Lineup />} />
           <Route path="/market" element={<Market />} />
+          <Route path="/market/incoming" element={<IncomingBids />} />
+          <Route path="/market/outgoing" element={<OutgoingBids />} />
           <Route path="/footballer-info" element={<FootballerInfo />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
