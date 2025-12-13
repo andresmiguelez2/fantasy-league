@@ -65,7 +65,7 @@ def player_market(player_id: int):
             WHERE
                 on_market = TRUE
                 AND (f.owner_id IS NULL OR f.owner_id != %s)
-            ORDER BY on_market_since, owner_id 
+            ORDER BY on_market_since DESC, owner_id 
             """,
             (player_id, player_id)
         )
