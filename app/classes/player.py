@@ -2,7 +2,7 @@ import logging
 import requests
 import os
 from tabulate import tabulate
-from aux.constants import FOOTBALLER_COLUMNS, PLAYER_MARKET_COLUMNS
+from aux.database import pg_connect
 
 
 logger = logging.getLogger(__name__)
@@ -154,40 +154,6 @@ class Session():
             logger.error(f"Failed to reach backend: {e}")
             return False
 
-    def _view_squad(self, player_id: int):
-        try:
-            url = f"{os.environ['BACKEND_URL']}/squad/{player_id}"
-            response = requests.get(url)
-            if response.status_code == 200:
-                data = response.json()
-                players = data.get("players", [])
-                if players:
-                    print("\nYour Squad:")
-                    print(tabulate(players, headers=FOOTBALLER_COLUMNS, tablefmt="grid"))
-                else:
-                    print("No players found.")
-            else:
-                logger.error(f"Failed to fetch squad: {response.status_code}")
-        except Exception as e:
-            logger.error(f"Error while fetching squad: {e}")
-
-    def _view_market(self):
-        try:
-            url = f"{os.environ['BACKEND_URL']}/market/{self.player_id}"
-            response = requests.get(url)
-            if response.status_code == 200:
-                data = response.json()
-                players = data.get("players", [])
-                if players:
-                    print("\nMarket:")
-                    print(tabulate(players, headers=PLAYER_MARKET_COLUMNS, tablefmt="grid"))
-                else:
-                    print("No players found on the market.")
-            else:
-                logger.error(f"Failed to fetch market: {response.status_code}")
-        except Exception as e:
-            logger.error(f"Error while fetching market: {e}")
-
 
     def _place_bid(self):
         footballer_id = input("Enter the ID of the player you want to bid on: ")
@@ -220,3 +186,34 @@ class Session():
                 logger.error(f"Failed to edit player status: {response.status_code}")
         except Exception as e:
             logger.error(f"Error while editing player status: {e}")
+
+
+def debit_player_value(player_id: int, amount: int):
+    """Debit value from player's budget
+    Args:
+        player_id (int): The player ID
+        amount (int): The amount to debit
+    """
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            UPDATE player
+            SET budget = budget - %s
+            WHERE id = %s
+            """,
+            (amount, player_id),
+        )
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        logger.info(f"Debited {amount:,.0f} from player {player_id}'s budget.")
+
+        return True
+    except Exception as e:
+        logger.error(f"Error while debiting player budget: {e}")
+        return False

@@ -4,6 +4,7 @@ from aux.constants import BANK_NAME
 from .logger import logger
 from pydantic import BaseModel
 from classes.footballer import Footballer
+from classes.player import debit_player_value
 
 
 router = APIRouter(prefix="/market", tags=["market"])
@@ -188,9 +189,13 @@ def reply_to_bid(bid_id: int, accept: bool):
         
         cursor.execute(
                 """
-                SELECT footballer_id, bidder_id, amount
-                FROM bid
-                WHERE id = %s
+                SELECT
+                    b.footballer_id
+                    , b.bidder_id
+                    , b.amount
+                    , f.owner_id
+                FROM bid AS b LEFT JOIN footballer AS f ON b.footballer_id = f.id
+                WHERE b.id = %s
             """,
             (bid_id,)
         )
@@ -200,7 +205,7 @@ def reply_to_bid(bid_id: int, accept: bool):
             conn.close()
             return {"status": "error", "message": "Bid not found."}
         
-        footballer_id, bidder_id, amount = bid
+        footballer_id, bidder_id, amount, owner_id = bid
 
         if accept:
             cursor.execute(
@@ -210,9 +215,14 @@ def reply_to_bid(bid_id: int, accept: bool):
                 WHERE id = %s;
                 DELETE FROM bid
                 WHERE footballer_id = %s
-            """,
-            (bidder_id, footballer_id, footballer_id)
-        )
+                """,
+                (bidder_id, footballer_id, footballer_id)
+            )
+            if bidder_id is not None:
+                debit_player_value(bidder_id, amount)
+            if owner_id is not None:
+                debit_player_value(owner_id, -amount)
+
             logger.info(f"Bid accepted: Footballer {footballer_id} sold to Player {bidder_id} for {amount}")
         else:
             logger.info(f"Bid rejected: Footballer {footballer_id} bid from Player {bidder_id} for {amount} rejected")
@@ -257,7 +267,7 @@ def get_player_incoming_bids(player_id: int):
             FROM bid AS b
                 LEFT JOIN footballer AS f ON b.footballer_id = f.id
                 LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
-                LEFT JOIN player AS p on f.owner_id = p.id
+                LEFT JOIN player AS p on b.bidder_id = p.id
             WHERE f.owner_id = %s
             ORDER BY footballer_id, b.timestamp DESC
             """,
