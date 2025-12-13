@@ -34,4 +34,4 @@ def footballers_to_update(limit: int = 20, time_threshold: int = 30*60):
 
     footballer_ids = cursor.fetchall()
 
-    return {"status": "success", "footballer_ids": [fid[0] for fid in footballer_ids]}
+    return {"status": "success", "footballer_ids": [fid[0] for fid in footballer_ids], "columns": ["id"]}

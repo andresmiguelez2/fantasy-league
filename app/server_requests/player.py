@@ -32,7 +32,11 @@ def get_player_info(player_id: int):
 
         cursor.close()
         conn.close()
-        return {"status": "success", "player": player}
+        return {
+            "status": "success",
+            "player": player,
+            "columns": ["id", "name", "budget", "points"]
+        }
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "player": None}
@@ -59,7 +63,10 @@ def get_player_lineup(player_id: int):
 
         cursor.close()
         conn.close()
-        return {"status": "success", "lineup": lineup}
+        return {
+            "status": "success",
+            "lineup": lineup,
+        }
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "lineup": None}
@@ -100,7 +107,11 @@ def get_footballers_on_lineup(player_id: int):
         for id, position in footballers_on_lineup:
             lineup[POSITION_ORDER[position]].append(id)
 
-        return {"status": "success", "lineup_footballers": lineup}
+        return {
+            "status": "success",
+            "lineup_footballers": lineup,
+            "columns": ["GK", "DF", "MD", "FW"]
+        }
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "lineup": None}
@@ -136,9 +147,17 @@ def get_footballers_not_on_lineup(player_id: int, target_position: str = None):
             lineup[POSITION_ORDER[position]].append(id)
 
         if not target_position:
-            return {"status": "success", "benched_footballers": lineup}
+            return {
+                "status": "success",
+                "benched_footballers": lineup,
+                "columns": ["GK", "DF", "MD", "FW"]
+            }
         else:
-            return {"status": "success", "benched_footballers": lineup[POSITION_ORDER[target_position]]}
+            return {
+                "status": "success",
+                "benched_footballers": lineup[POSITION_ORDER[target_position]],
+                "columns": [target_position]
+            }
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "lineup": None}
@@ -179,7 +198,11 @@ def get_available_substitutes(player_id: int, position: str):
 
         cursor.close()
         conn.close()
-        return {"status": "success", "substitutes": substitutes}
+        return {
+            "status": "success",
+            "substitutes": substitutes,
+            "columns": ["id", "name", "value", "total_points", "average_points"]
+        }
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "substitutes": []}

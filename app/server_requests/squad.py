@@ -35,7 +35,20 @@ def squad(player_id: int):
         cursor.close()
         conn.close()
 
-        return {"status": "success", "footballers": footballers}
+        return {
+            "status": "success",
+            "footballers": footballers,
+            "columns": [
+                "id",
+                "name",
+                "team",
+                "value",
+                "total_points",
+                "average_points",
+                "on_market",
+                "on_market_since"
+            ]
+        }
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "footballers": []}
@@ -48,6 +61,7 @@ class MarketFootballer(BaseModel):
 
 @router.post("/edit_player")
 def edit_player_status(market_footballer: MarketFootballer):
+    """Place or remove a footballer from the market."""
     try:
         conn = pg_connect()
         cursor = conn.cursor()

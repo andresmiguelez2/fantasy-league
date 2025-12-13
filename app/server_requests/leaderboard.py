@@ -37,7 +37,7 @@ def leaderboard():
 
         cursor.close()
         conn.close()
-        return {"status": "success", "leaderboard": players}
+        return {"status": "success", "leaderboard": players, "columns": ["id", "name", "points", "team_value"]}
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "leaderboard": []}
