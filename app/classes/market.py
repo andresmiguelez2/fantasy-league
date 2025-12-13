@@ -87,7 +87,10 @@ class Market:
         if footballers_to_remove:
             cursor.execute(
                 """
-                DELETE FROM public.footballer
+                UPDATE footballer
+                SET
+                    on_market = FALSE,
+                    on_market_since = NULL
                 WHERE id IN %s
                 """,
                 (tuple([f[0] for f in footballers_to_remove]),)
