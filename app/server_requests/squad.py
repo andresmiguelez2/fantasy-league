@@ -61,6 +61,7 @@ class MarketFootballer(BaseModel):
 
 @router.post("/edit_player")
 def edit_player_status(market_footballer: MarketFootballer):
+    """Place or remove a footballer from the market."""
     try:
         conn = pg_connect()
         cursor = conn.cursor()
