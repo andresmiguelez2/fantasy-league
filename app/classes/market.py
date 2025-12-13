@@ -214,7 +214,7 @@ class Market:
                 self._has_been_closed = False# Rollback the local state change if database update failed
 
     def _place_bid_on_footballers(self, cursor):
-        """Place bids on all footballers owned by someone on the market by the league."""
+        """Place bids on all footballers owned by someone on the marke, by the league."""
         cursor.execute(
             """
             SELECT
@@ -227,6 +227,13 @@ class Market:
             """
         )
         footballers_on_market = cursor.fetchall()
+
+        cursor.execute(
+            """
+            DELETE FROM BID
+            WHERE bidder_id IS NULL
+            """
+        )
 
         for id, value in footballers_on_market:
             bid_amount = Market.get_random_bid(value)
