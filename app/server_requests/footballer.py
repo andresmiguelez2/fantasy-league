@@ -116,7 +116,7 @@ def squad(footballer_id: int):
         cursor.close()
         conn.close()
 
-        return {"status": "success", "name": name}
+        return {"status": "success", "name": name, "columns": ["name"]}
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "footballers": []}
@@ -193,7 +193,17 @@ def get_all_footballers(limit: int = 20, offset: int = 0, page: int | None = Non
                 "limit": limit,
                 "offset": offset,
                 "page": page if page is not None else None
-            }
+            },
+            "columns": [
+                "id",
+                "name",
+                "value",
+                "owner_name",
+                "on_market_since",
+                "bid_amount",
+                "average_points",
+                "total_points"
+            ]
         }
     except Exception as e:
         logger.error(f"Error retrieving footballer info: {e}")

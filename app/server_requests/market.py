@@ -27,7 +27,18 @@ def market():
 
         cursor.close()
         conn.close()
-        return {"status": "success", "footballers": footballers}
+        return {
+            "status": "success",
+            "footballers": footballers,
+            "columns": [
+                "id",
+                "url_name",
+                "on_market",
+                "on_market_since",
+                "owner_id",
+                "on_lineup",
+            ]
+        }
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "footballers": []}
@@ -73,7 +84,20 @@ def player_market(player_id: int):
 
         cursor.close()
         conn.close()
-        return {"status": "success", "footballers": footballers}
+        return {
+            "status": "success",
+            "footballers": footballers,
+            "columns": [
+                "id",
+                "name",
+                "value",
+                "owner_name",
+                "on_market_since",
+                "bid_amount",
+                "average_points",
+                "total_points"
+            ]
+        }
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "footballers": []}
