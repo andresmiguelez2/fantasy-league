@@ -12,6 +12,8 @@ interface BidReplyDialogProps {
   onOpenChange: (open: boolean) => void;
   footballerName: string;
   bidAmount: number;
+  onAccept: () => void;
+  onDecline: () => void;
 }
 
 export const BidReplyDialog = ({
@@ -19,6 +21,8 @@ export const BidReplyDialog = ({
   onOpenChange,
   footballerName,
   bidAmount,
+  onAccept,
+  onDecline,
 }: BidReplyDialogProps) => {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -48,15 +52,14 @@ export const BidReplyDialog = ({
         <DialogFooter className="flex gap-2 sm:gap-0">
           <Button
             variant="destructive"
-            onClick={() => onOpenChange(false)}
+            onClick={onDecline}
             className="flex-1 sm:flex-none"
           >
             Decline
           </Button>
           <Button
-            variant="default"
-            onClick={() => onOpenChange(false)}
-            className="flex-1 sm:flex-none"
+            onClick={onAccept}
+            className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white"
           >
             Accept
           </Button>

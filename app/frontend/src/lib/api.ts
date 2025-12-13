@@ -296,3 +296,12 @@ export const fetchIncomingBids = async (playerId: string): Promise<IncomingBid[]
     amount: bid[5],
   }));
 };
+
+export const replyToBid = async (bidId: number, accept: boolean): Promise<boolean> => {
+  const response = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/market/reply_to_bid/${bidId}?accept=${accept}`,
+    { method: 'POST' }
+  );
+  const data = await response.json();
+  return data.status === "success";
+};

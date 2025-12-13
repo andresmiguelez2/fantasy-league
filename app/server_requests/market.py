@@ -206,21 +206,23 @@ def reply_to_bid(bid_id: int, accept: bool):
                 """
                 UPDATE footballer
                 SET owner_id = %s, on_market = FALSE, on_market_since = NULL
-                WHERE id = %s
+                WHERE id = %s;
+                DELETE FROM bid
+                WHERE footballer_id = %s
             """,
-            (bidder_id, footballer_id)
+            (bidder_id, footballer_id, footballer_id)
         )
             logger.info(f"Bid accepted: Footballer {footballer_id} sold to Player {bidder_id} for {amount}")
         else:
             logger.info(f"Bid rejected: Footballer {footballer_id} bid from Player {bidder_id} for {amount} rejected")
 
-        cursor.execute(
-            """
-            DELETE FROM bid
-            WHERE id = %s
-            """,
-            (bid_id,)
-        )
+            cursor.execute(
+                """
+                DELETE FROM bid
+                WHERE id = %s
+                """,
+                (bid_id,)
+            )
 
         conn.commit()
         cursor.close()
