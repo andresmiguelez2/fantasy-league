@@ -4,6 +4,7 @@ import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
 import { PlayerInfoRibbon } from "@/components/PlayerInfoRibbon";
 import { BidReplyDialog } from "@/components/BidReplyDialog";
+import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
 import { fetchIncomingBids, replyToBid, IncomingBid } from "@/lib/api";
 import {
   Table,
@@ -21,6 +22,7 @@ import { toast } from "sonner";
 const IncomingBids = () => {
   const [selectedBid, setSelectedBid] = useState<IncomingBid | null>(null);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
+  const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
   const { data: bids = [], isLoading } = useQuery({
@@ -42,9 +44,14 @@ const IncomingBids = () => {
     }).format(value);
   };
 
-  const handleReplyClick = (bid: IncomingBid) => {
+  const handleReplyClick = (e: React.MouseEvent, bid: IncomingBid) => {
+    e.stopPropagation();
     setSelectedBid(bid);
     setReplyDialogOpen(true);
+  };
+
+  const handleRowClick = (footballerId: number) => {
+    setSelectedFootballerId(footballerId);
   };
 
   const handleBidReply = async (accept: boolean) => {
@@ -84,7 +91,11 @@ const IncomingBids = () => {
               </TableHeader>
               <TableBody>
                 {bids.map((bid) => (
-                  <TableRow key={bid.bidId}>
+                  <TableRow 
+                    key={bid.bidId}
+                    className="cursor-pointer"
+                    onClick={() => handleRowClick(bid.footballerId)}
+                  >
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <img
@@ -108,7 +119,7 @@ const IncomingBids = () => {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleReplyClick(bid)}
+                        onClick={(e) => handleReplyClick(e, bid)}
                       >
                         <MessageSquareReply className="h-4 w-4" />
                       </Button>
@@ -131,6 +142,14 @@ const IncomingBids = () => {
           bidAmount={selectedBid.amount}
           onAccept={() => handleBidReply(true)}
           onDecline={() => handleBidReply(false)}
+        />
+      )}
+
+      {selectedFootballerId && (
+        <FootballerInfoDialog
+          footballerId={selectedFootballerId}
+          open={!!selectedFootballerId}
+          onOpenChange={(open) => !open && setSelectedFootballerId(null)}
         />
       )}
     </div>

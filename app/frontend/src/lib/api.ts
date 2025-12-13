@@ -305,3 +305,40 @@ export const replyToBid = async (bidId: number, accept: boolean): Promise<boolea
   const data = await response.json();
   return data.status === "success";
 };
+
+export interface OutgoingBid {
+  bidId: number;
+  timestamp: string;
+  footballerId: number;
+  ownerId: number | null;
+  footballerName: string;
+  amount: number;
+}
+
+export const fetchOutgoingBids = async (playerId: string): Promise<OutgoingBid[]> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/outgoing_bids/${playerId}`);
+  const data = await response.json();
+  
+  return data.bids.map((bid: any[]) => ({
+    bidId: bid[0],
+    timestamp: bid[1],
+    footballerId: bid[2],
+    ownerId: bid[3],
+    footballerName: bid[4],
+    amount: bid[5],
+  }));
+};
+
+export const submitBid = async (footballerId: number, playerId: string, amount: number): Promise<boolean> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/bid`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      footballer_id: footballerId,
+      player_id: playerId,
+      bid_amount: amount,
+    }),
+  });
+  const data = await response.json();
+  return data.status === "success";
+};
