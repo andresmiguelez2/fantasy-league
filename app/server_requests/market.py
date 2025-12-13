@@ -205,3 +205,79 @@ def reply_to_bid(bid_id: int, accept: bool):
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "message": str(e)}
+
+
+@router.get("/incoming_bids/{player_id}")
+def get_player_incoming_bids(player_id: int):
+    """Get all incoming bids for a player's footballers.
+    
+    Args:
+        player_id (int): The ID of the player to get incoming bids for.
+    """
+    try:
+        conn = pg_connect()
+
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT
+                b.id AS bid_id
+                , b.timestamp
+                , f.id AS footballer_id
+                , b.bidder_id
+                , fd.name
+                , b.amount
+            FROM bid AS b
+                LEFT JOIN footballer AS f ON b.footballer_id = f.id
+                LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
+            WHERE f.owner_id = %s
+            ORDER BY b.timestamp DESC
+            """,
+            (player_id,)
+        )
+        bids = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+        return {"status": "success", "bids": bids, "columns": ["bid_id", "timestamp", "footballer_id", "bidder_id", "footballer_name", "amount"]}
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return {"status": "error", "bids": []}
+    
+
+@router.get("/outgoing_bids/{player_id}")
+def get_player_outgoing_bids(player_id: int):
+    """Get all outgoing bids made by a player.
+    
+    Args:
+        player_id (int): The ID of the player to get outgoing bids for.
+    """
+    try:
+        conn = pg_connect()
+
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT
+                b.id AS bid_id
+                , b.timestamp
+                , f.id AS footballer_id
+                , f.owner_id
+                , fd.name
+                , b.amount
+            FROM bid AS b
+                LEFT JOIN footballer AS f ON b.footballer_id = f.id
+                LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
+            WHERE b.bidder_id = %s
+            ORDER BY b.timestamp DESC
+            """,
+            (player_id,)
+        )
+        bids = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+        return {"status": "success", "bids": bids, "columns": ["bid_id", "timestamp", "footballer_id", "owner_id", "footballer_name", "amount"]}
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return {"status": "error", "bids": []}
