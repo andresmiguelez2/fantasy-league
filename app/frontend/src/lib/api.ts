@@ -273,3 +273,26 @@ export const setLineup = async (playerId: string, footballerId: number, onLineup
   const data = await response.json();
   return data.status === "success";
 };
+
+export interface IncomingBid {
+  bidId: number;
+  timestamp: string;
+  footballerId: number;
+  bidderId: number;
+  footballerName: string;
+  amount: number;
+}
+
+export const fetchIncomingBids = async (playerId: string): Promise<IncomingBid[]> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/incoming_bids/${playerId}`);
+  const data = await response.json();
+  
+  return data.bids.map((bid: any[]) => ({
+    bidId: bid[0],
+    timestamp: bid[1],
+    footballerId: bid[2],
+    bidderId: bid[3],
+    footballerName: bid[4],
+    amount: bid[5],
+  }));
+};
