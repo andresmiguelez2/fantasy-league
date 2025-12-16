@@ -120,7 +120,31 @@ def squad(footballer_id: int):
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "footballers": []}
-    
+
+
+@router.get("/fixture_detail/{footballer_id}")
+def get_fixture_detail(footballer_id: int, fixture: int):
+    try:
+        client = mongo_client()
+        db = client["FantasyMDB"]
+
+        document = db.footballer.find_one({"id": footballer_id})
+        client.close()
+
+        if document is None:
+            return {"status": "error", "message": "Footballer not found."}
+        
+        return {
+            "status": "success",
+            "fixture_detail": next(
+                (item for item in document['fixture_breakdown'] if item['fixture'] == fixture),
+                {}
+            )
+        }
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return {"status": "error", "message": str(e)}
+
 
 @router.get("s")
 def get_all_footballers(limit: int = 20, offset: int = 0, page: int | None = None, sort: str = 'name', invert: str = "false", search: str = ""):
