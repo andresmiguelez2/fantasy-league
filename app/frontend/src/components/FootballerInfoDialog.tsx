@@ -148,7 +148,7 @@ export const FootballerInfoDialog = ({
 
         {/* Fixture Breakdown Bar Chart */}
         <Card className="p-6 mb-6">
-          <h3 className="text-lg font-semibold mb-4">Points by Fixture {selectedFixture && <span className="text-muted-foreground text-sm">(Selected: {selectedFixture})</span>}</h3>
+          <h3 className="text-lg font-semibold mb-4">Points by Fixture {selectedFixture && <span className="text-muted-foreground text-sm"></span>}</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={sortedFixtures} onClick={handleBarClick}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -195,6 +195,13 @@ export const FootballerInfoDialog = ({
                     <TableCell className="text-center text-primary font-semibold">{(data as { value: number | null; points: number }).points}</TableCell>
                   </TableRow>
                 ))}
+                <TableRow className="bg-green-600/10 border-t-2 border-green-600">
+                  <TableCell className="font-bold">Total</TableCell>
+                  <TableCell className="text-center">-</TableCell>
+                  <TableCell className="text-center text-green-600 font-bold text-lg">
+                    {Object.values(fixtureDetail.breakdown).reduce((sum, data) => sum + (data as { value: number | null; points: number }).points, 0)}
+                  </TableCell>
+                </TableRow>
               </TableBody>
             </Table>
           </Card>
