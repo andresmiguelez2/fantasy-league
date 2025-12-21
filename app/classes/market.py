@@ -4,9 +4,8 @@ import logging
 import psycopg2
 import random
 
-from aux.constants import N_NEW_FOOTBALLERS_INTO_MARKET, RELEASE_CLAUSE_DAYS
+from aux.constants import N_NEW_FOOTBALLERS_INTO_MARKET
 from pymongo import MongoClient
-from classes.footballer import Footballer
 
 
 # Create logger for this module
