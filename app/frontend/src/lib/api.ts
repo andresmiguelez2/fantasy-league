@@ -173,10 +173,21 @@ export interface FootballerInfo {
   fixture_breakdown: { fixture: number; points: number }[];
 }
 
+export interface FixtureDetail {
+  fixture: number;
+  breakdown: Record<string, { value: number | null; points: number }>;
+}
+
 export const fetchFootballerInfo = async (footballerId: number): Promise<FootballerInfo> => {
   const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/footballer/${footballerId}`);
   const data = await response.json();
   return data.footballer_info;
+};
+
+export const fetchFixtureDetail = async (footballerId: number, fixture: number): Promise<FixtureDetail> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/footballer/fixture_detail/${footballerId}?fixture=${fixture}`);
+  const data = await response.json();
+  return data.fixture_detail;
 };
 
 export const fetchAllFootballers = async (
