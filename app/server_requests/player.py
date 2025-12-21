@@ -115,6 +115,71 @@ def get_footballers_on_lineup(player_id: int):
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "lineup": None}
+    
+
+@router.get('/fixture_lineup/{player_id}')
+def get_fixture_lineup(player_id: int, fixture_n: int):
+    """
+    Get the footballers on the player's lineup for a specific fixture
+
+    Args:
+        player_id (int): The player ID
+        fixture_id (int): The fixture number
+    
+    API Returns:
+        list[list[int]]: A list of lists containing the footballer IDs on the lineup. Includes GK, DF, MD, FW
+        list[int]: The formation lineup
+    """
+    try:
+        conn = pg_connect()
+
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT
+                fx.footballer_id
+                , fd.position
+            FROM (
+                SELECT
+                    footballer_id
+                FROM fixture_details
+                CROSS JOIN LATERAL unnest(footballers_on_lineup) AS footballer_id
+                WHERE
+                    fixture_n = %s
+                    AND player_id = %s
+            ) AS fx LEFT JOIN footballer_data AS fd ON fx.footballer_id = fd.id
+            ORDER BY position, fx.footballer_id
+            """,
+            (fixture_n, player_id),
+        )
+        footballers_on_lineup = cursor.fetchall()
+
+        cursor.execute(
+            """
+            SELECT lineup
+            FROM fixture_details
+            WHERE fixture_n = %s AND player_id = %s
+            """,
+            (fixture_n, player_id),
+        )
+        formation = cursor.fetchone()[0]
+
+        cursor.close()
+        conn.close()
+
+        lineup = [[], [], [], []]
+        for id, position in footballers_on_lineup:
+            lineup[POSITION_ORDER[position]].append(id)
+
+        return {
+            "status": "success",
+            "lineup_footballers": lineup,
+            "lineup": formation,
+            "columns": ["GK", "DF", "MD", "FW"]
+        }
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return {"status": "error", "lineup": None}
 
 
 @router.get('/benched_footballers/{player_id}')
