@@ -5,6 +5,7 @@ from aux.constants import LOOP_TIME_SECONDS, SLEEP_TIME, LOOP_TIME_BUFFER, N_REQ
 from server_requests.server_requests import server_app
 from server_requests.footballer import update_footballer_info
 from server_requests.general import footballers_to_update
+from classes.fixture import get_current_fixture
 
 
 logging.basicConfig(
@@ -49,6 +50,7 @@ if __name__ == "__main__":
                 active_market.fulfill_market()
 
             active_market = load_market()
+            active_fixture = get_current_fixture()
             if not active_market:
                 active_market = load_last_market()
                 active_market.fulfill_market()

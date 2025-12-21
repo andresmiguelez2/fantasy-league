@@ -63,6 +63,12 @@ class Fixture:
     
 
 def get_current_fixture():
+    """
+    Retrieve the current open fixture from the database.
+    
+    Returns:
+        Fixture: The current open fixture object, or None if no open fixture is found.
+    """
     conn = pg_connect()
     cursor = conn.cursor()
 
@@ -92,7 +98,10 @@ def get_current_fixture():
             logger.warning(f"Dangling fixture detected: Fixture {n} has been open for {time_open}")
             continue
 
-        return Fixture(n=n, start_dt=start_ts, finished=False, dangling=False)
+        fixture = Fixture(n=n, start_dt=start_ts, finished=False, dangling=False)
+        logger.info(f"Current fixture found: {fixture}")
+
+        return fixture
     else:
         logger.info("No open fixture found.")
         return None
