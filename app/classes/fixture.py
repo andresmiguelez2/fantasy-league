@@ -3,7 +3,7 @@ import logging
 from aux.database import pg_connect
 from aux.constants import DANGLING_FIXTURE_THRESHOLD
 from server_requests.leaderboard import leaderboard
-from server_requests.player import get_footballers_on_lineup
+from server_requests.player import get_footballers_on_lineup, get_player_lineup
 
 
 logger = logging.getLogger(__name__)
@@ -75,16 +75,17 @@ class Fixture:
         players = [row_[0] for row_ in leaderboard()["leaderboard"]]
 
         for player_id in players:
-            lineup = [element for sublist in get_footballers_on_lineup(player_id)['lineup_footballers'] for element in sublist]
+            footballers_on_lineup = [element for sublist in get_footballers_on_lineup(player_id)['lineup_footballers'] for element in sublist]
+            lineup = get_player_lineup(player_id)['lineup']
 
             conn = pg_connect()
             cursor = conn.cursor()
             cursor.execute(
                 """
-                INSERT INTO fixture_details (fixture_n, player_id, lineup)
-                VALUES (%s, %s, %s)
+                INSERT INTO fixture_details (fixture_n, player_id, footballers_on_lineup, lineup)
+                VALUES (%s, %s, %s, %s)
                 """,
-                (self.n, player_id, lineup),
+                (self.n, player_id, footballers_on_lineup, lineup),
             )
             conn.commit()
             cursor.close()
