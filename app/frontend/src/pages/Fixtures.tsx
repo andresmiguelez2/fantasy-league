@@ -138,7 +138,7 @@ const Fixtures = () => {
                 onClick={() => setSelectedFixture(fixture)}
                 className="min-w-[4rem]"
               >
-                {fixture}
+                {`J ${fixture}`}
               </Button>
             ))}
           </div>
