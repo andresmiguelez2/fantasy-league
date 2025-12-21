@@ -170,7 +170,7 @@ const handleFootballerClick = (rowIndex: number, footballerId?: number) => {
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Lineup</h1>
+          <h1 className="text-3xl font-bold"></h1>
           {!loading && formation.length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
