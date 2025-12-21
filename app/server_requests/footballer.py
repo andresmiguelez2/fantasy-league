@@ -98,7 +98,7 @@ def get_footballer_info(footballer_id: int):
     
 
 @router.get("/short_name/{footballer_id}")
-def squad(footballer_id: int):
+def get_short_name(footballer_id: int):
     """Get the footballer's short name."""
     try:
         conn = pg_connect()
@@ -140,6 +140,34 @@ def get_fixture_detail(footballer_id: int, fixture: int):
                 (item for item in document['fixture_breakdown'] if item['fixture'] == fixture),
                 {}
             )
+        }
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+@router.get("/fixture_points/{footballer_id}")
+def get_fixture_points(footballer_id: int, fixture: int):
+    try:
+        client = mongo_client()
+        db = client["FantasyMDB"]
+
+        document = db.footballer.find_one({"id": footballer_id})
+        client.close()
+
+        if document is None:
+            return {"status": "error", "message": "Footballer not found."}
+
+        for fixture_dict in extract_fixture_points(document.get('fixture_breakdown', {})):
+            if fixture_dict['fixture'] == fixture:
+                points = fixture_dict.get('points', 0)
+                break
+        else:
+            points = 0
+        
+        return {
+            "status": "success",
+            "points": points,
         }
     except Exception as e:
         logger.error(f"Error: {e}")
