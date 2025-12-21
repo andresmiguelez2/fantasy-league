@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
-import { fetchFootballerShortName, fetchOpenedFixtures, fetchFixtureLineup } from "@/lib/api";
+import { fetchFootballerShortName, fetchOpenedFixtures, fetchFixtureLineup, fetchFootballerFixturePoints } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -15,6 +15,7 @@ const Fixtures = () => {
   const [formation, setFormation] = useState<number[]>([]);
   const [lineupFootballers, setLineupFootballers] = useState<number[][]>([]);
   const [footballerNames, setFootballerNames] = useState<Record<number, string>>({});
+  const [footballerPoints, setFootballerPoints] = useState<Record<number, number | null>>({});
   const [loading, setLoading] = useState(true);
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -51,17 +52,31 @@ const Fixtures = () => {
         setFormation(lineup);
         setLineupFootballers(footballersData);
 
-        // Fetch short names for all footballers
+        // Fetch short names and points for all footballers
         const allFootballerIds = footballersData.flat().filter(id => id !== undefined);
         const namePromises = allFootballerIds.map(id => 
           fetchFootballerShortName(id).then(name => ({ id, name }))
         );
-        const names = await Promise.all(namePromises);
+        const pointsPromises = allFootballerIds.map(id => 
+          fetchFootballerFixturePoints(id, selectedFixture).then(points => ({ id, points }))
+        );
+        
+        const [names, points] = await Promise.all([
+          Promise.all(namePromises),
+          Promise.all(pointsPromises)
+        ]);
+        
         const namesMap = names.reduce((acc, { id, name }) => {
           acc[id] = name;
           return acc;
         }, {} as Record<number, string>);
+        const pointsMap = points.reduce((acc, { id, points }) => {
+          acc[id] = points;
+          return acc;
+        }, {} as Record<number, number | null>);
+        
         setFootballerNames(namesMap);
+        setFootballerPoints(pointsMap);
       } catch (error) {
         console.error("Error fetching fixture lineup:", error);
         setFormation([]);
@@ -90,6 +105,7 @@ const Fixtures = () => {
           const footballerId = footballersInRow[index];
           const hasFootballer = footballerId !== undefined;
           const shortName = hasFootballer ? footballerNames[footballerId] : null;
+          const points = hasFootballer ? footballerPoints[footballerId] : null;
           
           return (
             <div
@@ -97,15 +113,26 @@ const Fixtures = () => {
               className="flex flex-col items-center gap-1"
             >
               <div
-                className={`w-32 h-36 bg-card border-2 border-primary rounded-lg flex items-center justify-center transition-colors shadow-lg overflow-hidden ${hasFootballer ? 'hover:bg-primary/10 cursor-pointer' : ''}`}
+                className={`relative w-32 h-36 bg-card border-2 border-primary rounded-lg flex items-center justify-center transition-colors shadow-lg overflow-hidden ${hasFootballer ? 'hover:bg-primary/10 cursor-pointer' : ''}`}
                 onClick={() => handleFootballerClick(footballerId)}
               >
                 {hasFootballer ? (
-                  <img
-                    src={`${API_ENDPOINT}/footballer/image/${footballerId}`}
-                    alt="Footballer"
-                    className="w-full h-full object-cover"
-                  />
+                  <>
+                    <img
+                      src={`${API_ENDPOINT}/footballer/image/${footballerId}`}
+                      alt="Footballer"
+                      className="w-full h-full object-cover"
+                    />
+                    {/* Points badge - diagonal corner */}
+                    {points !== null && (
+                      <div className="absolute top-0 right-0 w-12 h-12 overflow-hidden">
+                        <div className="absolute top-0 right-0 w-16 h-16 bg-primary transform rotate-45 translate-x-6 -translate-y-6" />
+                        <span className="absolute top-1.5 right-1.5 text-primary-foreground font-bold text-sm">
+                          {points}
+                        </span>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <span className="text-sm text-muted-foreground font-medium">Empty</span>
                 )}
@@ -138,7 +165,7 @@ const Fixtures = () => {
                 onClick={() => setSelectedFixture(fixture)}
                 className="min-w-[4rem]"
               >
-                {`J ${fixture}`}
+                {fixture}
               </Button>
             ))}
           </div>

@@ -205,6 +205,12 @@ export const fetchFixtureLineup = async (playerId: string, fixtureN: number): Pr
   };
 };
 
+export const fetchFootballerFixturePoints = async (footballerId: number, fixture: number): Promise<number | null> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/footballer/fixture_points/${footballerId}?fixture=${fixture}`);
+  const data = await response.json();
+  return data.points ?? null;
+};
+
 export const fetchAllFootballers = async (
   page: number = 1,
   limit: number = 25,

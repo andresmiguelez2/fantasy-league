@@ -59,26 +59,10 @@ export const FootballerInfoDialog = ({
   useEffect(() => {
     if (selectedFixture !== null && footballerId) {
       fetchFixtureDetail(footballerId, selectedFixture)
-        .then((detail) => {
-          const hasBreakdown = !!detail && !!detail.breakdown && Object.keys(detail.breakdown).length > 0;
-          if (hasBreakdown) {
-            setFixtureDetail(detail);
-            return;
-          }
-
-          // No data for selected fixture -> fallback to normal behaviour (latest fixture)
-          if (info && info.fixture_breakdown.length > 0) {
-            const latest = Math.max(...info.fixture_breakdown.map((f) => f.fixture));
-            if (selectedFixture !== latest) {
-              setSelectedFixture(latest);
-            }
-          }
-          // Avoid showing empty table
-          setFixtureDetail(null);
-        })
+        .then(setFixtureDetail)
         .catch(console.error);
     }
-  }, [selectedFixture, footballerId, info]);
+  }, [selectedFixture, footballerId]);
 
   const formatValue = (val: number) => {
     return new Intl.NumberFormat('en-ES', {
