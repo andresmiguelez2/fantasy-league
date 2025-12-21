@@ -15,6 +15,7 @@ interface FootballerInfoDialogProps {
   onOpenChange: (open: boolean) => void;
   footballerId: number;
   footballerName?: string;
+  defaultFixture?: number | null;
 }
 
 export const FootballerInfoDialog = ({
@@ -22,6 +23,7 @@ export const FootballerInfoDialog = ({
   onOpenChange,
   footballerId,
   footballerName,
+  defaultFixture,
 }: FootballerInfoDialogProps) => {
   const [info, setInfo] = useState<FootballerInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,22 +43,42 @@ export const FootballerInfoDialog = ({
     }
   }, [open, footballerId]);
 
-  // Set default fixture to latest when info loads
+  // Set default fixture to provided value or latest when info loads
   useEffect(() => {
     if (info && info.fixture_breakdown.length > 0) {
-      const latestFixture = Math.max(...info.fixture_breakdown.map(f => f.fixture));
-      setSelectedFixture(latestFixture);
+      if (defaultFixture !== undefined && defaultFixture !== null) {
+        setSelectedFixture(defaultFixture);
+      } else {
+        const latestFixture = Math.max(...info.fixture_breakdown.map(f => f.fixture));
+        setSelectedFixture(latestFixture);
+      }
     }
-  }, [info]);
+  }, [info, defaultFixture]);
 
   // Fetch fixture detail when selected fixture changes
   useEffect(() => {
     if (selectedFixture !== null && footballerId) {
       fetchFixtureDetail(footballerId, selectedFixture)
-        .then(setFixtureDetail)
+        .then((detail) => {
+          const hasBreakdown = !!detail && !!detail.breakdown && Object.keys(detail.breakdown).length > 0;
+          if (hasBreakdown) {
+            setFixtureDetail(detail);
+            return;
+          }
+
+          // No data for selected fixture -> fallback to normal behaviour (latest fixture)
+          if (info && info.fixture_breakdown.length > 0) {
+            const latest = Math.max(...info.fixture_breakdown.map((f) => f.fixture));
+            if (selectedFixture !== latest) {
+              setSelectedFixture(latest);
+            }
+          }
+          // Avoid showing empty table
+          setFixtureDetail(null);
+        })
         .catch(console.error);
     }
-  }, [selectedFixture, footballerId]);
+  }, [selectedFixture, footballerId, info]);
 
   const formatValue = (val: number) => {
     return new Intl.NumberFormat('en-ES', {

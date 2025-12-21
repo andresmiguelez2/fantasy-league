@@ -197,6 +197,7 @@ const Fixtures = () => {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         footballerId={selectedFootballerId}
+        defaultFixture={selectedFixture}
       />
     </div>
   );
