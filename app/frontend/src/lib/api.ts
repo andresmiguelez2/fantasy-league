@@ -190,6 +190,21 @@ export const fetchFixtureDetail = async (footballerId: number, fixture: number):
   return data.fixture_detail;
 };
 
+export const fetchOpenedFixtures = async (): Promise<number[]> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/general/opened_fixtures`);
+  const data = await response.json();
+  return data.opened_fixtures;
+};
+
+export const fetchFixtureLineup = async (playerId: string, fixtureN: number): Promise<{ lineup: number[]; lineupFootballers: number[][] }> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/player/fixture_lineup/${playerId}?fixture_n=${fixtureN}`);
+  const data = await response.json();
+  return {
+    lineup: data.lineup,
+    lineupFootballers: data.lineup_footballers
+  };
+};
+
 export const fetchAllFootballers = async (
   page: number = 1,
   limit: number = 25,
