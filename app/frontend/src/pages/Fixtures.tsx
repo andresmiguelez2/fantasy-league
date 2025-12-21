@@ -126,8 +126,12 @@ const Fixtures = () => {
                     {/* Points badge - diagonal corner */}
                     {points !== null && (
                       <div className="absolute top-0 right-0 w-12 h-12 overflow-hidden">
-                        <div className="absolute top-0 right-0 w-16 h-16 bg-primary transform rotate-45 translate-x-6 -translate-y-6" />
-                        <span className="absolute top-1.5 right-1.5 text-primary-foreground font-bold text-sm">
+                        <div
+                          className={`absolute top-0 right-0 w-16 h-16 transform rotate-45 translate-x-6 -translate-y-6 ${points < 0 ? 'bg-red-600' : 'bg-green-600/60'}`}
+                        />
+                        <span
+                          className={`absolute top-1.5 right-1.5 font-extrabold text-xl leading-none ${points < 0 ? 'text-red-50' : 'text-green-50'}`}
+                        >
                           {points}
                         </span>
                       </div>
@@ -165,7 +169,7 @@ const Fixtures = () => {
                 onClick={() => setSelectedFixture(fixture)}
                 className="min-w-[4rem]"
               >
-                {fixture}
+                {`J ${fixture}`}
               </Button>
             ))}
           </div>
