@@ -1,9 +1,10 @@
 from datetime import datetime
 import logging
 from aux.database import pg_connect
-from aux.constants import DANGLING_FIXTURE_THRESHOLD
+from aux.constants import DANGLING_FIXTURE_THRESHOLD, FANTASY_FIXTURE_URL
 from server_requests.leaderboard import leaderboard
 from server_requests.player import get_footballers_on_lineup, get_player_lineup
+from scraper import scrape_page
 
 
 logger = logging.getLogger(__name__)
@@ -167,3 +168,53 @@ def get_current_fixture():
     else:
         logger.info("No open fixture found.")
         return None
+    
+
+def ckeck_all_matches_finished(fixture_n: int) -> bool:
+    """Check if all matches in a fixture have finished.
+    
+    Args:
+        fixture_n (int): The fixture number.
+        
+    Returns:
+        bool: True if all matches have finished, False otherwise.
+    """
+    match_urls = get_fixture_matches(fixture_n)
+    
+    if len(match_urls) != 10:
+        logger.warning(f"Expected 10 match URLs for fixture {fixture_n}, but found {len(match_urls)}.")
+        return False
+    
+    for url in match_urls:
+        soup = scrape_page(url, logger)
+        if "El árbitro pita el final del partido" not in soup.get_text():
+            return False
+    
+    return True
+
+
+def get_fixture_matches(fixture_n: int) -> list[str]:
+    """Get match URLs for a given fixture number.
+    
+    Args:
+        fixture_n (int): The fixture number.
+
+    Returns:
+        list: List of match URLs for the fixture.
+    """
+    fixture_url = FANTASY_FIXTURE_URL + str(fixture_n)
+
+    soup = scrape_page(fixture_url, logger)
+    
+    fixture_matches_url = soup.find_all('a', href=True)
+    
+    # Filter links that start with the specified URL pattern
+    match_urls = []
+    for link in fixture_matches_url:
+        href = link['href']
+        if href.startswith("https://www.futbolfantasy.com/partidos/"):
+            match_urls.append(href)
+            if len(match_urls) == 10:
+                break
+    
+    return match_urls
