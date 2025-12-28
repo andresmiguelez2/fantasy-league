@@ -4,11 +4,7 @@ LOOP_TIME_BUFFER = 2
 N_REQUEST_BUFFER = 2 # número de peticiones API a saltar
 SLEEP_TIME = 0.001 # Sleep time in seconds
 UPDATE_DB_INTERVAL = 1800  # in seconds (30 minutes)
-
-
-### Market ####
-N_NEW_FOOTBALLERS_INTO_MARKET = 5 # number of new players to be added into new market
-RELEASE_CLAUSE_DAYS = 14 # number of days until a footballer can be released again after being bought
+HANDLE_DANGLING_FIXTURES_INTERVAL = 50 # dangling features will be handled every number of iterations
 
 
 ### Client app ###
@@ -71,3 +67,9 @@ FOOTBALLER_POSITIONS = {
 LINEUP_POSITIONS = ['GK', 'DF', 'MD', 'FW']
 POSITION_ORDER = {'GK': 0, 'DF': 1, 'MD': 2, 'FW': 3}
 DANGLING_FIXTURE_THRESHOLD = 5 # days without updates to consider a fixture dangling
+CLOSING_TIME_FIXTURE = 60*4 # minutes to close fixture after it finishes
+
+
+### Market ####
+N_NEW_FOOTBALLERS_INTO_MARKET = 5 # number of new players to be added into new market
+RELEASE_CLAUSE_DAYS = 14 # number of days until a footballer can be released again after being bought

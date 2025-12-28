@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 from aux.database import pg_connect
-from aux.constants import DANGLING_FIXTURE_THRESHOLD, FANTASY_FIXTURE_URL
+from aux.constants import DANGLING_FIXTURE_THRESHOLD, FANTASY_FIXTURE_URL, CLOSING_TIME_FIXTURE
 from server_requests.leaderboard import leaderboard
 from server_requests.player import get_footballers_on_lineup, get_player_lineup
 from scraper import scrape_page
@@ -92,7 +92,6 @@ class Fixture:
             cursor.close()
             conn.close()
 
-
     def open_fixture(self):
         """Open the fixture in the database and fix lineups in time
         """
@@ -114,15 +113,94 @@ class Fixture:
 
         self._fix_lineups()
 
+    def _close_fixture(self):
+        """Close the fixture in the database
+        """
+        logger.info(f"Closing fixture {self.n}.")
 
+        conn = pg_connect()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            UPDATE FIXTURE
+            SET finished = true
+            WHERE id = %s
+            """,
+            (self.id,),
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+    def _set_closing_time(self, time_diff: float = 0) -> None:
+        """Set the closing time of a fixture in the database.
+        
+        Args:
+            time_diff (float): Time difference in minutes to set the closing time.
+        """
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            UPDATE FIXTURE
+            SET end_ts = now() + INTERVAL '%s minutes'
+            WHERE n = %s
+            """,
+            (time_diff, self.n),
+        )
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        logging.info(f"fixture {self.n} will be closed in {time_diff} minutes.")
+
+    def fulfill_fixture(self) -> bool:
+        """Fulfills the fixture. It first checks if it should be closed.
+
+        Returns:
+            bool: True if the fixture was closed, False otherwise.
+        """
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT end_ts
+            FROM FIXTURE
+            WHERE n = %s
+            """,
+            (self.n,),
+        )
+
+        end_ts = cursor.fetchone()[0]
+
+        cursor.close()
+        conn.close()
+
+        if end_ts and end_ts <= datetime.now(tz=timezone.utc):
+            self._close_fixture()
+            closed = True
+        elif end_ts:
+            logging.info(f"fixture {self.n} will be closed at {end_ts}.")
+            closed = False
+        else:
+            self._set_closing_time(time_diff=CLOSING_TIME_FIXTURE)
+            closed = False
+
+        return closed
 
     def __repr__(self):
         return f"Fixture(n={self.n}, start_dt={self.start_dt}, end_dt={self.end_dt}, finished={self.finished})"
     
 
-def get_current_fixture():
+def get_current_fixture(handle_dangling: bool = True) -> Fixture | None:
     """
     Retrieve the current open fixture from the database.
+
+    Args:
+        handle_dangling (bool): Whether to handle dangling fixtures.
     
     Returns:
         Fixture: The current open fixture object, or None if no open fixture is found.
@@ -156,6 +234,10 @@ def get_current_fixture():
     for id, n, start_ts, time_open, opened in open_fixtures:
         if time_open.days >= DANGLING_FIXTURE_THRESHOLD:
             logger.warning(f"Dangling fixture detected: Fixture {n} has been open for {time_open}")
+            if handle_dangling and ckeck_all_matches_finished(n):
+                fixture = Fixture(id=id, n=n, start_dt=start_ts, finished=False, dangling=True)
+                fixture.fulfill_fixture()
+
             continue
 
         fixture = Fixture(id=id, n=n, start_dt=start_ts, finished=False, dangling=False)
