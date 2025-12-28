@@ -68,6 +68,7 @@ LINEUP_POSITIONS = ['GK', 'DF', 'MD', 'FW']
 POSITION_ORDER = {'GK': 0, 'DF': 1, 'MD': 2, 'FW': 3}
 DANGLING_FIXTURE_THRESHOLD = 5 # days without updates to consider a fixture dangling
 CLOSING_TIME_FIXTURE = 60*4 # minutes to close fixture after it finishes
+COINS_PER_POINT = 100_000 # money awarded per point scored
 
 
 ### Market ####

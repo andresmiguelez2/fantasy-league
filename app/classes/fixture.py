@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
 import logging
 from aux.database import pg_connect
-from aux.constants import DANGLING_FIXTURE_THRESHOLD, FANTASY_FIXTURE_URL, CLOSING_TIME_FIXTURE
+from aux.constants import DANGLING_FIXTURE_THRESHOLD, FANTASY_FIXTURE_URL, CLOSING_TIME_FIXTURE, COINS_PER_POINT
+from server_requests.footballer import get_fixture_points
 from server_requests.leaderboard import leaderboard
 from server_requests.player import get_footballers_on_lineup, get_player_lineup
 from scraper import scrape_page
@@ -154,7 +155,63 @@ class Fixture:
         cursor.close()
         conn.close()
 
-        logging.info(f"fixture {self.n} will be closed in {time_diff} minutes.")
+        logger.info(f"fixture {self.n} will be closed in {time_diff} minutes.")
+
+    def _assign_fixture_prizes(self):
+        """Assign prizes to players based on their performance in the fixture.
+        """
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT
+                player_id
+                , footballers_on_lineup
+                , valid
+            FROM fixture_details
+            WHERE fixture_n = %s
+            """,
+            (self.n,),
+        )
+
+        valid_players = cursor.fetchall()
+
+        for player_id, footballers_on_lineup, valid in valid_players:
+            fixture_points = 0
+            if valid:
+                for fid in footballers_on_lineup:
+                    points = get_fixture_points(fid, self.n)['points']
+                    fixture_points += points
+                    
+            cursor.execute(
+                """
+                UPDATE fixture_details
+                SET points = %s
+                WHERE 
+                    fixture_n = %s
+                    AND player_id = %s
+                """,
+                (fixture_points, self.n, player_id),
+            )
+            logger.info(f"Player {player_id} scored {fixture_points} points in fixture {self.n}.")
+
+            cursor.execute(
+                """
+                UPDATE player
+                SET 
+                    points = points + %s
+                    , budget = budget + %s
+                WHERE id = %s
+                """,
+                (fixture_points, fixture_points*COINS_PER_POINT, player_id),
+            )
+            logger.info(f"Player {player_id} awarded {fixture_points*COINS_PER_POINT:,.0f} € for fixture {self.n}.")
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
 
     def fulfill_fixture(self) -> bool:
         """Fulfills the fixture. It first checks if it should be closed.
@@ -181,9 +238,10 @@ class Fixture:
 
         if end_ts and end_ts <= datetime.now(tz=timezone.utc):
             self._close_fixture()
+            self._assign_fixture_prizes()
             closed = True
         elif end_ts:
-            logging.info(f"fixture {self.n} will be closed at {end_ts}.")
+            logger.info(f"fixture {self.n} will be closed at {end_ts}.")
             closed = False
         else:
             self._set_closing_time(time_diff=CLOSING_TIME_FIXTURE)
