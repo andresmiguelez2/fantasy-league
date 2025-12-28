@@ -93,7 +93,7 @@ class Fixture:
 
 
     def open_fixture(self):
-        """Open the fixture in the database and fix lineups
+        """Open the fixture in the database and fix lineups in time
         """
         logger.info(f"Opening fixture {self.n}.")
 

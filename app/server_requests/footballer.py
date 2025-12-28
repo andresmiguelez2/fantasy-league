@@ -303,6 +303,7 @@ def update_footballer_info(footballer_id: int):
     try:
         conn = pg_connect()
         cursor = conn.cursor()
+        client = None
 
         cursor.execute(
             """
@@ -325,38 +326,42 @@ def update_footballer_info(footballer_id: int):
         fb.url_name = url_name
         fb.get_player_data()
 
-        cursor.execute(
-            """
-            UPDATE footballer_data
-            SET (last_updated, total_points, average_points, value, availability) = (SELECT NOW(), %s, %s, %s, CAST(%s AS AVAILABILITY_TYPE))
-            WHERE id = %s
-            """,
-            (fb.data['total_points'], fb.data['average_points'], fb.data['market_details'][-1]['value'], fb.availability, footballer_id)
-        )
+        if fb.data['market_details']:
+            cursor.execute(
+                """
+                UPDATE footballer_data
+                SET (last_updated, total_points, average_points, value, availability) = (SELECT NOW(), %s, %s, %s, CAST(%s AS AVAILABILITY_TYPE))
+                WHERE id = %s
+                """,
+                (fb.data['total_points'], fb.data['average_points'], fb.data['market_details'][-1]['value'], fb.availability, footballer_id)
+            )
 
-        client = mongo_client()
-        db = client["FantasyMDB"]
+            client = mongo_client()
+            db = client["FantasyMDB"]
 
-        update_fields = {}
-        if fb.data is not None:
-            if fb.data.get("market_details") is not None:
-                update_fields["market_details"] = fb.data["market_details"]
-            if fb.data.get("fixture_breakdown") is not None:
-                update_fields["fixture_breakdown"] = fb.data["fixture_breakdown"]
-            # if fb.data.get("image_binary") is not None:
-            #     update_fields["image_binary"] = fb.data["image_binary"]
+            update_fields = {}
+            if fb.data is not None:
+                if fb.data.get("market_details") is not None:
+                    update_fields["market_details"] = fb.data["market_details"]
+                if fb.data.get("fixture_breakdown") is not None:
+                    update_fields["fixture_breakdown"] = fb.data["fixture_breakdown"]
+                # if fb.data.get("image_binary") is not None:
+                #     update_fields["image_binary"] = fb.data["image_binary"]
 
-        if update_fields:
-            db.footballer.update_one({"id": footballer_id}, {"$set": update_fields}, upsert=True)
+            if update_fields:
+                db.footballer.update_one({"id": footballer_id}, {"$set": update_fields}, upsert=True)
+        else:
+            logger.warning(f"No market details found for footballer {footballer_id}; skipping update. Consider removing from database")
 
         conn.commit()
         cursor.close()
         conn.close()
-        client.close()
+        if client:
+            client.close()
 
         elapsed_time = time.time() - init_time
 
-        logger.info(f"Updated footballer {footballer_id}. Elapsed time: {elapsed_time:.4f} seconds.")
+        logger.debug(f"Updated footballer {footballer_id}. Elapsed time: {elapsed_time:.4f} seconds.")
         return {"status": "success", "elapsed_time": round(elapsed_time, 4)}
     except Exception as e:
         logger.error(f"Error updating footballer data: {e}")
