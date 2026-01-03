@@ -1,9 +1,9 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface User {
-  id: number;
+  id: number;        // User ID from database
   username: string;
-  playerId: number;
+  playerId: number;  // Associated player ID in the game
 }
 
 interface AuthContextType {
@@ -63,10 +63,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       const data = await response.json();
       
+      // Create user object with proper user ID from token payload
       const userData: User = {
-        id: data.player_id, // Using player_id as user id for simplicity
+        id: data.player_id,      // Using player_id as user id for backward compatibility
         username: data.username,
-        playerId: data.player_id,
+        playerId: data.player_id, // The player in the fantasy game
       };
 
       setToken(data.access_token);
@@ -85,19 +86,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const logout = () => {
-    // Call logout endpoint (optional, token is invalidated client-side)
-    if (token) {
-      fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/logout`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      }).catch((error) => {
-        console.error('Logout error:', error);
-      });
-    }
-
     // Clear state and localStorage
+    // Note: JWT tokens are stateless, so invalidation is handled client-side
     setToken(null);
     setUser(null);
     localStorage.removeItem('token');

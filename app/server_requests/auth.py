@@ -68,31 +68,11 @@ def logout(credentials: HTTPAuthCredentials = Depends(security)):
 
 
 @router.get("/me", response_model=UserInfo)
-def get_current_user(credentials: HTTPAuthCredentials = Depends(security)):
+def get_current_user(current_user: dict = Depends(get_current_user_from_token)):
     """
     Get current authenticated user information
     """
-    token = credentials.credentials
-    payload = verify_token(token)
-    
-    if not payload:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    user_id = int(payload.get("sub"))
-    user = get_user_by_id(user_id)
-    
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    return user
+    return current_user
 
 
 def get_current_user_from_token(credentials: HTTPAuthCredentials = Depends(security)) -> dict:
