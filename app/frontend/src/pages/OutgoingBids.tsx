@@ -18,13 +18,15 @@ import { Button } from "@/components/ui/button";
 import { Edit } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const OutgoingBids = () => {
   const [selectedBid, setSelectedBid] = useState<OutgoingBid | null>(null);
   const [bidDialogOpen, setBidDialogOpen] = useState(false);
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
   const queryClient = useQueryClient();
-  const playerId = localStorage.getItem("playerId") || "1";
+  const { user } = useAuth();
+  const playerId = user?.playerId?.toString() || localStorage.getItem("playerId") || "1";
 
   const { data: bids = [], isLoading } = useQuery({
     queryKey: ["outgoingBids", playerId],
