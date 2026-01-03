@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { fetchPlayerInfo, PlayerInfo } from "@/lib/api";
 import { Card } from "@/components/ui/card";
 import { User, Wallet } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const PlayerInfoRibbon = () => {
   const [playerInfo, setPlayerInfo] = useState<PlayerInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const playerId = '1'; // Hardcoded for now
+  const { user } = useAuth();
+  const playerId = user?.playerId?.toString() || localStorage.getItem("playerId");
 
   useEffect(() => {
     const loadPlayerInfo = async () => {
@@ -28,7 +30,7 @@ export const PlayerInfoRibbon = () => {
     };
 
     loadPlayerInfo();
-  }, []);
+  }, [playerId]);
 
   // Show placeholder while loading
   const displayInfo = loading 

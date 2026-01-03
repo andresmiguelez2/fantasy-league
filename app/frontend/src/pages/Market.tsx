@@ -9,6 +9,7 @@ import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
 import { fetchMarketFootballers, placeBid, MarketFootballer } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useParams } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Sample placeholder data for visualization
 const sampleFootballers: MarketFootballer[] = [
@@ -24,6 +25,7 @@ const sampleFootballers: MarketFootballer[] = [
 
 const Market = () => {
   const { playerId } = useParams();
+  const { user } = useAuth();
   const [footballers, setFootballers] = useState<MarketFootballer[]>([]);
   const [loading, setLoading] = useState(true);
   const [bidDialogOpen, setBidDialogOpen] = useState(false);
@@ -35,8 +37,8 @@ const Market = () => {
     const loadFootballers = async () => {
       setLoading(true);
       try {
-        // Use playerId from URL params or default to '1' for current user
-        const id = playerId || '1';
+        // Use playerId from URL params or default to logged-in user
+        const id = playerId || user?.playerId?.toString() || localStorage.getItem("playerId");
         const data = await fetchMarketFootballers(id);
         setFootballers(data);
       } catch (error) {
@@ -49,7 +51,7 @@ const Market = () => {
     };
     
     loadFootballers();
-  }, []);
+  }, [playerId, user?.playerId]);
   
   const handleBidClick = (footballer: MarketFootballer) => {
     setSelectedFootballer(footballer);
@@ -64,7 +66,7 @@ const Market = () => {
   const handleBidSubmit = async (amount: number) => {
     if (!selectedFootballer) return;
     
-    const id = playerId || '1';
+    const id = playerId || user?.playerId?.toString() || localStorage.getItem("playerId");
     const resp = await placeBid(selectedFootballer.id, id, amount);
 
     // Determine message from API response
