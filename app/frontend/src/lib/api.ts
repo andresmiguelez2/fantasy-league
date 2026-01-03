@@ -51,8 +51,8 @@ export const fetchLeagues = async (): Promise<League[]> => {
   ];
 };
 
-export const fetchLeaderboard = async (): Promise<Player[]> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leaderboard/`);
+export const fetchLeaderboard = async (fixtureId: string = 'total'): Promise<Player[]> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leaderboard/${fixtureId}`);
   const data = await response.json();
   
   return data.leaderboard.map((player: any[]) => ({

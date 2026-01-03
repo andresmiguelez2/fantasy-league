@@ -5,8 +5,15 @@ import { NavigationTabs } from "@/components/NavigationTabs";
 import { PlayerRow } from "@/components/PlayerRow";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { PlayerInfoRibbon } from "@/components/PlayerInfoRibbon";
-import { fetchLeaderboard, Player } from "@/lib/api";
+import { fetchLeaderboard, fetchOpenedFixtures, Player } from "@/lib/api";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Sample placeholder data for visualization
 const samplePlayers: Player[] = [
@@ -26,16 +33,31 @@ const League = () => {
   const { leagueId } = useParams();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fixtures, setFixtures] = useState<number[]>([]);
+  const [selectedFixture, setSelectedFixture] = useState<string>("total");
   
+  // Fetch available fixtures on mount
+  useEffect(() => {
+    const loadFixtures = async () => {
+      try {
+        const data = await fetchOpenedFixtures();
+        setFixtures(data);
+      } catch (error) {
+        console.log('Failed to fetch fixtures');
+      }
+    };
+    loadFixtures();
+  }, []);
+
+  // Fetch leaderboard when selectedFixture changes
   useEffect(() => {
     const loadPlayers = async () => {
       setLoading(true);
       try {
-        const data = await fetchLeaderboard();
+        const data = await fetchLeaderboard(selectedFixture);
         setPlayers(data);
       } catch (error) {
         console.log('Failed to fetch leaderboard data, using sample data for visualization');
-        // Use sample data when API is not available
         setPlayers(samplePlayers);
       } finally {
         setLoading(false);
@@ -43,7 +65,7 @@ const League = () => {
     };
     
     loadPlayers();
-  }, []);
+  }, [selectedFixture]);
   
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -51,6 +73,21 @@ const League = () => {
       <NavigationTabs leagueId={leagueId} />
       
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-4xl mb-4">
+          <Select value={selectedFixture} onValueChange={setSelectedFixture}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select fixture" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="total">Total</SelectItem>
+              {fixtures.map((fixture) => (
+                <SelectItem key={fixture} value={fixture.toString()}>
+                  J {fixture}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         {loading ? (
           <LoadingSkeleton type="players" />
         ) : (
