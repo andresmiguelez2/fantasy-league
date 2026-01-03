@@ -6,7 +6,7 @@ import { User, Wallet } from "lucide-react";
 export const PlayerInfoRibbon = () => {
   const [playerInfo, setPlayerInfo] = useState<PlayerInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const playerId = '1'; // Hardcoded for now
+  const playerId = localStorage.getItem("playerId") || "1";
 
   useEffect(() => {
     const loadPlayerInfo = async () => {
@@ -28,7 +28,7 @@ export const PlayerInfoRibbon = () => {
     };
 
     loadPlayerInfo();
-  }, []);
+  }, [playerId]);
 
   // Show placeholder while loading
   const displayInfo = loading 

@@ -24,10 +24,11 @@ const IncomingBids = () => {
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
   const queryClient = useQueryClient();
+  const playerId = localStorage.getItem("playerId") || "1";
 
   const { data: bids = [], isLoading } = useQuery({
-    queryKey: ["incomingBids", "1"],
-    queryFn: () => fetchIncomingBids("1"),
+    queryKey: ["incomingBids", playerId],
+    queryFn: () => fetchIncomingBids(playerId),
   });
 
   const formatTimestamp = (timestamp: string) => {

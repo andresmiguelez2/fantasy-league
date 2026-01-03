@@ -24,10 +24,11 @@ const OutgoingBids = () => {
   const [bidDialogOpen, setBidDialogOpen] = useState(false);
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
   const queryClient = useQueryClient();
+  const playerId = localStorage.getItem("playerId") || "1";
 
   const { data: bids = [], isLoading } = useQuery({
-    queryKey: ["outgoingBids", "1"],
-    queryFn: () => fetchOutgoingBids("1"),
+    queryKey: ["outgoingBids", playerId],
+    queryFn: () => fetchOutgoingBids(playerId),
   });
 
   const formatTimestamp = (timestamp: string) => {
@@ -58,7 +59,7 @@ const OutgoingBids = () => {
     if (!selectedBid) return;
     
     try {
-      await submitBid(selectedBid.footballerId, "1", amount);
+      await submitBid(selectedBid.footballerId, playerId, amount);
       toast.success(amount === 0 ? "Bid deleted" : "Bid updated");
       queryClient.invalidateQueries({ queryKey: ["outgoingBids"] });
       setBidDialogOpen(false);

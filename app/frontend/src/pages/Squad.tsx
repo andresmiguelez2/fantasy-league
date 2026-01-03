@@ -35,8 +35,8 @@ const Squad = () => {
     const loadFootballers = async () => {
       setLoading(true);
       try {
-        // Use playerId from URL params or default to '1' for current user
-        const id = playerId || '1';
+        // Use playerId from URL params or default to logged-in user
+        const id = playerId || localStorage.getItem("playerId") || "1";
         const data = await fetchSquadFootballers(id);
         setFootballers(data);
       } catch (error) {
