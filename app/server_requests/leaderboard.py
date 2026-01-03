@@ -15,7 +15,7 @@ def leaderboard(fixture_id: str):
 
         cursor = conn.cursor()
 
-        if fixture_id != "total":
+        if fixture_id == "total":
             cursor.execute(
                 """
                 SELECT
@@ -51,10 +51,10 @@ def leaderboard(fixture_id: str):
                     FROM footballer JOIN footballer_data ON footballer.id = footballer_data.id
                     GROUP BY footballer.owner_id
                 ) AS f ON player.id = f.owner_id
-                LEFT JOIN (
+                RIGHT JOIN (
                     SELECT
                         player_id
-                        , points
+                        , COALESCE(points, 0) AS points
                     FROM fixture_details
                     WHERE fixture_n = %s
                 ) AS fixture ON fixture.player_id = player.id
