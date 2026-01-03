@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
+import { useAuth } from "@/contexts/AuthContext";
 
 const API_ENDPOINT = import.meta.env.VITE_BACKEND_URL;
 
@@ -19,7 +20,8 @@ const Fixtures = () => {
   const [loading, setLoading] = useState(true);
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const playerId = localStorage.getItem("playerId") || "1";
+  const { user } = useAuth();
+  const playerId = user?.playerId?.toString() || localStorage.getItem("playerId") || "1";
 
   // Fetch opened fixtures on mount
   useEffect(() => {

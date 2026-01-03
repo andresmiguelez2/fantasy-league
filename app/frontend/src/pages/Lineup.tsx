@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { POSSIBLE_FORMATIONS } from "@/lib/constants";
+import { useAuth } from "@/contexts/AuthContext";
 
 const API_ENDPOINT = import.meta.env.VITE_BACKEND_URL;
 
@@ -24,7 +25,8 @@ const Lineup = () => {
 const [selectedPosition, setSelectedPosition] = useState<number>(0);
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | undefined>();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const playerId = localStorage.getItem("playerId") || "1";
+  const { user } = useAuth();
+  const playerId = user?.playerId?.toString() || localStorage.getItem("playerId") || "1";
 
   useEffect(() => {
     const loadLineupData = async () => {
