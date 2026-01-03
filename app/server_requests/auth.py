@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthCredentials
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from typing import Optional
 from aux.auth import authenticate_user, create_access_token, verify_token, get_user_by_id
@@ -56,26 +56,7 @@ def login(request: LoginRequest):
     }
 
 
-@router.post("/logout")
-def logout(credentials: HTTPAuthCredentials = Depends(security)):
-    """
-    Logout endpoint (token invalidation handled client-side)
-    """
-    # In a JWT system, logout is typically handled client-side by removing the token
-    # For more advanced implementations, you could maintain a token blacklist
-    logger.info("User logged out")
-    return {"message": "Logged out successfully"}
-
-
-@router.get("/me", response_model=UserInfo)
-def get_current_user(current_user: dict = Depends(get_current_user_from_token)):
-    """
-    Get current authenticated user information
-    """
-    return current_user
-
-
-def get_current_user_from_token(credentials: HTTPAuthCredentials = Depends(security)) -> dict:
+def get_current_user_from_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
     """
     Dependency to get current user from JWT token
     Can be used to protect routes
@@ -101,3 +82,22 @@ def get_current_user_from_token(credentials: HTTPAuthCredentials = Depends(secur
         )
     
     return user
+
+
+@router.post("/logout")
+def logout(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Logout endpoint (token invalidation handled client-side)
+    """
+    # In a JWT system, logout is typically handled client-side by removing the token
+    # For more advanced implementations, you could maintain a token blacklist
+    logger.info("User logged out")
+    return {"message": "Logged out successfully"}
+
+
+@router.get("/me", response_model=UserInfo)
+def get_current_user(current_user: dict = Depends(get_current_user_from_token)):
+    """
+    Get current authenticated user information
+    """
+    return current_user
