@@ -38,7 +38,7 @@ const Squad = () => {
       setLoading(true);
       try {
         // Use playerId from URL params or default to logged-in user
-        const id = playerId || user?.playerId?.toString() || localStorage.getItem("playerId") || "1";
+        const id = playerId || user?.playerId?.toString() || localStorage.getItem("playerId");
         const data = await fetchSquadFootballers(id);
         setFootballers(data);
       } catch (error) {

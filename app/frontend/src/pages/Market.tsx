@@ -38,7 +38,7 @@ const Market = () => {
       setLoading(true);
       try {
         // Use playerId from URL params or default to logged-in user
-        const id = playerId || user?.playerId?.toString() || localStorage.getItem("playerId") || "1";
+        const id = playerId || user?.playerId?.toString() || localStorage.getItem("playerId");
         const data = await fetchMarketFootballers(id);
         setFootballers(data);
       } catch (error) {
@@ -66,7 +66,7 @@ const Market = () => {
   const handleBidSubmit = async (amount: number) => {
     if (!selectedFootballer) return;
     
-    const id = playerId || user?.playerId?.toString() || localStorage.getItem("playerId") || "1";
+    const id = playerId || user?.playerId?.toString() || localStorage.getItem("playerId");
     const resp = await placeBid(selectedFootballer.id, id, amount);
 
     // Determine message from API response

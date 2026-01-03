@@ -8,7 +8,7 @@ export const PlayerInfoRibbon = () => {
   const [playerInfo, setPlayerInfo] = useState<PlayerInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const playerId = user?.playerId?.toString() || localStorage.getItem("playerId") || "1";
+  const playerId = user?.playerId?.toString() || localStorage.getItem("playerId");
 
   useEffect(() => {
     const loadPlayerInfo = async () => {

@@ -26,7 +26,7 @@ const [selectedPosition, setSelectedPosition] = useState<number>(0);
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | undefined>();
   const [dialogOpen, setDialogOpen] = useState(false);
   const { user } = useAuth();
-  const playerId = user?.playerId?.toString() || localStorage.getItem("playerId") || "1";
+  const playerId = user?.playerId?.toString() || localStorage.getItem("playerId");
 
   useEffect(() => {
     const loadLineupData = async () => {

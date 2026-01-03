@@ -26,7 +26,7 @@ const IncomingBids = () => {
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const playerId = user?.playerId?.toString() || localStorage.getItem("playerId") || "1";
+  const playerId = user?.playerId?.toString() || localStorage.getItem("playerId");
 
   const { data: bids = [], isLoading } = useQuery({
     queryKey: ["incomingBids", playerId],

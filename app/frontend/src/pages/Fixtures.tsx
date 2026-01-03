@@ -21,7 +21,7 @@ const Fixtures = () => {
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const { user } = useAuth();
-  const playerId = user?.playerId?.toString() || localStorage.getItem("playerId") || "1";
+  const playerId = user?.playerId?.toString() || localStorage.getItem("playerId");
 
   // Fetch opened fixtures on mount
   useEffect(() => {
