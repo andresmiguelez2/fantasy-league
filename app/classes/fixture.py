@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 import logging
 from aux.database import pg_connect
 from aux.constants import DANGLING_FIXTURE_THRESHOLD, FANTASY_FIXTURE_URL, CLOSING_TIME_FIXTURE, COINS_PER_POINT
+from bs4 import BeautifulSoup
 from server_requests.footballer import get_fixture_points
 from server_requests.leaderboard import leaderboard
 from server_requests.player import get_footballers_on_lineup, get_player_lineup
@@ -98,15 +99,19 @@ class Fixture:
         """
         logger.info(f"Opening fixture {self.n}.")
 
+        _, closing_ts, _ = get_earliest_fixture_dates(scrape_page(FANTASY_FIXTURE_URL + str(self.n), logger))
+
         conn = pg_connect()
         cursor = conn.cursor()
         cursor.execute(
             """
             UPDATE FIXTURE
-            SET opened = true
+            SET
+                opened = true
+                , end_ts = %s + INTERVAL '%s minutes'
             WHERE id = %s
             """,
-            (self.id,),
+            (closing_ts, CLOSING_TIME_FIXTURE, self.id),
         )
         conn.commit()
         cursor.close()
@@ -358,3 +363,59 @@ def get_fixture_matches(fixture_n: int) -> list[str]:
                 break
     
     return match_urls
+
+
+def get_earliest_fixture_dates(soup: BeautifulSoup) -> tuple[datetime | None, datetime | None, bool]:
+    """
+    Extracts the earliest fixture start and latest fixture end dates from the provided BeautifulSoup object.
+
+    Args:
+        soup (BeautifulSoup): The BeautifulSoup object containing the HTML content.
+
+    Returns:
+        tuple[datetime.datetime | None, datetime.datetime | None, bool]: A tuple containing the earliest start date,
+        latest end date, and a boolean indicating if all fixtures are closed.
+    """
+   # Find all time tags with itemprop="startDate"
+    start_time_tags = soup.find_all('time', {'itemprop': 'startDate'})
+    end_time_tags = soup.find_all('time', {'itemprop': 'endDate'})
+    
+    if not start_time_tags:
+        return None
+    
+    dates = []
+    for tag in start_time_tags:
+        content = tag.get('content')
+        if content:
+            try:
+                date_obj = datetime.strptime(content, '%Y-%m-%d %H:%M:%S')
+                dates.append(date_obj)
+            except ValueError:
+                continue
+
+    end_dates = []
+    for tag in end_time_tags:
+        content = tag.get('content')
+        if content:
+            try:
+                date_obj = datetime.strptime(content, '%Y-%m-%d %H:%M:%S')
+                end_dates.append(date_obj)
+            except ValueError:
+                continue
+
+    if dates:
+        earliest_start = min(dates)
+    else:
+        earliest_start = None
+
+    if end_dates:
+        latest_end = max(end_dates)
+        if datetime.now() > latest_end:
+            closed = True
+        else:
+            closed = False
+    else:
+        closed = False
+        latest_end = None
+    
+    return earliest_start, latest_end, closed
