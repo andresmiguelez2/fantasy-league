@@ -12,3 +12,6 @@ tqdm
 pymongo
 pillow
 standard-imghdr
+pyjwt
+passlib[bcrypt]
+python-multipart

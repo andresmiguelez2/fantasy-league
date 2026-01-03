@@ -3,6 +3,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import Login from "./pages/Login";
 import Landing from "./pages/Landing";
 import League from "./pages/League";
 import Squad from "./pages/Squad";
@@ -22,19 +25,22 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/league/:leagueId" element={<League />} />
-          <Route path="/squad" element={<Squad />} />
-          <Route path="/squad/:playerId" element={<Squad />} />
-          <Route path="/lineup" element={<Lineup />} />
-          <Route path="/fixtures" element={<Fixtures />} />
-          <Route path="/market" element={<Market />} />
-          <Route path="/market/incoming" element={<IncomingBids />} />
-          <Route path="/market/outgoing" element={<OutgoingBids />} />
-          <Route path="/footballer-info" element={<FootballerInfo />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/" element={<ProtectedRoute><Landing /></ProtectedRoute>} />
+            <Route path="/league/:leagueId" element={<ProtectedRoute><League /></ProtectedRoute>} />
+            <Route path="/squad" element={<ProtectedRoute><Squad /></ProtectedRoute>} />
+            <Route path="/squad/:playerId" element={<ProtectedRoute><Squad /></ProtectedRoute>} />
+            <Route path="/lineup" element={<ProtectedRoute><Lineup /></ProtectedRoute>} />
+            <Route path="/fixtures" element={<ProtectedRoute><Fixtures /></ProtectedRoute>} />
+            <Route path="/market" element={<ProtectedRoute><Market /></ProtectedRoute>} />
+            <Route path="/market/incoming" element={<ProtectedRoute><IncomingBids /></ProtectedRoute>} />
+            <Route path="/market/outgoing" element={<ProtectedRoute><OutgoingBids /></ProtectedRoute>} />
+            <Route path="/footballer-info" element={<ProtectedRoute><FootballerInfo /></ProtectedRoute>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

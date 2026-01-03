@@ -3,6 +3,7 @@ from .logger import logger
 from fastapi.middleware.cors import CORSMiddleware
 
 # import sub-routers
+from . import auth
 from . import market
 from . import leaderboard
 from . import footballer
@@ -30,6 +31,7 @@ def ping():
     return {"status": "ok", "message": "pong"}
 
 
+server_app.include_router(auth.router)
 server_app.include_router(market.router)
 server_app.include_router(leaderboard.router)
 server_app.include_router(footballer.router)
