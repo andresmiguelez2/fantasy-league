@@ -57,7 +57,7 @@ const League = () => {
   // Squad view state (for "total")
   const [footballers, setFootballers] = useState<Footballer[]>([]);
   const [selectedFootballer, setSelectedFootballer] = useState<Footballer | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [squadDialogOpen, setSquadDialogOpen] = useState(false);
   
   // Fixture view state (for specific fixture)
   const [formation, setFormation] = useState<number[]>([]);
@@ -65,6 +65,7 @@ const League = () => {
   const [footballerNames, setFootballerNames] = useState<Record<number, string>>({});
   const [footballerPoints, setFootballerPoints] = useState<Record<number, number | null>>({});
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
+  const [fixtureDialogOpen, setFixtureDialogOpen] = useState(false);
   
   // Fetch available fixtures on mount
   useEffect(() => {
@@ -167,17 +168,21 @@ const League = () => {
     setLineupFootballers([]);
     setFootballerNames({});
     setFootballerPoints({});
+    setSelectedFootballer(null);
+    setSelectedFootballerId(null);
+    setSquadDialogOpen(false);
+    setFixtureDialogOpen(false);
   };
   
   const handleFootballerClick = (footballer?: Footballer | number) => {
     if (typeof footballer === "number") {
       // From fixture view
       setSelectedFootballerId(footballer);
-      setDialogOpen(true);
+      setFixtureDialogOpen(true);
     } else if (footballer) {
       // From squad view
       setSelectedFootballer(footballer);
-      setDialogOpen(true);
+      setSquadDialogOpen(true);
     }
   };
   
@@ -379,8 +384,8 @@ const League = () => {
       
       {selectedFootballer && (
         <FootballerInfoDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
+          open={squadDialogOpen}
+          onOpenChange={setSquadDialogOpen}
           footballerId={selectedFootballer.id}
           footballerName={selectedFootballer.name}
         />
@@ -388,8 +393,8 @@ const League = () => {
       
       {selectedFootballerId && (
         <FootballerInfoDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
+          open={fixtureDialogOpen}
+          onOpenChange={setFixtureDialogOpen}
           footballerId={selectedFootballerId}
           defaultFixture={selectedFixture !== "total" ? parseInt(selectedFixture) : undefined}
         />
