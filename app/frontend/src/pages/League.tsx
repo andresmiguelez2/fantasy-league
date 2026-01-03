@@ -279,7 +279,11 @@ const League = () => {
           )}
         </div>
         {loading ? (
-          <LoadingSkeleton type={selectedPlayerId === null ? "players" : (selectedFixture === "total" ? "footballers" : "players")} />
+          (() => {
+            if (selectedPlayerId === null) return <LoadingSkeleton type="players" />;
+            if (selectedFixture === "total") return <LoadingSkeleton type="footballers" />;
+            return <LoadingSkeleton type="players" />;
+          })()
         ) : selectedPlayerId === null ? (
           // Leaderboard view
           <div className="max-w-4xl">
