@@ -12,3 +12,49 @@ ssh/
 *.pyc
 *.cpython-*
 app/__pycache__/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Frontend
+app/frontend/node_modules/
+app/frontend/.vite/
+app/frontend/dist/
+app/frontend/build/
+app/frontend/.cache/
+app/frontend/.parcel-cache/
+app/frontend/.turbo/
+app/frontend/.next/            # in case Next.js is used later
+app/frontend/.pnp.*            # pnpm
+app/frontend/.env.local
+app/frontend/.env.*.local
+app/frontend/coverage/
+app/frontend/coverage-final.json
+app/frontend/npm-debug.log*
+app/frontend/yarn-debug.log*
+app/frontend/yarn-error.log*
+app/frontend/.DS_Store
+app/frontend/.idea/
+app/frontend/.vscode/

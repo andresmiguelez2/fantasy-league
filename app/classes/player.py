@@ -2,7 +2,7 @@ import logging
 import requests
 import os
 from tabulate import tabulate
-from aux.constants import FOOTBALLER_COLUMNS, PLAYER_MARKET_COLUMNS
+from aux.database import pg_connect
 
 
 logger = logging.getLogger(__name__)
@@ -56,7 +56,8 @@ class Session():
         print("\t1. Squad")
         print("\t2. Market")
         print("\t3. Leaderboard")
-        print("\t4. Logout")
+        print("\t4. Other players' squad")
+        print("\t5. Logout")
         choice = input("Select an option: ")
 
         if choice == "1":
@@ -66,6 +67,8 @@ class Session():
         elif choice == "3":
             self._leaderboard_main()
         elif choice == "4":
+            self._other_players_squad()
+        elif choice == "5":
             self.logout()
         else:
             logger.info("Invalid choice.")
@@ -77,11 +80,15 @@ class Session():
         choice = input("Select an option: ")
 
         if choice == "1":
-            self._view_squad()
+            self._view_squad(self.player_id)
         elif choice == "2":
             self._edit_player_status()
         else:
             logger.info("Invalid choice.")
+
+    def _other_players_squad(self):
+        choice = input("Select a player ID: ")
+        self._view_squad(int(choice))
 
     def _market_main(self):
         print("\nMarket menu:")
@@ -147,47 +154,13 @@ class Session():
             logger.error(f"Failed to reach backend: {e}")
             return False
 
-    def _view_squad(self):
-        try:
-            url = f"{os.environ['BACKEND_URL']}/squads/{self.player_id}"
-            response = requests.get(url)
-            if response.status_code == 200:
-                data = response.json()
-                players = data.get("players", [])
-                if players:
-                    print("\nYour Squad:")
-                    print(tabulate(players, headers=FOOTBALLER_COLUMNS, tablefmt="grid"))
-                else:
-                    print("No players found in your squad.")
-            else:
-                logger.error(f"Failed to fetch squad: {response.status_code}")
-        except Exception as e:
-            logger.error(f"Error while fetching squad: {e}")
-
-    def _view_market(self):
-        try:
-            url = f"{os.environ['BACKEND_URL']}/market/{self.player_id}"
-            response = requests.get(url)
-            if response.status_code == 200:
-                data = response.json()
-                players = data.get("players", [])
-                if players:
-                    print("\nMarket:")
-                    print(tabulate(players, headers=PLAYER_MARKET_COLUMNS, tablefmt="grid"))
-                else:
-                    print("No players found on the market.")
-            else:
-                logger.error(f"Failed to fetch market: {response.status_code}")
-        except Exception as e:
-            logger.error(f"Error while fetching market: {e}")
-
 
     def _place_bid(self):
         footballer_id = input("Enter the ID of the player you want to bid on: ")
         bid_amount = input("Enter your bid amount: ")
 
         try:
-            url = f"{os.environ['BACKEND_URL']}/market/bids"
+            url = f"{os.environ['BACKEND_URL']}/market/bid"
             response = requests.post(url, json={"footballer_id": footballer_id, "player_id": self.player_id, "bid_amount": bid_amount})
             if response.status_code == 200:
                 logger.info(response.json()['message'])
@@ -213,3 +186,34 @@ class Session():
                 logger.error(f"Failed to edit player status: {response.status_code}")
         except Exception as e:
             logger.error(f"Error while editing player status: {e}")
+
+
+def debit_player_value(player_id: int, amount: int):
+    """Debit value from player's budget
+    Args:
+        player_id (int): The player ID
+        amount (int): The amount to debit
+    """
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            UPDATE player
+            SET budget = budget - %s
+            WHERE id = %s
+            """,
+            (amount, player_id),
+        )
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        logger.info(f"Debited {amount:,.0f} from player {player_id}'s budget.")
+
+        return True
+    except Exception as e:
+        logger.error(f"Error while debiting player budget: {e}")
+        return False

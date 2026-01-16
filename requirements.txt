@@ -8,3 +8,8 @@ tqdm
 pymongo
 pyzmq 
 # pillow
+standard-imghdr
+pyjwt
+bcrypt==4.3.0
+passlib[bcrypt]
+python-multipart

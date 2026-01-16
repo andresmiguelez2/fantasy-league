@@ -3,7 +3,7 @@ import logging
 import re
 import requests
 from bson import Binary
-from aux.server_requests import scrape_page
+from aux.aux_functions import scrape_page
 from pymongo import MongoClient
 
 from aux.constants import FANTASY_PLAYER_URL, FANTASY_PLAYER_MARKET_URL, COMPETITION_NAME
@@ -23,6 +23,8 @@ class Footballer():
         self._owner_id: int = None
         self._data: dict = None
         self._team: str = None
+        self._position: str = None
+        self._availability: str = None
         
         if obtain_data and name:
             self._name = name
@@ -122,6 +124,26 @@ class Footballer():
         """Set the footballer team."""
         self._team = value
 
+    @property
+    def position(self):
+        """Get the footballer position."""
+        return self._position
+
+    @position.setter
+    def position(self, value):
+        """Set the footballer position."""
+        self._position = value
+
+    @property
+    def availability(self):
+        """Get the footballer availability."""
+        return self._availability
+    
+    @availability.setter
+    def availability(self, value):
+        """Set the footballer availability."""
+        self._availability = value
+
     def __str__(self):
         attrs = [attr for attr in dir(self) if attr.startswith('_') and not attr.startswith('__')]
         attr_strs = []
@@ -218,7 +240,7 @@ class Footballer():
     def _get_player_data(self):
         """Fetches and parses player data from the fantasy football website."""
         search_url = FANTASY_PLAYER_URL + self.url_name
-        soup = scrape_page(search_url)
+        soup = scrape_page(search_url, logger)
 
         if COMPETITION_NAME not in soup.text:
             if '-1' not in self.url_name:
@@ -235,15 +257,19 @@ class Footballer():
         player_id = int(image_url.split('/')[-1].split('.')[0]) if image_url else None
         market_details = self._get_market_details(player_id) if player_id else None
         self.team = self._get_team(soup)
+        self.position = self._get_position(soup)
+        self.availability = self._get_availability(soup)
 
         self.data = {
             "player_source_id": player_id,
             "team": self.team,
+            "position": self.position,
             "total_points": total_points,
             "average_points": average_points,
             "fixture_breakdown": fixture_breakdown,
             "image_binary": image_binary,
-            "market_details": market_details
+            "market_details": market_details,
+            "availability": self.availability,
         }
 
     def get_player_data(self):
@@ -257,7 +283,7 @@ class Footballer():
         Returns a list of dicts with 'date' and 'value'.
         """
         url = FANTASY_PLAYER_MARKET_URL + str(player_id)
-        soup = scrape_page(url)
+        soup = scrape_page(url, logger)
         # Find all script tags and search for player_chartjs.push({...})
         chart_data = []
         script_tags = soup.find_all("script")
@@ -306,15 +332,64 @@ class Footballer():
         logger.warning(f"Team not found for player {self.name}.")
         return None
 
-    @classmethod
-    def set_release_clause_date(cls, footballer_id: int, release_clause_date: datetime.datetime, client: MongoClient):
-        """Sets the release clause expiry date for a footballer in the MongoDB."""
-        db = client["FantasyMDB"]
+    def _get_position(self, soup):
+        """Extracts the player's position code from the page.
 
+        Looks for the first occurrence of a span with class containing `position-box`.
+        Example HTML: <span class="position-box x ">X</span>
+
+        Returns the class token (e.g. 'x') if present, otherwise the span text lowercased.
+        Returns None if no position is found.
+        """
         try:
-            db.footballer.update_one(
-                {"id": footballer_id},
-                {"$set": {"release_clause_expiry_date": release_clause_date}}
-            )
+            # find the first span whose class list contains 'position-box'
+            span = soup.find("span", class_=re.compile(r"\bposition-box\b"))
+            if not span:
+                return None
+
+            # BeautifulSoup exposes the class attribute as a list when available
+            class_attr = span.get("class") or []
+            # return the first token that is not 'position-box'
+            for token in class_attr:
+                if token and token != 'position-box':
+                    return str(token).lower()
+
+            # fallback to the inner text (e.g. 'X')
+            text = span.get_text(strip=True)
+            return text.lower() if text else None
         except Exception as e:
-            logger.error(f"Error setting release clause date for footballer {footballer_id}: {e}")
+            logger.debug(f"Error extracting position: {e}")
+            return None
+
+    def _get_availability(self, soup):
+        """
+        Determine availability using BeautifulSoup:
+        - 'suspended' if the word 'Sancionado' appears inside a <strong> or <b> tag
+        - 'uncertain' if an <img> alt contains 'duda'
+        - 'injured' ONLY if an <img> alt contains 'lesionado'
+        - otherwise 'available'
+        """
+        try:
+            # Suspended: word 'sancionado' inside a bold tag (<strong> or <b>)
+            bold_tag = soup.find(
+                lambda tag: tag.name in ("strong")
+                and tag.get_text(strip=True)
+                and "sancionado" in tag.get_text(strip=True).lower()
+            )
+            if bold_tag:
+                return "suspended"
+
+            # Uncertain: image with alt containing 'duda' (case-insensitive)
+            img_duda = soup.find("img", alt=lambda v: v and "duda" in v.lower())
+            if img_duda:
+                return "uncertain"
+
+            # Injured: ONLY if an <img> alt contains 'lesionado'
+            img_les = soup.find("img", alt=lambda v: v and re.search(r"Lesionado", v, re.I))
+            if img_les:
+                return "injured"
+
+            return "available"
+        except Exception as e:
+            logger.debug(f"_get_availability error: {e}")
+            return "available"

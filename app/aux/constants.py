@@ -1,22 +1,21 @@
 ### Server app ###
 LOOP_TIME_SECONDS = 10 # Bucle de scan
+LOOP_TIME_BUFFER = 2
+N_REQUEST_BUFFER = 2 # número de peticiones API a saltar
 SLEEP_TIME = 0.001 # Sleep time in seconds
-
-
-### Market ####
-N_NEW_FOOTBALLERS_INTO_MARKET = 5 # number of new players to be added into new market
-RELEASE_CLAUSE_DAYS = 14 # number of days until a footballer can be released again after being bought
+UPDATE_DB_INTERVAL = 1800  # in seconds (30 minutes)
+HANDLE_DANGLING_FIXTURES_INTERVAL = 50 # dangling features will be handled every number of iterations
 
 
 ### Client app ###
-FOOTBALLER_COLUMNS = ["name", "team", "value", "on_market", "on_market_since"]
-PLAYER_MARKET_COLUMNS = ["id", "name", "value", "owner_id", "on_market_since", "bid_amount"]
+BANK_NAME = "LaLiga"
 
 
 ### Scraper ###
 FANTASY_MAIN_URL = "https://www.futbolfantasy.com/analytics/laliga-fantasy/puntos"
 FANTASY_PLAYER_URL = "https://www.futbolfantasy.com/jugadores/"
 FANTASY_PLAYER_MARKET_URL = "https://www.futbolfantasy.com/analytics/laliga-fantasy/mercado/detalle/"
+FANTASY_FIXTURE_URL = "https://www.futbolfantasy.com/laliga/posibles-alineaciones/"
 FOOTBALLER_NAME_DICT = {
     'toni martinez': 'antonio martinez',
     'alex baena': 'lex baena',
@@ -57,3 +56,21 @@ FOOTBALLER_NAME_DICT = {
     'karl etta eyong': 'etta-eyong',
 }
 COMPETITION_NAME = 'LaLiga 2025/26'
+FOOTBALLER_POSITIONS = {
+    'def': 'DF',
+    'med': 'MD',
+    'del': 'FW',
+    'por': 'GK',
+}
+
+# Game
+LINEUP_POSITIONS = ['GK', 'DF', 'MD', 'FW']
+POSITION_ORDER = {'GK': 0, 'DF': 1, 'MD': 2, 'FW': 3}
+DANGLING_FIXTURE_THRESHOLD = 5 # days without updates to consider a fixture dangling
+CLOSING_TIME_FIXTURE = 60*4 # minutes to close fixture after it finishes
+COINS_PER_POINT = 100_000 # money awarded per point scored
+
+
+### Market ####
+N_NEW_FOOTBALLERS_INTO_MARKET = 5 # number of new players to be added into new market
+RELEASE_CLAUSE_DAYS = 14 # number of days until a footballer can be released again after being bought

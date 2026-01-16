@@ -4,9 +4,8 @@ import logging
 import psycopg2
 import random
 
-from aux.constants import N_NEW_FOOTBALLERS_INTO_MARKET, RELEASE_CLAUSE_DAYS
+from aux.constants import N_NEW_FOOTBALLERS_INTO_MARKET
 from pymongo import MongoClient
-from classes.footballer import Footballer
 
 
 # Create logger for this module
@@ -87,7 +86,10 @@ class Market:
         if footballers_to_remove:
             cursor.execute(
                 """
-                DELETE FROM public.footballer
+                UPDATE footballer
+                SET
+                    on_market = FALSE,
+                    on_market_since = NULL
                 WHERE id IN %s
                 """,
                 (tuple([f[0] for f in footballers_to_remove]),)
@@ -137,7 +139,6 @@ class Market:
             WHERE 
                 footballer.owner_id IS NULL
                 AND footballer.on_market = TRUE -- para mayor robustez
-                AND bid.amount >= footballer.value -- para mayor robustez
             ORDER BY 
                 amount DESC
                 , timestamp ASC
@@ -169,8 +170,6 @@ class Market:
                 """,
                 (bidder_id, footballer_id, footballer_id)
             )
-
-            Footballer.set_release_clause_date(int(footballer_id), datetime.datetime.now() + datetime.timedelta(days=RELEASE_CLAUSE_DAYS), mongoclient)
 
             logger.info(f"Footballer {footballer_id} assigned to bidder {bidder_id} with amount {amount}.")
             
@@ -206,6 +205,7 @@ class Market:
                 self._open_new_market(cursor)
                 removed_from_market = self._cleanup_market(cursor)
                 self._place_footballers_into_market(cursor, N_NEW_FOOTBALLERS_INTO_MARKET, removed_from_market)
+                self._place_bid_on_footballers(cursor)
 
                 conn.commit()
                 cursor.close()
@@ -215,12 +215,52 @@ class Market:
                 logger.error(f"Database error while fulfilling market {self._id}: {e}")
                 self._has_been_closed = False# Rollback the local state change if database update failed
 
+    def _place_bid_on_footballers(self, cursor):
+        """Place bids on all footballers owned by someone on the marke, by the league."""
+        cursor.execute(
+            """
+            SELECT
+                f.id
+                , fd.value
+            FROM footballer f LEFT JOIN footballer_data fd ON f.id = fd.id
+            WHERE
+                owner_id IS NOT NULL
+                AND on_market = true
+            """
+        )
+        footballers_on_market = cursor.fetchall()
+
+        cursor.execute(
+            """
+            DELETE FROM BID
+            WHERE bidder_id IS NULL
+            """
+        )
+
+        for id, value in footballers_on_market:
+            bid_amount = Market.get_random_bid(value)
+            cursor.execute(
+                """
+                INSERT INTO bid (footballer_id, bidder_id, amount, timestamp)
+                VALUES (%s, %s, %s, now())
+                """,
+                (id, None, bid_amount)
+            )
+            logger.info(f"League placed bid of amount {bid_amount} on footballer {id}.")
+
+
     def shift_closing_ts(self):
         """Shift the market closing timestamp far into the future."""
         self.closing_ts += datetime.timedelta(days=9999)
 
     def __str__(self):
         return f"Market(id={self._id}, closing_ts={self._closing_ts}, has_been_closed={self._has_been_closed})"
+    
+    @classmethod
+    def get_random_bid(cls, market_value):
+        """Generate a random bid based on the market value."""
+        bid_multiplier = random.uniform(0.9, 1.1)
+        return int(market_value * bid_multiplier)
     
 
 def load_market():
