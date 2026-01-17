@@ -86,7 +86,7 @@ services:
   scraper:
     build:
       context: .
-      dockerfile: Dockerfile.backend
+      dockerfile: Dockerfile.scraper
     container_name: scraper_app
     env_file:
       - secrets/db.env
@@ -96,12 +96,9 @@ services:
       - DB_PORT=5432
       - MONGO_HOST=mongodb
       - MONGO_PORT=27017
-      - SSH_USER=developer
-      - ENV_FILES=/workspace/secrets/db.env:/workspace/secrets/mongo.env
     volumes:
       - ./app:/app
       - ./:/workspace
-      - ./ssh/authorized_keys:/authorized_keys:ro
       - ./secrets:/workspace/secrets:ro
     depends_on:
       - db

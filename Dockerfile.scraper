@@ -1,17 +1,40 @@
 FROM python:3.13.9-slim
 
-# Install Git and other development tools
+# Install Git, SSH, and other development tools
 RUN apt-get update && apt-get install -y \
     git \
     curl \
     build-essential \
     libpq-dev \
+    openssh-server \
     && rm -rf /var/lib/apt/lists/*
+
+# Setup SSH
+RUN mkdir -p /run/sshd /root/.ssh
+RUN chmod 700 /root/.ssh
+
+# Copy authorized keys if provided
+COPY .ssh/authorized_keys /root/.ssh/authorized_keys
+RUN chmod 600 /root/.ssh/authorized_keys 2>/dev/null || true
+
+# Generate SSH host keys
+RUN ssh-keygen -A
+
+# SSH configuration
+RUN echo "PasswordAuthentication no" >> /etc/ssh/sshd_config && \
+    echo "PubkeyAuthentication yes" >> /etc/ssh/sshd_config && \
+    echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
 
 WORKDIR /app
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Keep container running for development
-CMD ["tail", "-f", "/dev/null"]
+# Auto-load mounted env files for interactive shells (SSH sessions)
+RUN echo 'set -a' >> /etc/bash.bashrc && \
+    echo '[ -f /workspace/secrets/db.env ] && . /workspace/secrets/db.env' >> /etc/bash.bashrc && \
+    echo '[ -f /workspace/secrets/mongo.env ] && . /workspace/secrets/mongo.env' >> /etc/bash.bashrc && \
+    echo 'set +a' >> /etc/bash.bashrc
+
+# Start SSH server
+CMD ["/usr/sbin/sshd", "-D"]
