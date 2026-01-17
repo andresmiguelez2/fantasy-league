@@ -1,6 +1,6 @@
 # Secrets
 secrets/
-ssh/
+.ssh/
 
 # environment variables
 .env
