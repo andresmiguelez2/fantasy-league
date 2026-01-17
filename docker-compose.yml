@@ -7,7 +7,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql
     ports:
-      - "5432:5432"
+      - "0.0.0.0:5432:5432"
 
   mongodb:
     image: arm64v8/mongo:4.4.18
@@ -16,7 +16,7 @@ services:
     env_file:
       - secrets/mongo.env
     ports:
-      - "27017:27017"
+      - "0.0.0.0:27017:27017"
     volumes:
       - mongo_data:/data/db
       
@@ -38,7 +38,7 @@ services:
       - ./app:/app
       - ./app:/app
     ports:
-      - "8000:8000"
+      - "0.0.0.0:8000:8000"
     depends_on:
       - db
       - mongodb
@@ -69,7 +69,7 @@ services:
       - ./app/frontend:/app
       - /app/node_modules
     ports:
-      - "5173:8080"
+      - "0.0.0.0:5173:8080"
     depends_on:
       - app
 
