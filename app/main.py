@@ -1,5 +1,7 @@
 import logging
 import time
+import threading
+import uvicorn
 from classes.market import load_market, load_last_market
 from aux.constants import LOOP_TIME_SECONDS, SLEEP_TIME, LOOP_TIME_BUFFER, N_REQUEST_BUFFER, UPDATE_DB_INTERVAL, HANDLE_DANGLING_FIXTURES_INTERVAL
 from server_requests.server_requests import server_app
@@ -39,6 +41,10 @@ def wait_loop_time(start_time):
 
 
 if __name__ == "__main__":
+    threading.Thread(
+        target=lambda: uvicorn.run("server_requests.server_requests:server_app", host="0.0.0.0", port=8000),
+        daemon=True,
+    ).start()
     logger.info("Backend app is starting...")
     active_market = None
     n_iteration = 0

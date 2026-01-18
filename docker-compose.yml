@@ -42,7 +42,7 @@ services:
     depends_on:
       - db
       - mongodb
-    command: bash -c "uvicorn main:server_app --host 0.0.0.0 --port 8000 --reload"
+    command: python /app/main.py
 
   # userapp:
   #   build: .
@@ -64,7 +64,7 @@ services:
       dockerfile: Dockerfile.frontend
     container_name: frontend_app
     environment:
-      - VITE_BACKEND_URL=http://localhost:8000
+      - VITE_BACKEND_URL=http://192.168.1.75:8000
     volumes:
       - ./app/frontend:/app
       - /app/node_modules
