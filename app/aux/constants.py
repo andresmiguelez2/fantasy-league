@@ -1,5 +1,5 @@
 ### Server app ###
-LOOP_TIME_SECONDS = 10 # Bucle de scan
+LOOP_TIME_SECONDS = 30 # Bucle de scan
 LOOP_TIME_BUFFER = 2
 N_REQUEST_BUFFER = 2 # número de peticiones API a saltar
 SLEEP_TIME = 0.001 # Sleep time in seconds
@@ -72,5 +72,5 @@ COINS_PER_POINT = 100_000 # money awarded per point scored
 
 
 ### Market ####
-N_NEW_FOOTBALLERS_INTO_MARKET = 5 # number of new players to be added into new market
+N_NEW_FOOTBALLERS_INTO_MARKET = 15 # number of new players to be added into new market
 RELEASE_CLAUSE_DAYS = 14 # number of days until a footballer can be released again after being bought
