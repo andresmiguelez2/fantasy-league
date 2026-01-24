@@ -34,51 +34,60 @@ export const FootballerCard = ({
      }).format(amount);
    };
    
-   const getInitials = (name: string) => {
-     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+   const getInitials = (name?: string | null) => {
+     const safe = name?.trim();
+     if (!safe) return "?";
+     return safe
+       .split(/\s+/)
+       .map((part) => part[0])
+       .join("")
+       .toUpperCase()
+       .slice(0, 2);
    };
    
    return (
-    <Card className="p-4 flex items-center justify-between fade-in hover-lift border-primary/20 bg-gradient-to-r from-card to-card/80">
-      {/* Left: avatar + fixed-width name column so text boxes align vertically */}
-      <div className="flex items-center gap-3 cursor-pointer" onClick={() => onOwnerClick?.()}>
-        <Avatar className="h-14 w-14 border-2 border-secondary/30">
-          <AvatarImage src={`${import.meta.env.VITE_BACKEND_URL}/footballer/image/${id}`} />
-          <AvatarFallback className="bg-gradient-primary text-white font-semibold text-sm">
-            {getInitials(name)}
-          </AvatarFallback>
-        </Avatar>
-        <div className="min-w-[12rem]">
-          <span className="font-semibold text-foreground">{name}</span>
-          {owner ? <div className="text-sm text-secondary">{owner}</div> : null}
-        </div>
-      </div>
-
-      {/* Center: stats with fixed width to align across cards */}
-      <div className="w-28 text-center">
-        {(totalPoints !== undefined || averagePoints !== undefined) && (
-          <div>
-            <div className="text-sm font-semibold text-foreground">
-              {totalPoints ?? 0} pts
-            </div>
-            <div className="text-xs text-muted-foreground">
-              Avg: {averagePoints || '0'}
-            </div>
+    <Card className="p-3 sm:p-4 fade-in hover-lift border-primary/20 bg-gradient-to-r from-card to-card/80">
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Left: avatar + name column */}
+        <div className="flex items-center gap-2 sm:gap-3 cursor-pointer flex-1 min-w-0" onClick={() => onOwnerClick?.()}>
+          <Avatar className="h-10 w-10 sm:h-14 sm:w-14 border-2 border-secondary/30 flex-shrink-0">
+            <AvatarImage src={`${import.meta.env.VITE_BACKEND_URL}/footballer/image/${id}`} />
+            <AvatarFallback className="bg-gradient-primary text-white font-semibold text-xs sm:text-sm">
+              {getInitials(name)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <span className="font-semibold text-foreground text-sm sm:text-base block truncate">{name}</span>
+            {owner ? <div className="text-xs sm:text-sm text-secondary truncate">{owner}</div> : null}
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Right: Bid button - fixed width so it doesn't shift center stats */}
-      <div className="w-32 flex items-center justify-end">
-        {showBidButton && (
-          <Button
-            variant="default"
-            onClick={onBid}
-            className="w-full rounded-full bg-gradient-primary hover:opacity-90 border-0 truncate"
-          >
-            {currentBid ? `Bid: ${formatBid(currentBid)}` : "Bid: ---"}
-          </Button>
-        )}
+        {/* Center: stats */}
+        <div className="text-center flex-shrink-0">
+          {(totalPoints !== undefined || averagePoints !== undefined) && (
+            <div>
+              <div className="text-xs sm:text-sm font-semibold text-foreground">
+                {totalPoints ?? 0} pts
+              </div>
+              <div className="text-[10px] sm:text-xs text-muted-foreground">
+                Avg: {averagePoints || '0'}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right: Bid button */}
+        <div className="flex-shrink-0">
+          {showBidButton && (
+            <Button
+              variant="default"
+              onClick={onBid}
+              className="rounded-full bg-gradient-primary hover:opacity-90 border-0 text-xs sm:text-sm px-2 sm:px-4 h-8 sm:h-10"
+            >
+              {currentBid ? `${formatBid(currentBid)}` : "Bid"}
+            </Button>
+          )}
+        </div>
       </div>
      </Card>
    );

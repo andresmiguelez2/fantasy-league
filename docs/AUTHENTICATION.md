@@ -4,7 +4,7 @@ This guide explains how to set up and use the JWT authentication system for the 
 
 ## Overview
 
-The Fantasy League application uses JWT (JSON Web Signature) tokens for secure user authentication. This implementation includes:
+The Fantasy League application uses JWT (JSON Web Token) tokens for secure user authentication. This implementation includes:
 
 - Password hashing with bcrypt
 - JWT token generation and validation

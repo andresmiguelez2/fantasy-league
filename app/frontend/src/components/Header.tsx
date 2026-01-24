@@ -29,21 +29,21 @@ export const Header = ({ showBackButton = false }: HeaderProps) => {
 
   return (
     <header className="border-b border-border bg-card">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+      <div className="container mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-14 sm:h-16">
           <Button
             variant="ghost"
             onClick={handleFantasyClick}
-            className={`text-lg font-semibold ${
+            className={`text-base sm:text-lg font-semibold px-2 sm:px-4 ${
               showBackButton ? "cursor-pointer hover:bg-accent" : "cursor-default hover:bg-transparent"
             }`}
           >
             Fantasy
           </Button>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             {isAuthenticated && user && (
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">
                 Welcome, {user.username}
               </span>
             )}
@@ -51,7 +51,7 @@ export const Header = ({ showBackButton = false }: HeaderProps) => {
               <Button
                 variant="outline"
                 onClick={handleLogout}
-                className="rounded-full"
+                className="rounded-full text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-10"
               >
                 Log out
               </Button>
@@ -59,7 +59,7 @@ export const Header = ({ showBackButton = false }: HeaderProps) => {
               <Button
                 variant="outline"
                 onClick={() => navigate("/login")}
-                className="rounded-full"
+                className="rounded-full text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-10"
               >
                 Log in
               </Button>

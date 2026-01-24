@@ -1,17 +1,15 @@
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useNavigate } from "react-router-dom";
 
 interface PlayerRowProps {
   playerId: number;
   name: string;
   points: number;
   team_value: number;
+  onPlayerClick?: (playerId: number, name: string) => void;
 }
 
-export const PlayerRow = ({ playerId, name, points, team_value }: PlayerRowProps) => {
-  const navigate = useNavigate();
-  
+export const PlayerRow = ({ playerId, name, points, team_value, onPlayerClick }: PlayerRowProps) => {
   const formatValue = (val: number) => {
     return new Intl.NumberFormat('en-ES', {
       style: 'currency',
@@ -21,12 +19,25 @@ export const PlayerRow = ({ playerId, name, points, team_value }: PlayerRowProps
     }).format(val);
   };
   
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  const getInitials = (name?: string | null) => {
+    const safe = name?.trim();
+    if (!safe) return "?";
+    return safe
+      .split(/\s+/)
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+  
+  const handleClick = () => {
+    if (onPlayerClick) {
+      onPlayerClick(playerId, name);
+    }
   };
   
   return (
-    <TableRow className="fade-in cursor-pointer hover:bg-accent/10 transition-colors" onClick={() => navigate(`/squad/${playerId}`)}>
+    <TableRow className="fade-in cursor-pointer hover:bg-accent/10 transition-colors" onClick={handleClick}>
       <TableCell className="flex items-center gap-3">
         <Avatar className="h-10 w-10 border-2 border-secondary/30">
           <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`} />
