@@ -99,10 +99,14 @@ export const FootballerInfoDialog = ({
     }
   };
 
+  const getCurrentPlayerId = () => {
+    return playerId || user?.playerId?.toString() || localStorage.getItem("playerId");
+  };
+
   const handleBidSubmit = async (amount: number) => {
     if (!info) return;
     
-    const id = playerId || user?.playerId?.toString() || localStorage.getItem("playerId");
+    const id = getCurrentPlayerId();
     if (!id) {
       toast({
         description: "Unable to place bid: player ID not found",
@@ -114,14 +118,8 @@ export const FootballerInfoDialog = ({
     const resp = await placeBid(footballerId, id, amount);
 
     // Determine message from API response
-    let message = '';
-    if (resp) {
-      if (typeof resp === 'string') message = resp;
-      else if (resp.message) message = resp.message;
-      else if (resp.detail) message = resp.detail;
-      else if (resp.text) message = resp.text;
-      else message = JSON.stringify(resp);
-    }
+    const message = resp?.message || resp?.detail || resp?.text || 
+                    (typeof resp === 'string' ? resp : JSON.stringify(resp));
 
     toast({
       description: message || (amount === 0
@@ -132,10 +130,8 @@ export const FootballerInfoDialog = ({
 
   // Check if "Offer Amount" option should be available
   // Only available if the footballer belongs to another player (not NULL and not current player)
-  const currentPlayerId = playerId || user?.playerId?.toString() || localStorage.getItem("playerId");
   const canPlaceBid = info?.owner_id !== null && 
-                      info?.owner_id !== undefined && 
-                      info?.owner_id?.toString() !== currentPlayerId;
+                      info?.owner_id?.toString() !== getCurrentPlayerId();
 
   if (loading || !info) {
     return (
