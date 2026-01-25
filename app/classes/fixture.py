@@ -419,3 +419,39 @@ def get_earliest_fixture_dates(soup: BeautifulSoup) -> tuple[datetime | None, da
         latest_end = None
     
     return earliest_start, latest_end, closed
+
+
+def update_fixture_times():
+    """Updates fixture starting time in databsae
+    """
+    conn = pg_connect()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT n
+        FROM fixture
+        WHERE finished = false AND COALESCE(opened, false) != true
+        ORDER BY n ASC
+        """
+    )
+
+    fixtures_to_update = cursor.fetchall()
+
+    for fixture in fixtures_to_update:
+        url = FANTASY_FIXTURE_URL + str(fixture[0])
+        page_content = scrape_page(url, None)
+        start_date, end_date, closed = get_earliest_fixture_dates(page_content)
+
+        cursor.execute(
+            """
+            UPDATE fixture 
+            SET start_ts = %s, finished = %s
+            WHERE n = %s
+            """,
+            (f'{start_date} Europe/Madrid', closed, fixture[0])
+        )
+
+    conn.commit()
+    cursor.close()
+    conn.close()

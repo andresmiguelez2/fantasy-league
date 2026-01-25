@@ -1,11 +1,11 @@
 import logging
 import time
 from classes.market import load_market, load_last_market
-from aux.constants import LOOP_TIME_SECONDS, SLEEP_TIME, LOOP_TIME_BUFFER, N_REQUEST_BUFFER, UPDATE_DB_INTERVAL, HANDLE_DANGLING_FIXTURES_INTERVAL
+from aux.constants import LOOP_TIME_SECONDS, SLEEP_TIME, LOOP_TIME_BUFFER, N_REQUEST_BUFFER, UPDATE_DB_INTERVAL, HANDLE_DANGLING_FIXTURES_INTERVAL, UPDATE_FIXTURES_INTERVAL
 from server_requests.server_requests import server_app
 from server_requests.footballer import update_footballer_info
 from server_requests.general import footballers_to_update
-from classes.fixture import get_current_fixture
+from classes.fixture import get_current_fixture, update_fixture_times
 
 
 logging.basicConfig(
@@ -27,6 +27,11 @@ def cache_data(start_time):
         elapsed_time = update_footballer_info(fid)['elapsed_time']
         if time.time() - start_time > LOOP_TIME_SECONDS - elapsed_time*N_REQUEST_BUFFER:
             break
+
+
+def update_data(n_iteration):
+    if n_iteration%UPDATE_FIXTURES_INTERVAL == 0:
+        update_fixture_times()
 
 
 def wait_loop_time(start_time):
@@ -62,6 +67,7 @@ if __name__ == "__main__":
 
             cache_data(start_time)
             wait_loop_time(start_time)
+            update_data(n_iteration)
             
             n_iteration += 1
         except KeyboardInterrupt:

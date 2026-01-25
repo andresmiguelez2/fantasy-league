@@ -5,6 +5,7 @@ N_REQUEST_BUFFER = 2 # número de peticiones API a saltar
 SLEEP_TIME = 0.001 # Sleep time in seconds
 UPDATE_DB_INTERVAL = 1800  # in seconds (30 minutes)
 HANDLE_DANGLING_FIXTURES_INTERVAL = 50 # dangling features will be handled every number of iterations
+UPDATE_FIXTURES_INTERVAL = 200 # dangling features will be handled every number of iterations
 
 
 ### Client app ###
