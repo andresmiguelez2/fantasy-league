@@ -171,6 +171,7 @@ export interface FootballerInfo {
   market_value: number;
   market_details: { date: string; value: number }[];
   fixture_breakdown: { fixture: number; points: number }[];
+  owner_id: number | null;
 }
 
 export interface FixtureDetail {
