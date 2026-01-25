@@ -10,6 +10,7 @@ import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
 import { 
   fetchLeaderboard, 
   fetchOpenedFixtures, 
+  fetchPlayerFixtures,
   fetchSquadFootballers,
   fetchFixtureLineup,
   fetchFootballerShortName,
@@ -67,18 +68,23 @@ const League = () => {
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
   const [fixtureDialogOpen, setFixtureDialogOpen] = useState(false);
   
-  // Fetch available fixtures on mount
+  // Fetch available fixtures depending on selected player
   useEffect(() => {
     const loadFixtures = async () => {
       try {
-        const data = await fetchOpenedFixtures();
-        setFixtures(data);
+        if (selectedPlayerId === null) {
+          const data = await fetchOpenedFixtures();
+          setFixtures(data);
+        } else {
+          const data = await fetchPlayerFixtures(selectedPlayerId.toString());
+          setFixtures(data);
+        }
       } catch (error) {
         console.log('Failed to fetch fixtures');
       }
     };
     loadFixtures();
-  }, []);
+  }, [selectedPlayerId]);
 
   // Fetch leaderboard when selectedFixture changes or when returning to leaderboard view
   useEffect(() => {
@@ -158,6 +164,7 @@ const League = () => {
   const handlePlayerClick = (playerId: number, playerName: string) => {
     setSelectedPlayerId(playerId);
     setSelectedPlayerName(playerName);
+    setSelectedFixture("total");
   };
   
   const handleBackToLeaderboard = () => {
