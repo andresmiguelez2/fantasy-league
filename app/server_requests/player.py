@@ -162,7 +162,8 @@ def get_fixture_lineup(player_id: int, fixture_n: int):
             """,
             (fixture_n, player_id),
         )
-        formation = cursor.fetchone()[0]
+        formation_result = cursor.fetchone()
+        formation = formation_result[0] if formation_result else []
 
         cursor.close()
         conn.close()
@@ -179,7 +180,7 @@ def get_fixture_lineup(player_id: int, fixture_n: int):
         }
     except Exception as e:
         logger.error(f"Error: {e}")
-        return {"status": "error", "lineup": None}
+        return {"status": "error", "lineup": [], "lineup_footballers": []}
 
 
 @router.get('/benched_footballers/{player_id}')
