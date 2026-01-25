@@ -171,6 +171,7 @@ export interface FootballerInfo {
   market_value: number;
   market_details: { date: string; value: number }[];
   fixture_breakdown: { fixture: number; points: number }[];
+  owner_id: number | null;
 }
 
 export interface FixtureDetail {
@@ -196,12 +197,18 @@ export const fetchOpenedFixtures = async (): Promise<number[]> => {
   return data.opened_fixtures;
 };
 
+export const fetchPlayerFixtures = async (playerId: string): Promise<number[]> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/player/fixtures/${playerId}`);
+  const data = await response.json();
+  return data.fixtures || [];
+};
+
 export const fetchFixtureLineup = async (playerId: string, fixtureN: number): Promise<{ lineup: number[]; lineupFootballers: number[][] }> => {
   const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/player/fixture_lineup/${playerId}?fixture_n=${fixtureN}`);
   const data = await response.json();
   return {
-    lineup: data.lineup,
-    lineupFootballers: data.lineup_footballers
+    lineup: data.lineup || [],
+    lineupFootballers: data.lineup_footballers || []
   };
 };
 

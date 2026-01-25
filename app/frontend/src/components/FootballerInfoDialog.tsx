@@ -7,8 +7,20 @@ import {
 } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { BidDialog } from "@/components/BidDialog";
+import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail, placeBid } from "@/lib/api";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, Cell } from "recharts";
+import { MoreVertical } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { useParams } from "react-router-dom";
 
 interface FootballerInfoDialogProps {
   open: boolean;
@@ -30,6 +42,10 @@ export const FootballerInfoDialog = ({
   const [imgError, setImgError] = useState(false);
   const [selectedFixture, setSelectedFixture] = useState<number | null>(null);
   const [fixtureDetail, setFixtureDetail] = useState<FixtureDetail | null>(null);
+  const [bidDialogOpen, setBidDialogOpen] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const { playerId } = useParams();
 
   useEffect(() => {
     if (open) {
@@ -89,6 +105,40 @@ export const FootballerInfoDialog = ({
       setSelectedFixture(data.activePayload[0].payload.fixture);
     }
   };
+
+  const getCurrentPlayerId = () => {
+    return playerId || user?.playerId?.toString() || localStorage.getItem("playerId");
+  };
+
+  const handleBidSubmit = async (amount: number) => {
+    if (!info) return;
+    
+    const id = getCurrentPlayerId();
+    if (!id) {
+      toast({
+        description: "Unable to place bid: player ID not found",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const resp = await placeBid(footballerId, id, amount);
+
+    // Determine message from API response
+    const message = resp?.message || resp?.detail || resp?.text || 
+                    (typeof resp === 'string' ? resp : JSON.stringify(resp));
+
+    toast({
+      description: message || (amount === 0
+        ? `Your bid for ${info.name} has been deleted.`
+        : `Your bid of €${amount.toLocaleString()} for ${info.name} has been placed.`),
+    });
+  };
+
+  // Check if "Offer Amount" option should be available
+  // Only available if the footballer belongs to another player (not NULL and not current player)
+  const canPlaceBid = info?.owner_id !== null && 
+                      info?.owner_id?.toString() !== getCurrentPlayerId();
 
   if (loading || !info) {
     return (
@@ -153,8 +203,26 @@ export const FootballerInfoDialog = ({
             </Card>
 
             <Card className="p-4">
-              <p className="text-sm text-muted-foreground">Market Value</p>
-              <p className="text-2xl font-bold text-accent">{formatValue(info.market_value)}</p>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Market Value</p>
+                  <p className="text-2xl font-bold text-accent">{formatValue(info.market_value)}</p>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {canPlaceBid && (
+                      <DropdownMenuItem onClick={() => setBidDialogOpen(true)}>
+                        Offer Amount
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </Card>
           </div>
         </div>
@@ -251,6 +319,13 @@ export const FootballerInfoDialog = ({
           </ResponsiveContainer>
         </Card>
       </DialogContent>
+      
+      <BidDialog
+        open={bidDialogOpen}
+        onOpenChange={setBidDialogOpen}
+        footballerName={info.name}
+        onSubmit={handleBidSubmit}
+      />
     </Dialog>
   );
 };
