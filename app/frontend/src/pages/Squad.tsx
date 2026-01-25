@@ -63,18 +63,18 @@ const Squad = () => {
       <Header showBackButton />
       <NavigationTabs />
       
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="container mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
         {loading ? (
           <LoadingSkeleton type="footballers" />
         ) : (
-          <div className="max-w-4xl">
+          <div className="max-w-4xl overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Player</TableHead>
-                  <TableHead className="text-center">Total points</TableHead>
-                  <TableHead className="text-center">Average points</TableHead>
-                  <TableHead className="text-center">Value</TableHead>
+                  <TableHead className="text-center">Total pts</TableHead>
+                  <TableHead className="text-center hidden sm:table-cell">Avg pts</TableHead>
+                  <TableHead className="text-center hidden sm:table-cell">Value</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
