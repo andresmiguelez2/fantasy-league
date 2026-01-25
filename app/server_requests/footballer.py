@@ -61,12 +61,14 @@ def get_footballer_info(footballer_id: int):
         cursor.execute(
             """
             SELECT
-                full_name
-                , team
-                , total_points
-                , average_points
-            FROM footballer_data
-            WHERE id = %s
+                fd.full_name
+                , fd.team
+                , fd.total_points
+                , fd.average_points
+                , f.owner_id
+            FROM footballer_data fd
+            LEFT JOIN footballer f ON fd.id = f.id
+            WHERE fd.id = %s
             """,
             (footballer_id,)
         )
@@ -90,6 +92,7 @@ def get_footballer_info(footballer_id: int):
                 "market_value": document['market_details'][-1]['value'],
                 "market_details": document['market_details'],
                 "fixture_breakdown": extract_fixture_points(document['fixture_breakdown']),
+                "owner_id": footballer_data[4],
             }
         }
     except Exception as e:
