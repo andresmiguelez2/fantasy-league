@@ -101,11 +101,11 @@ const Market = () => {
       <Header showBackButton />
       <NavigationTabs />
       
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="container mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
         {loading ? (
           <LoadingSkeleton type="footballers" />
         ) : (
-          <div className="space-y-3 max-w-2xl">
+          <div className="space-y-2 sm:space-y-3 max-w-2xl">
             {footballers.map((footballer) => (
               <FootballerCard
                 key={footballer.id}

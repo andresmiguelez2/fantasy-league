@@ -162,7 +162,8 @@ def get_fixture_lineup(player_id: int, fixture_n: int):
             """,
             (fixture_n, player_id),
         )
-        formation = cursor.fetchone()[0]
+        formation_result = cursor.fetchone()
+        formation = formation_result[0] if formation_result else []
 
         cursor.close()
         conn.close()
@@ -179,7 +180,36 @@ def get_fixture_lineup(player_id: int, fixture_n: int):
         }
     except Exception as e:
         logger.error(f"Error: {e}")
-        return {"status": "error", "lineup": None}
+        return {"status": "error", "lineup": [], "lineup_footballers": []}
+
+
+@router.get('/fixtures/{player_id}')
+def get_player_fixtures(player_id: int):
+    """
+    Get the fixtures where the player took part.
+    """
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT fixture_n
+            FROM fixture_details
+            WHERE player_id = %s
+            ORDER BY fixture_n DESC
+            """,
+            (player_id,),
+        )
+
+        fixtures = [row[0] for row in cursor.fetchall()]
+
+        cursor.close()
+        conn.close()
+
+        return {"status": "success", "fixtures": fixtures}
+    except Exception as e:
+        logger.error(f"Error retrieving fixtures for player {player_id}: {e}")
+        return {"status": "error", "fixtures": None}
 
 
 @router.get('/benched_footballers/{player_id}')

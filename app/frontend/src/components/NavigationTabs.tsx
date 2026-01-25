@@ -50,15 +50,15 @@ export const NavigationTabs = ({ leagueId }: NavigationTabsProps) => {
   
   return (
     <div className="border-b border-border bg-card">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="container mx-auto px-3 sm:px-6 lg:px-8">
         {/* Main Tabs */}
-        <div className="flex gap-2 py-3">
+        <div className="flex gap-1.5 sm:gap-2 py-2 sm:py-3 overflow-x-auto scrollbar-hide">
           {mainTabs.map((tab) => (
             <Button
               key={tab.id}
               variant={isMainTabActive(tab) ? "default" : "outline"}
               onClick={() => navigate(tab.path)}
-              className="rounded-full min-w-[3rem]"
+              className="rounded-full min-w-fit px-3 sm:px-4 text-xs sm:text-sm h-8 sm:h-10 whitespace-nowrap flex-shrink-0"
             >
               {tab.label}
             </Button>
@@ -67,13 +67,13 @@ export const NavigationTabs = ({ leagueId }: NavigationTabsProps) => {
 
         {/* Team SubTabs */}
         {showTeamSubTabs && (
-          <div className="flex gap-2 pb-3">
+          <div className="flex gap-1.5 sm:gap-2 pb-2 sm:pb-3 overflow-x-auto scrollbar-hide">
             {teamSubTabs.map((tab) => (
               <Button
                 key={tab.id}
                 variant={isSubTabActive(tab.path) ? "secondary" : "ghost"}
                 onClick={() => navigate(tab.path)}
-                className="rounded-full min-w-[3rem] text-sm"
+                className="rounded-full min-w-fit px-3 sm:px-4 text-xs sm:text-sm h-7 sm:h-9 whitespace-nowrap flex-shrink-0"
                 size="sm"
               >
                 {tab.label}
@@ -84,13 +84,13 @@ export const NavigationTabs = ({ leagueId }: NavigationTabsProps) => {
 
         {/* Market SubTabs */}
         {showMarketSubTabs && (
-          <div className="flex gap-2 pb-3">
+          <div className="flex gap-1.5 sm:gap-2 pb-2 sm:pb-3 overflow-x-auto scrollbar-hide">
             {marketSubTabs.map((tab) => (
               <Button
                 key={tab.id}
                 variant={isSubTabActive(tab.path) ? "secondary" : "ghost"}
                 onClick={() => navigate(tab.path)}
-                className="rounded-full min-w-[3rem] text-sm"
+                className="rounded-full min-w-fit px-3 sm:px-4 text-xs sm:text-sm h-7 sm:h-9 whitespace-nowrap flex-shrink-0"
                 size="sm"
               >
                 {tab.label}

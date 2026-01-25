@@ -51,11 +51,11 @@ const Fixtures = () => {
       setLoading(true);
       try {
         const { lineup, lineupFootballers: footballersData } = await fetchFixtureLineup(playerId, selectedFixture);
-        setFormation(lineup);
-        setLineupFootballers(footballersData);
+        setFormation(lineup || []);
+        setLineupFootballers(footballersData || []);
 
         // Fetch short names and points for all footballers
-        const allFootballerIds = footballersData.flat().filter(id => id !== undefined);
+        const allFootballerIds = (footballersData || []).flat().filter(id => id !== undefined);
         const namePromises = allFootballerIds.map(id => 
           fetchFootballerShortName(id).then(name => ({ id, name }))
         );
@@ -102,7 +102,7 @@ const Fixtures = () => {
     const footballersInRow = lineupFootballers[rowIndex] || [];
     
     return (
-      <div className="flex justify-center gap-6 w-full" style={{ marginBottom: rowIndex === 0 ? '3rem' : '2rem' }}>
+      <div className="flex justify-center gap-2 sm:gap-6 w-full" style={{ marginBottom: rowIndex === 0 ? '1.5rem' : '1rem' }}>
         {Array.from({ length: count }).map((_, index) => {
           const footballerId = footballersInRow[index];
           const hasFootballer = footballerId !== undefined;
@@ -112,10 +112,10 @@ const Fixtures = () => {
           return (
             <div
               key={`${rowIndex}-${index}`}
-              className="flex flex-col items-center gap-1"
+              className="flex flex-col items-center gap-0.5 sm:gap-1"
             >
               <div
-                className={`relative w-32 h-36 bg-card border-2 border-primary rounded-lg flex items-center justify-center transition-colors shadow-lg overflow-hidden ${hasFootballer ? 'hover:bg-primary/10 cursor-pointer' : ''}`}
+                className={`relative w-14 h-16 sm:w-24 md:w-32 sm:h-28 md:h-36 bg-card border-2 border-primary rounded-lg flex items-center justify-center transition-colors shadow-lg overflow-hidden ${hasFootballer ? 'hover:bg-primary/10 cursor-pointer' : ''}`}
                 onClick={() => handleFootballerClick(footballerId)}
               >
                 {hasFootballer ? (
@@ -127,12 +127,12 @@ const Fixtures = () => {
                     />
                     {/* Points badge - diagonal corner */}
                     {points !== null && (
-                      <div className="absolute top-0 right-0 w-12 h-12 overflow-hidden">
+                      <div className="absolute top-0 right-0 w-8 h-8 sm:w-12 sm:h-12 overflow-hidden">
                         <div
-                          className={`absolute top-0 right-0 w-16 h-16 transform rotate-45 translate-x-6 -translate-y-6 ${points < 0 ? 'bg-red-600' : 'bg-green-600/60'}`}
+                          className={`absolute top-0 right-0 w-12 h-12 sm:w-16 sm:h-16 transform rotate-45 translate-x-4 sm:translate-x-6 -translate-y-4 sm:-translate-y-6 ${points < 0 ? 'bg-red-600' : 'bg-green-600/60'}`}
                         />
                         <span
-                          className={`absolute top-1.5 right-1.5 font-extrabold text-xl leading-none ${points < 0 ? 'text-red-50' : 'text-green-50'}`}
+                          className={`absolute top-0.5 sm:top-1.5 right-0.5 sm:right-1.5 font-extrabold text-sm sm:text-xl leading-none ${points < 0 ? 'text-red-50' : 'text-green-50'}`}
                         >
                           {points}
                         </span>
@@ -140,11 +140,11 @@ const Fixtures = () => {
                     )}
                   </>
                 ) : (
-                  <span className="text-sm text-muted-foreground font-medium">Empty</span>
+                  <span className="text-[10px] sm:text-sm text-muted-foreground font-medium">Empty</span>
                 )}
               </div>
               {shortName && (
-                <span className="text-xs font-semibold text-white drop-shadow-md">
+                <span className="text-[9px] sm:text-xs font-semibold text-white drop-shadow-md text-center max-w-[56px] sm:max-w-none truncate">
                   {shortName}
                 </span>
               )}
@@ -160,16 +160,16 @@ const Fixtures = () => {
       <Header />
       <NavigationTabs />
       
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="container mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="max-w-4xl mx-auto">
           {/* Fixture Selector Ribbon */}
-          <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+          <div className="flex gap-1.5 sm:gap-2 mb-4 sm:mb-6 overflow-x-auto pb-2 scrollbar-hide">
             {openedFixtures.map((fixture) => (
               <Button
                 key={fixture}
                 variant={selectedFixture === fixture ? "default" : "outline"}
                 onClick={() => setSelectedFixture(fixture)}
-                className="min-w-[4rem]"
+                className="min-w-[3rem] sm:min-w-[4rem] text-xs sm:text-sm px-2 sm:px-4 flex-shrink-0"
               >
                 {`J ${fixture}`}
               </Button>
@@ -188,25 +188,25 @@ const Fixtures = () => {
             <Card className="overflow-hidden">
               <CardContent className="p-0">
                 <div 
-                  className="relative w-full bg-gradient-to-b from-green-600 to-green-700 p-8"
+                  className="relative w-full bg-gradient-to-b from-green-600 to-green-700 p-3 sm:p-8"
                   style={{ aspectRatio: '3/4' }}
                 >
                   {/* Pitch markings */}
-                  <div className="absolute inset-4 border-2 border-white/40 rounded-lg">
+                  <div className="absolute inset-2 sm:inset-4 border-2 border-white/40 rounded-lg">
                     {/* Center circle */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 border-2 border-white/40 rounded-full" />
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white/40 rounded-full" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 sm:w-24 h-12 sm:h-24 border-2 border-white/40 rounded-full" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 sm:w-2 h-1.5 sm:h-2 bg-white/40 rounded-full" />
                     
                     {/* Center line */}
                     <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-white/40" />
                     
                     {/* Goal areas */}
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-12 border-2 border-white/40 border-t-0" />
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-32 h-12 border-2 border-white/40 border-b-0" />
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 sm:w-32 h-6 sm:h-12 border-2 border-white/40 border-t-0" />
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 sm:w-32 h-6 sm:h-12 border-2 border-white/40 border-b-0" />
                   </div>
 
                   {/* Player positions */}
-                  <div className="relative h-full flex flex-col justify-between py-8">
+                  <div className="relative h-full flex flex-col justify-between py-4 sm:py-8">
                     {/* Top row (Attack) */}
                     {formation[2] && renderRow(formation[2], 3)}
                     

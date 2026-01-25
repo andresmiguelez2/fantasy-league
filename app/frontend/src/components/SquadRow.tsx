@@ -20,8 +20,15 @@ export const SquadRow = ({ id, name, value, totalPoints, averagePoints, onClick 
     }).format(val);
   };
   
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  const getInitials = (name?: string | null) => {
+    const safe = name?.trim();
+    if (!safe) return "?";
+    return safe
+      .split(/\s+/)
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
   };
   
   return (
