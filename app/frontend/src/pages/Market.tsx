@@ -138,6 +138,8 @@ const Market = () => {
             onOpenChange={setInfoDialogOpen}
             footballerId={selectedFootballer.id}
             footballerName={selectedFootballer.name}
+            ownerId={selectedFootballer.ownerId}
+            onBid={() => handleBidClick(selectedFootballer)}
           />
         </>
       )}

@@ -6,9 +6,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail } from "@/lib/api";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, Cell } from "recharts";
+import { MoreVertical } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface FootballerInfoDialogProps {
   open: boolean;
@@ -16,6 +20,8 @@ interface FootballerInfoDialogProps {
   footballerId: number;
   footballerName?: string;
   defaultFixture?: number | null;
+  ownerId?: string | null;
+  onBid?: () => void;
 }
 
 export const FootballerInfoDialog = ({
@@ -24,12 +30,20 @@ export const FootballerInfoDialog = ({
   footballerId,
   footballerName,
   defaultFixture,
+  ownerId,
+  onBid,
 }: FootballerInfoDialogProps) => {
+  const { user } = useAuth();
   const [info, setInfo] = useState<FootballerInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [imgError, setImgError] = useState(false);
   const [selectedFixture, setSelectedFixture] = useState<number | null>(null);
   const [fixtureDetail, setFixtureDetail] = useState<FixtureDetail | null>(null);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+
+  // Check if "offer amount" should be available
+  // Available only if footballer belongs to another player (not null and not current user)
+  const isOfferAvailable = ownerId && ownerId !== user?.username;
 
   useEffect(() => {
     if (open) {
@@ -80,6 +94,13 @@ export const FootballerInfoDialog = ({
   const handleBarClick = (data: any) => {
     if (data && data.activePayload && data.activePayload[0]) {
       setSelectedFixture(data.activePayload[0].payload.fixture);
+    }
+  };
+
+  const handleOfferAmount = () => {
+    if (isOfferAvailable && onBid) {
+      setPopoverOpen(false);
+      onBid();
     }
   };
 
@@ -146,8 +167,36 @@ export const FootballerInfoDialog = ({
             </Card>
 
             <Card className="p-4">
-              <p className="text-sm text-muted-foreground">Market Value</p>
-              <p className="text-2xl font-bold text-accent">{formatValue(info.market_value)}</p>
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Market Value</p>
+                  <p className="text-2xl font-bold text-accent">{formatValue(info.market_value)}</p>
+                </div>
+                <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      className="h-8 w-8 flex-shrink-0"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-48 p-2" align="end">
+                    <button
+                      onClick={handleOfferAmount}
+                      disabled={!isOfferAvailable}
+                      className={`w-full text-left px-3 py-2 rounded-md text-sm ${
+                        isOfferAvailable 
+                          ? 'hover:bg-accent hover:text-accent-foreground cursor-pointer' 
+                          : 'text-muted-foreground cursor-not-allowed'
+                      }`}
+                    >
+                      Offer amount
+                    </button>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </Card>
           </div>
         </div>
