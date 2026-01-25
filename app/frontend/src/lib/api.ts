@@ -200,8 +200,8 @@ export const fetchFixtureLineup = async (playerId: string, fixtureN: number): Pr
   const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/player/fixture_lineup/${playerId}?fixture_n=${fixtureN}`);
   const data = await response.json();
   return {
-    lineup: data.lineup,
-    lineupFootballers: data.lineup_footballers
+    lineup: data.lineup || [],
+    lineupFootballers: data.lineup_footballers || []
   };
 };
 

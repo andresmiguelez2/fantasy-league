@@ -51,11 +51,11 @@ const Fixtures = () => {
       setLoading(true);
       try {
         const { lineup, lineupFootballers: footballersData } = await fetchFixtureLineup(playerId, selectedFixture);
-        setFormation(lineup);
-        setLineupFootballers(footballersData);
+        setFormation(lineup || []);
+        setLineupFootballers(footballersData || []);
 
         // Fetch short names and points for all footballers
-        const allFootballerIds = footballersData.flat().filter(id => id !== undefined);
+        const allFootballerIds = (footballersData || []).flat().filter(id => id !== undefined);
         const namePromises = allFootballerIds.map(id => 
           fetchFootballerShortName(id).then(name => ({ id, name }))
         );
