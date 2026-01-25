@@ -6,6 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +29,8 @@ interface FootballerInfoDialogProps {
   footballerId: number;
   footballerName?: string;
   defaultFixture?: number | null;
+  ownerId?: string | null;
+  onBid?: () => void;
 }
 
 export const FootballerInfoDialog = ({
@@ -36,7 +39,10 @@ export const FootballerInfoDialog = ({
   footballerId,
   footballerName,
   defaultFixture,
+  ownerId,
+  onBid,
 }: FootballerInfoDialogProps) => {
+  const { user } = useAuth();
   const [info, setInfo] = useState<FootballerInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [imgError, setImgError] = useState(false);
@@ -103,6 +109,13 @@ export const FootballerInfoDialog = ({
   const handleBarClick = (data: any) => {
     if (data && data.activePayload && data.activePayload[0]) {
       setSelectedFixture(data.activePayload[0].payload.fixture);
+    }
+  };
+
+  const handleOfferAmount = () => {
+    if (isOfferAvailable && onBid) {
+      setPopoverOpen(false);
+      onBid();
     }
   };
 
