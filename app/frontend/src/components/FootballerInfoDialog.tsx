@@ -110,13 +110,6 @@ export const FootballerInfoDialog = ({
     }
   };
 
-  const handleOfferAmount = () => {
-    if (isOfferAvailable && onBid) {
-      setPopoverOpen(false);
-      onBid();
-    }
-  };
-
   const getCurrentPlayerId = () => {
     return playerId || user?.playerId?.toString() || localStorage.getItem("playerId");
   };
