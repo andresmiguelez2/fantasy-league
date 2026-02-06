@@ -8,7 +8,6 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,7 +48,6 @@ export const FootballerInfoDialog = ({
   const [selectedFixture, setSelectedFixture] = useState<number | null>(null);
   const [fixtureDetail, setFixtureDetail] = useState<FixtureDetail | null>(null);
   const [bidDialogOpen, setBidDialogOpen] = useState(false);
-  const { user } = useAuth();
   const { toast } = useToast();
   const { playerId } = useParams();
 
