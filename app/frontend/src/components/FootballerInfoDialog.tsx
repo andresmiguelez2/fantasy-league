@@ -15,7 +15,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { BidDialog } from "@/components/BidDialog";
-import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail, placeBid } from "@/lib/api";
+import { ReleaseClauseDialog } from "@/components/ReleaseClauseDialog";
+import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail, placeBid, payReleaseClause } from "@/lib/api";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, Cell } from "recharts";
 import { MoreVertical } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -48,6 +49,7 @@ export const FootballerInfoDialog = ({
   const [selectedFixture, setSelectedFixture] = useState<number | null>(null);
   const [fixtureDetail, setFixtureDetail] = useState<FixtureDetail | null>(null);
   const [bidDialogOpen, setBidDialogOpen] = useState(false);
+  const [releaseClauseDialogOpen, setReleaseClauseDialogOpen] = useState(false);
   const { toast } = useToast();
   const { playerId } = useParams();
 
@@ -139,10 +141,44 @@ export const FootballerInfoDialog = ({
     });
   };
 
+  const handleReleaseClauseSubmit = async () => {
+    if (!info) return;
+    
+    const id = getCurrentPlayerId();
+    if (!id) {
+      toast({
+        description: "Unable to pay release clause: player ID not found",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const resp = await payReleaseClause(footballerId, id);
+
+    const message = resp?.message || resp?.detail || resp?.text || 
+                    (typeof resp === 'string' ? resp : JSON.stringify(resp));
+
+    toast({
+      description: message || `Release clause paid for ${info.name}.`,
+      variant: resp?.status === "success" ? "default" : "destructive",
+    });
+
+    if (resp?.status === "success") {
+      // Refresh info after successful transfer
+      fetchFootballerInfo(footballerId)
+        .then(setInfo)
+        .catch(console.error);
+    }
+  };
+
   // Check if "Offer Amount" option should be available
   // Only available if the footballer belongs to another player (not NULL and not current player)
   const canPlaceBid = info?.owner_id !== null && 
                       info?.owner_id?.toString() !== getCurrentPlayerId();
+
+  // Check if "Pay release clause" option should be available
+  // Only available if owner_id is not null
+  const canPayReleaseClause = info?.owner_id !== null;
 
   if (loading || !info) {
     return (
@@ -222,6 +258,11 @@ export const FootballerInfoDialog = ({
                     {canPlaceBid && (
                       <DropdownMenuItem onClick={() => setBidDialogOpen(true)}>
                         Offer Amount
+                      </DropdownMenuItem>
+                    )}
+                    {canPayReleaseClause && (
+                      <DropdownMenuItem onClick={() => setReleaseClauseDialogOpen(true)}>
+                        Pay release clause
                       </DropdownMenuItem>
                     )}
                   </DropdownMenuContent>
@@ -329,6 +370,14 @@ export const FootballerInfoDialog = ({
         onOpenChange={setBidDialogOpen}
         footballerName={info.name}
         onSubmit={handleBidSubmit}
+      />
+      
+      <ReleaseClauseDialog
+        open={releaseClauseDialogOpen}
+        onOpenChange={setReleaseClauseDialogOpen}
+        footballerName={info.name}
+        footballerId={footballerId}
+        onSubmit={handleReleaseClauseSubmit}
       />
     </Dialog>
   );
