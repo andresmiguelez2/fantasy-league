@@ -177,8 +177,9 @@ export const FootballerInfoDialog = ({
                       info?.owner_id?.toString() !== getCurrentPlayerId();
 
   // Check if "Pay release clause" option should be available
-  // Only available if owner_id is not null
-  const canPayReleaseClause = info?.owner_id !== null;
+  // Only available if owner_id is not null AND footballer is not owned by current player
+  const canPayReleaseClause = info?.owner_id !== null && 
+                              info?.owner_id?.toString() !== getCurrentPlayerId();
 
   if (loading || !info) {
     return (

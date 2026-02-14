@@ -336,6 +336,9 @@ def pay_release_clause(request: ReleaseClauseRequest):
     Returns:
         dict: A dictionary with status and message.
     """
+    conn = None
+    cursor = None
+    client = None
     try:
         conn = pg_connect()
         cursor = conn.cursor()
@@ -354,33 +357,21 @@ def pay_release_clause(request: ReleaseClauseRequest):
         
         result = cursor.fetchone()
         if not result:
-            cursor.close()
-            conn.close()
-            client.close()
             return {"status": "error", "message": "Footballer not found."}
         
         owner_id, on_lineup = result
         
         # Cannot pay release clause if owner_id is NULL
         if owner_id is None:
-            cursor.close()
-            conn.close()
-            client.close()
             return {"status": "error", "message": "Release clause not available for this footballer."}
         
         # Cannot acquire your own footballer
         if owner_id == request.player_id:
-            cursor.close()
-            conn.close()
-            client.close()
             return {"status": "error", "message": "Cannot pay release clause for your own footballer."}
         
         # Get market value from MongoDB
         document = db.footballer.find_one({"id": request.footballer_id})
         if document is None or not document.get('market_details'):
-            cursor.close()
-            conn.close()
-            client.close()
             return {"status": "error", "message": "Market data not found."}
         
         release_clause = document['market_details'][-1]['value']
@@ -390,11 +381,17 @@ def pay_release_clause(request: ReleaseClauseRequest):
             """
             UPDATE footballer
             SET owner_id = %s, on_market = FALSE, on_market_since = NULL, on_lineup = FALSE
-            WHERE id = %s;
+            WHERE id = %s
+            """,
+            (request.player_id, request.footballer_id)
+        )
+        
+        cursor.execute(
+            """
             DELETE FROM bid
             WHERE footballer_id = %s
             """,
-            (request.player_id, request.footballer_id, request.footballer_id)
+            (request.footballer_id,)
         )
         
         # Update player budgets
@@ -402,12 +399,18 @@ def pay_release_clause(request: ReleaseClauseRequest):
         debit_player_value(owner_id, -release_clause)
         
         conn.commit()
-        cursor.close()
-        conn.close()
-        client.close()
         
         logger.info(f"Release clause paid: Footballer {request.footballer_id} transferred from Player {owner_id} to Player {request.player_id} for {release_clause}")
         return {"status": "success", "message": f"Release clause paid successfully. Footballer acquired for €{release_clause:,.0f}."}
     except Exception as e:
         logger.error(f"Error paying release clause: {e}")
+        if conn:
+            conn.rollback()
         return {"status": "error", "message": str(e)}
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+        if client:
+            client.close()

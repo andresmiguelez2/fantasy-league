@@ -570,6 +570,9 @@ def get_release_clause_data(footballer_id: int):
             - rc_available: boolean indicating if release clause is available
             - release_clause: the amount of the release clause
     """
+    conn = None
+    cursor = None
+    client = None
     try:
         conn = pg_connect()
         client = mongo_client()
@@ -589,18 +592,12 @@ def get_release_clause_data(footballer_id: int):
         
         result = cursor.fetchone()
         if not result:
-            cursor.close()
-            conn.close()
-            client.close()
             return {"status": "error", "message": "Footballer not found."}
         
         owner_id = result[0]
         
         # Release clause is not available if owner_id is NULL
         if owner_id is None:
-            cursor.close()
-            conn.close()
-            client.close()
             return {
                 "status": "success",
                 "rc_available": False,
@@ -610,17 +607,10 @@ def get_release_clause_data(footballer_id: int):
         # Get market value from MongoDB
         document = db.footballer.find_one({"id": footballer_id})
         if document is None or not document.get('market_details'):
-            cursor.close()
-            conn.close()
-            client.close()
             return {"status": "error", "message": "Market data not found."}
         
         # Release clause is typically the market value
         release_clause = document['market_details'][-1]['value']
-        
-        cursor.close()
-        conn.close()
-        client.close()
         
         return {
             "status": "success",
@@ -630,3 +620,10 @@ def get_release_clause_data(footballer_id: int):
     except Exception as e:
         logger.error(f"Error retrieving release clause data: {e}")
         return {"status": "error", "message": str(e)}
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+        if client:
+            client.close()
