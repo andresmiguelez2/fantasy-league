@@ -116,6 +116,11 @@ export const FootballerInfoDialog = ({
     return playerId || user?.playerId?.toString() || localStorage.getItem("playerId");
   };
 
+  const extractMessage = (resp: any) => {
+    return resp?.message || resp?.detail || resp?.text || 
+           (typeof resp === 'string' ? resp : JSON.stringify(resp));
+  };
+
   const handleBidSubmit = async (amount: number) => {
     if (!info) return;
     
@@ -129,10 +134,7 @@ export const FootballerInfoDialog = ({
     }
     
     const resp = await placeBid(footballerId, id, amount);
-
-    // Determine message from API response
-    const message = resp?.message || resp?.detail || resp?.text || 
-                    (typeof resp === 'string' ? resp : JSON.stringify(resp));
+    const message = extractMessage(resp);
 
     toast({
       description: message || (amount === 0
@@ -154,9 +156,7 @@ export const FootballerInfoDialog = ({
     }
     
     const resp = await payReleaseClause(footballerId, id);
-
-    const message = resp?.message || resp?.detail || resp?.text || 
-                    (typeof resp === 'string' ? resp : JSON.stringify(resp));
+    const message = extractMessage(resp);
 
     toast({
       description: message || `Release clause paid for ${info.name}.`,
