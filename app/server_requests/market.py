@@ -320,3 +320,13 @@ def get_player_outgoing_bids(player_id: int):
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "bids": []}
+    
+
+class ReleaseClause(BaseModel):
+    player_id: int
+    footballer_id: int
+
+@router.post("/pay_release_clause")
+def pay_release_clause(release_clause: ReleaseClause):
+    """Pay the release clause for a footballer."""
+    ...
