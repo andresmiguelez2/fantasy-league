@@ -171,15 +171,10 @@ export const FootballerInfoDialog = ({
     }
   };
 
-  // Check if "Offer Amount" option should be available
+  // Check if "Offer Amount" and "Pay release clause" options should be available
   // Only available if the footballer belongs to another player (not NULL and not current player)
   const canPlaceBid = info?.owner_id !== null && 
                       info?.owner_id?.toString() !== getCurrentPlayerId();
-
-  // Check if "Pay release clause" option should be available
-  // Only available if owner_id is not null AND footballer is not owned by current player
-  const canPayReleaseClause = info?.owner_id !== null && 
-                              info?.owner_id?.toString() !== getCurrentPlayerId();
 
   if (loading || !info) {
     return (
@@ -261,7 +256,7 @@ export const FootballerInfoDialog = ({
                         Offer Amount
                       </DropdownMenuItem>
                     )}
-                    {canPayReleaseClause && (
+                    {canPlaceBid && (
                       <DropdownMenuItem onClick={() => setReleaseClauseDialogOpen(true)}>
                         Pay release clause
                       </DropdownMenuItem>
