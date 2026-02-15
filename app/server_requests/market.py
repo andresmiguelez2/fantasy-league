@@ -336,19 +336,17 @@ def pay_release_clause(request: ReleaseClauseRequest):
     Returns:
         dict: A dictionary with status and message.
     """
-    conn = None
-    cursor = None
-    client = None
     try:
         conn = pg_connect()
         cursor = conn.cursor()
         client = mongo_client()
-        db = client["FantasyMDB"]
         
         # Get footballer data
         cursor.execute(
             """
-            SELECT owner_id, on_lineup
+            SELECT
+                owner_id
+                , release_clause
             FROM footballer
             WHERE id = %s
             """,
@@ -359,7 +357,7 @@ def pay_release_clause(request: ReleaseClauseRequest):
         if not result:
             return {"status": "error", "message": "Footballer not found."}
         
-        owner_id, on_lineup = result
+        owner_id, release_clause = result
         
         # Cannot pay release clause if owner_id is NULL
         if owner_id is None:
@@ -368,13 +366,6 @@ def pay_release_clause(request: ReleaseClauseRequest):
         # Cannot acquire your own footballer
         if owner_id == request.player_id:
             return {"status": "error", "message": "Cannot pay release clause for your own footballer."}
-        
-        # Get market value from MongoDB
-        document = db.footballer.find_one({"id": request.footballer_id})
-        if document is None or not document.get('market_details'):
-            return {"status": "error", "message": "Market data not found."}
-        
-        release_clause = document['market_details'][-1]['value']
         
         # Transfer the footballer
         cursor.execute(
