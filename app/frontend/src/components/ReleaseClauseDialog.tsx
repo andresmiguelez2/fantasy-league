@@ -67,8 +67,8 @@ export const ReleaseClauseDialog = ({
   const formatTimeRemaining = (seconds: number | undefined) => {
     if (seconds === undefined) return '';
     
-    // If negative, release clause is already available
-    if (seconds < 0) return '';
+    // If negative or zero, release clause is already available
+    if (seconds <= 0) return '';
     
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor((seconds % 86400) / 3600);
@@ -76,7 +76,8 @@ export const ReleaseClauseDialog = ({
     const secs = Math.floor(seconds % 60);
     
     if (days > 0) {
-      return `${days} day${days !== 1 ? 's' : ''} ${hours} hour${hours !== 1 ? 's' : ''}`;
+      const hoursText = hours > 0 ? ` ${hours} hour${hours !== 1 ? 's' : ''}` : '';
+      return `${days} day${days !== 1 ? 's' : ''}${hoursText}`;
     } else if (hours > 0) {
       return `${hours} hour${hours !== 1 ? 's' : ''} ${minutes} minute${minutes !== 1 ? 's' : ''}`;
     } else if (minutes > 0) {
