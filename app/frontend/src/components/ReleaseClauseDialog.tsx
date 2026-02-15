@@ -111,7 +111,8 @@ export const ReleaseClauseDialog = ({
                 </div>
                 {data.time_until_rc !== undefined && data.time_until_rc > 0 && (
                   <div className="text-sm text-muted-foreground">
-                    Time remaining: <span className="font-semibold">{formatTimeRemaining(data.time_until_rc)}</span>
+                    Time remaining: <span className="font-semibold" aria-label="Days hours minutes seconds">{formatTimeRemaining(data.time_until_rc)}</span>
+                    <div className="text-xs mt-1 opacity-75">(days hh:mm:ss)</div>
                   </div>
                 )}
               </div>
