@@ -64,11 +64,6 @@ export const ReleaseClauseDialog = ({
     }).format(val);
   };
   
-  // Helper for regular English plurals (day, hour, minute, second)
-  const pluralize = (count: number, singular: string) => {
-    return `${count} ${singular}${count !== 1 ? 's' : ''}`;
-  };
-  
   const formatTimeRemaining = (seconds: number | undefined) => {
     // Return empty string if undefined, zero, or negative
     if (seconds === undefined || seconds <= 0) return '';
@@ -78,17 +73,12 @@ export const ReleaseClauseDialog = ({
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
     
-    if (days > 0) {
-      const hoursText = hours > 0 ? ` ${pluralize(hours, 'hour')}` : '';
-      return `${pluralize(days, 'day')}${hoursText}`;
-    } else if (hours > 0) {
-      const minutesText = minutes > 0 ? ` ${pluralize(minutes, 'minute')}` : '';
-      return `${pluralize(hours, 'hour')}${minutesText}`;
-    } else if (minutes > 0) {
-      return pluralize(minutes, 'minute');
-    } else {
-      return pluralize(secs, 'second');
-    }
+    // Format as DD hh:mm:ss
+    const hh = hours.toString().padStart(2, '0');
+    const mm = minutes.toString().padStart(2, '0');
+    const ss = secs.toString().padStart(2, '0');
+    
+    return `${days} ${hh}:${mm}:${ss}`;
   };
   
   return (
