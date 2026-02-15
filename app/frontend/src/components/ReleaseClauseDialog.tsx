@@ -64,15 +64,14 @@ export const ReleaseClauseDialog = ({
     }).format(val);
   };
   
+  // Helper for regular English plurals (day, hour, minute, second)
   const pluralize = (count: number, singular: string) => {
     return `${count} ${singular}${count !== 1 ? 's' : ''}`;
   };
   
   const formatTimeRemaining = (seconds: number | undefined) => {
-    if (seconds === undefined) return '';
-    
-    // If negative or zero, release clause is already available
-    if (seconds <= 0) return '';
+    // Return empty string if undefined, zero, or negative
+    if (seconds === undefined || seconds <= 0) return '';
     
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor((seconds % 86400) / 3600);
