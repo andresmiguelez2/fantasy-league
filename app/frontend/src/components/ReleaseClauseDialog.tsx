@@ -21,6 +21,7 @@ interface ReleaseClauseData {
   status: string;
   rc_available: boolean;
   release_clause: number;
+  time_until_rc?: number;
 }
 
 export const ReleaseClauseDialog = ({
@@ -63,6 +64,25 @@ export const ReleaseClauseDialog = ({
     }).format(val);
   };
   
+  const formatTimeRemaining = (seconds: number | undefined) => {
+    if (seconds === undefined || seconds === null) return '';
+    
+    // If negative, release clause is already available
+    if (seconds < 0) return '';
+    
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    
+    if (days > 0) {
+      return `${days} day${days !== 1 ? 's' : ''} ${hours} hour${hours !== 1 ? 's' : ''}`;
+    } else if (hours > 0) {
+      return `${hours} hour${hours !== 1 ? 's' : ''} ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    } else {
+      return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    }
+  };
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -87,8 +107,15 @@ export const ReleaseClauseDialog = ({
             </div>
             
             {!data.rc_available && (
-              <div className="text-sm text-destructive">
-                Release clause is not available for this footballer.
+              <div className="space-y-2">
+                <div className="text-sm text-destructive">
+                  Release clause is not available for this footballer.
+                </div>
+                {data.time_until_rc !== undefined && data.time_until_rc > 0 && (
+                  <div className="text-sm text-muted-foreground">
+                    Time remaining: <span className="font-semibold">{formatTimeRemaining(data.time_until_rc)}</span>
+                  </div>
+                )}
               </div>
             )}
           </div>

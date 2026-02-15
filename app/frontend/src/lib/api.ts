@@ -386,6 +386,7 @@ export interface ReleaseClauseData {
   status: string;
   rc_available: boolean;
   release_clause: number;
+  time_until_rc?: number;
   message?: string;
 }
 
