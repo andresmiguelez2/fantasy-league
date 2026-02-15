@@ -569,7 +569,7 @@ def get_release_clause_data(footballer_id: int):
             SELECT
                 COALESCE(acquisition_ts < now() - interval '%s days', FALSE) AS rc_available
                 , release_clause
-                , (acquisition_ts - now() - interval '%s days') AS time_until_rc
+                , -(acquisition_ts - now() - interval '%s days') AS time_until_rc
             FROM footballer
             WHERE id = %s
             """,
