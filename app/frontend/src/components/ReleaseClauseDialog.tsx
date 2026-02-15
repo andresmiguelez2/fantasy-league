@@ -64,6 +64,10 @@ export const ReleaseClauseDialog = ({
     }).format(val);
   };
   
+  const pluralize = (count: number, singular: string) => {
+    return `${count} ${singular}${count !== 1 ? 's' : ''}`;
+  };
+  
   const formatTimeRemaining = (seconds: number | undefined) => {
     if (seconds === undefined) return '';
     
@@ -76,15 +80,15 @@ export const ReleaseClauseDialog = ({
     const secs = Math.floor(seconds % 60);
     
     if (days > 0) {
-      const hoursText = hours > 0 ? ` ${hours} hour${hours !== 1 ? 's' : ''}` : '';
-      return `${days} day${days !== 1 ? 's' : ''}${hoursText}`;
+      const hoursText = hours > 0 ? ` ${pluralize(hours, 'hour')}` : '';
+      return `${pluralize(days, 'day')}${hoursText}`;
     } else if (hours > 0) {
-      const minutesText = minutes > 0 ? ` ${minutes} minute${minutes !== 1 ? 's' : ''}` : '';
-      return `${hours} hour${hours !== 1 ? 's' : ''}${minutesText}`;
+      const minutesText = minutes > 0 ? ` ${pluralize(minutes, 'minute')}` : '';
+      return `${pluralize(hours, 'hour')}${minutesText}`;
     } else if (minutes > 0) {
-      return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+      return pluralize(minutes, 'minute');
     } else {
-      return `${secs} second${secs !== 1 ? 's' : ''}`;
+      return pluralize(secs, 'second');
     }
   };
   
