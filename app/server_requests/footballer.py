@@ -8,7 +8,7 @@ from fastapi.responses import Response
 from classes.footballer import Footballer
 import time
 import datetime
-from aux.constants import FANTASY_PLAYER_URL, FOOTBALLER_POSITIONS, UPDATE_DB_INTERVAL, LINEUP_POSITIONS
+from aux.constants import FANTASY_PLAYER_URL, FOOTBALLER_POSITIONS, UPDATE_DB_INTERVAL, LINEUP_POSITIONS, RELEASE_CLAUSE_DAYS
 
 
 router = APIRouter(prefix="/footballer", tags=["footballer"])
@@ -559,71 +559,31 @@ def change_market_status(footballer_id: int, on_market: bool):
 
 @router.get("/release_clause_data/{footballer_id}")
 def get_release_clause_data(footballer_id: int):
-    """Get release clause data for a footballer.
-    
-    Args:
-        footballer_id (int): The ID of the footballer to get release clause data for.
-        
-    Returns:
-        dict: A dictionary containing:
-            - status: "success" or "error"
-            - rc_available: boolean indicating if release clause is available
-            - release_clause: the amount of the release clause
-    """
-    conn = None
-    cursor = None
-    client = None
+    """Get the release clause data for a footballer."""
     try:
         conn = pg_connect()
-        client = mongo_client()
-        db = client["FantasyMDB"]
-
         cursor = conn.cursor()
-        
-        # Get footballer data including owner_id
+
         cursor.execute(
             """
-            SELECT owner_id
+            SELECT
+                COALESCE(acquisition_ts < now() - interval '%s days', FALSE) AS rc_available
+                , release_clause
             FROM footballer
             WHERE id = %s
             """,
-            (footballer_id,)
+            (RELEASE_CLAUSE_DAYS, footballer_id)
         )
-        
-        result = cursor.fetchone()
-        if not result:
+
+        data = cursor.fetchone()
+
+        cursor.close()
+        conn.close()
+
+        if not data:
             return {"status": "error", "message": "Footballer not found."}
         
-        owner_id = result[0]
-        
-        # Release clause is not available if owner_id is NULL
-        if owner_id is None:
-            return {
-                "status": "success",
-                "rc_available": False,
-                "release_clause": 0
-            }
-        
-        # Get market value from MongoDB
-        document = db.footballer.find_one({"id": footballer_id})
-        if document is None or not document.get('market_details'):
-            return {"status": "error", "message": "Market data not found."}
-        
-        # Release clause is typically the market value
-        release_clause = document['market_details'][-1]['value']
-        
-        return {
-            "status": "success",
-            "rc_available": True,
-            "release_clause": release_clause
-        }
+        return {"status": "success", "rc_available": data[0], "release_clause": data[1]}
     except Exception as e:
-        logger.error(f"Error retrieving release clause data: {e}")
+        logger.error(f"Error getting footballer release clause data: {e}")
         return {"status": "error", "message": str(e)}
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
-        if client:
-            client.close()
