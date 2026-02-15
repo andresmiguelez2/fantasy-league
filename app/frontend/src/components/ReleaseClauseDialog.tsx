@@ -79,7 +79,8 @@ export const ReleaseClauseDialog = ({
       const hoursText = hours > 0 ? ` ${hours} hour${hours !== 1 ? 's' : ''}` : '';
       return `${days} day${days !== 1 ? 's' : ''}${hoursText}`;
     } else if (hours > 0) {
-      return `${hours} hour${hours !== 1 ? 's' : ''} ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+      const minutesText = minutes > 0 ? ` ${minutes} minute${minutes !== 1 ? 's' : ''}` : '';
+      return `${hours} hour${hours !== 1 ? 's' : ''}${minutesText}`;
     } else if (minutes > 0) {
       return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
     } else {
