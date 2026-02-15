@@ -381,3 +381,48 @@ export const submitBid = async (footballerId: number, playerId: string, amount: 
   const data = await response.json();
   return data.status === "success";
 };
+
+export interface ReleaseClauseData {
+  status: string;
+  rc_available: boolean;
+  release_clause: number;
+  time_until_rc?: number;
+  message?: string;
+}
+
+export interface PayReleaseClauseResponse {
+  status: string;
+  message?: string;
+  ok?: boolean;
+  text?: string;
+}
+
+export const fetchReleaseClauseData = async (footballerId: number): Promise<ReleaseClauseData> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/footballer/release_clause_data/${footballerId}`);
+  const data = await response.json();
+  return data;
+};
+
+export const payReleaseClause = async (footballerId: number, playerId: string): Promise<PayReleaseClauseResponse> => {
+  const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/pay_release_clause`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      footballer_id: footballerId,
+      player_id: playerId,
+    }),
+  });
+
+  const text = await res.text();
+  if (!text) {
+    return { status: res.status.toString(), ok: res.ok };
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { status: res.status.toString(), ok: res.ok, text };
+  }
+};

@@ -15,7 +15,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { BidDialog } from "@/components/BidDialog";
-import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail, placeBid } from "@/lib/api";
+import { ReleaseClauseDialog } from "@/components/ReleaseClauseDialog";
+import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail, placeBid, payReleaseClause } from "@/lib/api";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, Cell } from "recharts";
 import { MoreVertical } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -48,6 +49,7 @@ export const FootballerInfoDialog = ({
   const [selectedFixture, setSelectedFixture] = useState<number | null>(null);
   const [fixtureDetail, setFixtureDetail] = useState<FixtureDetail | null>(null);
   const [bidDialogOpen, setBidDialogOpen] = useState(false);
+  const [releaseClauseDialogOpen, setReleaseClauseDialogOpen] = useState(false);
   const { toast } = useToast();
   const { playerId } = useParams();
 
@@ -114,6 +116,11 @@ export const FootballerInfoDialog = ({
     return playerId || user?.playerId?.toString() || localStorage.getItem("playerId");
   };
 
+  const extractMessage = (resp: any) => {
+    return resp?.message || resp?.detail || resp?.text || 
+           (typeof resp === 'string' ? resp : JSON.stringify(resp));
+  };
+
   const handleBidSubmit = async (amount: number) => {
     if (!info) return;
     
@@ -127,10 +134,7 @@ export const FootballerInfoDialog = ({
     }
     
     const resp = await placeBid(footballerId, id, amount);
-
-    // Determine message from API response
-    const message = resp?.message || resp?.detail || resp?.text || 
-                    (typeof resp === 'string' ? resp : JSON.stringify(resp));
+    const message = extractMessage(resp);
 
     toast({
       description: message || (amount === 0
@@ -139,7 +143,35 @@ export const FootballerInfoDialog = ({
     });
   };
 
-  // Check if "Offer Amount" option should be available
+  const handleReleaseClauseSubmit = async () => {
+    if (!info) return;
+    
+    const id = getCurrentPlayerId();
+    if (!id) {
+      toast({
+        description: "Unable to pay release clause: player ID not found",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const resp = await payReleaseClause(footballerId, id);
+    const message = extractMessage(resp);
+
+    toast({
+      description: message || `Release clause paid for ${info.name}.`,
+      variant: resp?.status === "success" ? "default" : "destructive",
+    });
+
+    if (resp?.status === "success") {
+      // Refresh info after successful transfer
+      fetchFootballerInfo(footballerId)
+        .then(setInfo)
+        .catch(console.error);
+    }
+  };
+
+  // Check if "Offer Amount" and "Pay release clause" options should be available
   // Only available if the footballer belongs to another player (not NULL and not current player)
   const canPlaceBid = info?.owner_id !== null && 
                       info?.owner_id?.toString() !== getCurrentPlayerId();
@@ -222,6 +254,11 @@ export const FootballerInfoDialog = ({
                     {canPlaceBid && (
                       <DropdownMenuItem onClick={() => setBidDialogOpen(true)}>
                         Offer Amount
+                      </DropdownMenuItem>
+                    )}
+                    {canPlaceBid && (
+                      <DropdownMenuItem onClick={() => setReleaseClauseDialogOpen(true)}>
+                        Pay release clause
                       </DropdownMenuItem>
                     )}
                   </DropdownMenuContent>
@@ -329,6 +366,14 @@ export const FootballerInfoDialog = ({
         onOpenChange={setBidDialogOpen}
         footballerName={info.name}
         onSubmit={handleBidSubmit}
+      />
+      
+      <ReleaseClauseDialog
+        open={releaseClauseDialogOpen}
+        onOpenChange={setReleaseClauseDialogOpen}
+        footballerName={info.name}
+        footballerId={footballerId}
+        onSubmit={handleReleaseClauseSubmit}
       />
     </Dialog>
   );

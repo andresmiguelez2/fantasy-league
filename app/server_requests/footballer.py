@@ -8,7 +8,7 @@ from fastapi.responses import Response
 from classes.footballer import Footballer
 import time
 import datetime
-from aux.constants import FANTASY_PLAYER_URL, FOOTBALLER_POSITIONS, UPDATE_DB_INTERVAL, LINEUP_POSITIONS
+from aux.constants import FANTASY_PLAYER_URL, FOOTBALLER_POSITIONS, UPDATE_DB_INTERVAL, LINEUP_POSITIONS, RELEASE_CLAUSE_DAYS
 
 
 router = APIRouter(prefix="/footballer", tags=["footballer"])
@@ -554,4 +554,37 @@ def change_market_status(footballer_id: int, on_market: bool):
         return {"status": "success", "footballer_id": footballer_id, "on_market": on_market}
     except Exception as e:
         logger.error(f"Error changing footballer market status: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+@router.get("/release_clause_data/{footballer_id}")
+def get_release_clause_data(footballer_id: int):
+    """Get the release clause data for a footballer."""
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT
+                COALESCE(acquisition_ts < now() - interval '%s days', FALSE) AS rc_available
+                , release_clause
+                , (acquisition_ts + interval '%s days' - now()) AS time_until_rc
+            FROM footballer
+            WHERE id = %s
+            """,
+            (RELEASE_CLAUSE_DAYS, RELEASE_CLAUSE_DAYS, footballer_id)
+        )
+
+        data = cursor.fetchone()
+
+        cursor.close()
+        conn.close()
+
+        if not data:
+            return {"status": "error", "message": "Footballer not found."}
+        
+        return {"status": "success", "rc_available": data[0], "release_clause": data[1], "time_until_rc": data[2]}
+    except Exception as e:
+        logger.error(f"Error getting footballer release clause data: {e}")
         return {"status": "error", "message": str(e)}
