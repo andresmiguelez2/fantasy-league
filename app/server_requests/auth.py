@@ -17,6 +17,7 @@ class LoginRequest(BaseModel):
 class LoginResponse(BaseModel):
     access_token: str
     token_type: str
+    id: int
     player_id: int
     username: str
 
@@ -51,6 +52,7 @@ def login(request: LoginRequest):
     return {
         "access_token": access_token,
         "token_type": "bearer",
+        "id": user["id"],
         "player_id": user["player_id"],
         "username": user["username"]
     }
