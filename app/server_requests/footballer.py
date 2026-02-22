@@ -558,6 +558,35 @@ def get_market_status(footballer_id: int):
         return {"status": "error", "message": str(e)}
 
 
+@router.get("/market_status/{footballer_id}")
+def get_market_status(footballer_id: int):
+    """Get the market status of a footballer."""
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT on_market
+            FROM footballer
+            WHERE id = %s
+            """,
+            (footballer_id,)
+        )
+
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if row is None:
+            return {"status": "error", "message": "Footballer not found."}
+
+        return {"status": "success", "on_market": row[0]}
+    except Exception as e:
+        logger.error(f"Error getting footballer market status: {e}")
+        return {"status": "error", "message": str(e)}
+
+
 @router.post("/change_market_status/{footballer_id}")
 def change_market_status(footballer_id: int, on_market: bool):
     """Change the market status of a footballer."""

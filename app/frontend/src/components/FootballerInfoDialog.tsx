@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { BidDialog } from "@/components/BidDialog";
 import { ReleaseClauseDialog } from "@/components/ReleaseClauseDialog";
-import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail, placeBid, payReleaseClause } from "@/lib/api";
+import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail, placeBid, payReleaseClause, fetchMarketStatus, changeMarketStatus } from "@/lib/api";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, Cell } from "recharts";
 import { MoreVertical } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -50,6 +50,7 @@ export const FootballerInfoDialog = ({
   const [fixtureDetail, setFixtureDetail] = useState<FixtureDetail | null>(null);
   const [bidDialogOpen, setBidDialogOpen] = useState(false);
   const [releaseClauseDialogOpen, setReleaseClauseDialogOpen] = useState(false);
+  const [onMarket, setOnMarket] = useState<boolean | null>(null);
   const { toast } = useToast();
   const { playerId } = useParams();
 
@@ -62,6 +63,15 @@ export const FootballerInfoDialog = ({
         .then(setInfo)
         .catch(console.error)
         .finally(() => setLoading(false));
+    }
+  }, [open, footballerId]);
+
+  // Fetch market status when the dialog opens (for owned footballers)
+  useEffect(() => {
+    if (open && footballerId) {
+      fetchMarketStatus(footballerId)
+        .then(setOnMarket)
+        .catch(console.error);
     }
   }, [open, footballerId]);
 
@@ -176,6 +186,34 @@ export const FootballerInfoDialog = ({
   const canPlaceBid = info?.owner_id !== null && 
                       info?.owner_id?.toString() !== getCurrentPlayerId();
 
+  // Check if the current player owns this footballer
+  const isOwner = info?.owner_id?.toString() === getCurrentPlayerId();
+
+  const handleMarketStatusToggle = async () => {
+    const newStatus = !onMarket;
+    try {
+      const resp = await changeMarketStatus(footballerId, newStatus);
+      if (resp?.status === "success") {
+        setOnMarket(newStatus);
+        toast({
+          description: newStatus
+            ? `${info?.name} has been placed on the market.`
+            : `${info?.name} has been removed from the market.`,
+        });
+      } else {
+        toast({
+          description: resp?.message || "Failed to update market status.",
+          variant: "destructive",
+        });
+      }
+    } catch {
+      toast({
+        description: "Failed to update market status.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading || !info) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -259,6 +297,11 @@ export const FootballerInfoDialog = ({
                     {canPlaceBid && (
                       <DropdownMenuItem onClick={() => setReleaseClauseDialogOpen(true)}>
                         Pay release clause
+                      </DropdownMenuItem>
+                    )}
+                    {isOwner && onMarket !== null && (
+                      <DropdownMenuItem onClick={handleMarketStatusToggle}>
+                        {onMarket ? "Remove from market" : "Place on market"}
                       </DropdownMenuItem>
                     )}
                   </DropdownMenuContent>
