@@ -69,12 +69,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
       })
       .catch(() => {
-        // Network error – fall back to stored user so the app still works offline
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          setToken(storedToken);
-          setUser(JSON.parse(storedUser));
-        }
+        // Network error – clear stored session so the user is prompted to log in
+        setToken(null);
+        setUser(null);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('playerId');
       })
       .finally(() => setIsLoading(false));
   }, []);
