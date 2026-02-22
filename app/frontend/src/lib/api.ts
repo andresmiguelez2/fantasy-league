@@ -403,6 +403,23 @@ export const fetchReleaseClauseData = async (footballerId: number): Promise<Rele
   return data;
 };
 
+export const fetchMarketStatus = async (footballerId: number): Promise<boolean> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/footballer/market_status/${footballerId}`);
+  const data = await response.json();
+  if (data.status !== "success") {
+    throw new Error(data.message || "Failed to fetch market status");
+  }
+  return data.on_market;
+};
+
+export const changeMarketStatus = async (footballerId: number, onMarket: boolean): Promise<any> => {
+  const response = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/footballer/change_market_status/${footballerId}?on_market=${onMarket}`,
+    { method: 'POST' }
+  );
+  return response.json();
+};
+
 export const payReleaseClause = async (footballerId: number, playerId: string): Promise<PayReleaseClauseResponse> => {
   const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/pay_release_clause`, {
     method: 'POST',
