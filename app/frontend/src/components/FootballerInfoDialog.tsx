@@ -261,20 +261,22 @@ export const FootballerInfoDialog = ({
 
           <div className="space-y-4">
             <Card className="p-4">
-              <div className="flex items-center justify-center gap-3">
+              <div className="flex items-center gap-3">
                 {!teamBadgeError && (
                   <img
                     src={`${import.meta.env.VITE_BACKEND_URL}/team/image/${encodeURIComponent(info.team)}`}
                     alt={`${info.team} team badge`}
-                    className="h-10 w-10 object-contain flex-shrink-0"
+                    className="w-10 self-stretch object-contain flex-shrink-0"
                     onError={() => setTeamBadgeError(true)}
                   />
                 )}
-                <h3 className="text-2xl font-bold text-center">{info.name}</h3>
+                <div className="flex-1 text-center">
+                  <h3 className="text-2xl font-bold">{info.name}</h3>
+                  {info.owner_id != null && (
+                    <p className="text-sm text-muted-foreground mt-1">{info.owner_id}</p>
+                  )}
+                </div>
               </div>
-              {info.owner_id != null && (
-                <p className="text-sm text-muted-foreground text-center mt-1">{info.owner_id}</p>
-              )}
             </Card>
 
             <Card className="p-4">
