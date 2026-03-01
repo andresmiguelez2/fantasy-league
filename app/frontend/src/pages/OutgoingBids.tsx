@@ -26,7 +26,7 @@ const OutgoingBids = () => {
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const playerId = user?.playerId?.toString() || localStorage.getItem("playerId");
+  const playerId = user?.playerId?.toString();
 
   const { data: bids = [], isLoading } = useQuery({
     queryKey: ["outgoingBids", playerId],
@@ -81,13 +81,13 @@ const OutgoingBids = () => {
         ) : bids.length === 0 ? (
           <p className="text-muted-foreground">No outgoing bids</p>
         ) : (
-          <div className="max-w-4xl">
+          <div className="max-w-4xl overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Footballer</TableHead>
-                  <TableHead className="text-center">Owner</TableHead>
-                  <TableHead className="text-center">Timestamp</TableHead>
+                  <TableHead className="text-center hidden sm:table-cell">Owner</TableHead>
+                  <TableHead className="text-center hidden sm:table-cell">Timestamp</TableHead>
                   <TableHead className="text-center">Bid Value</TableHead>
                   <TableHead className="w-[80px]"></TableHead>
                 </TableRow>
@@ -104,15 +104,15 @@ const OutgoingBids = () => {
                         <img
                           src={`${import.meta.env.VITE_BACKEND_URL}/footballer/image/${bid.footballerId}`}
                           alt={bid.footballerName}
-                          className="w-10 h-10 rounded-full object-cover"
+                          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover flex-shrink-0"
                         />
-                        <span className="font-medium">{bid.footballerName}</span>
+                        <span className="font-medium truncate">{bid.footballerName}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-center text-muted-foreground">
+                    <TableCell className="text-center text-muted-foreground hidden sm:table-cell">
                       {bid.ownerId ?? "-"}
                     </TableCell>
-                    <TableCell className="text-center text-muted-foreground">
+                    <TableCell className="text-center text-muted-foreground hidden sm:table-cell">
                       {formatTimestamp(bid.timestamp)}
                     </TableCell>
                     <TableCell className="text-center font-semibold">

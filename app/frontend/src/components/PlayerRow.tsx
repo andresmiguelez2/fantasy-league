@@ -50,7 +50,7 @@ export const PlayerRow = ({ playerId, name, points, team_value, onPlayerClick }:
       <TableCell className="text-center">
         <span className="text-accent font-semibold">{points} pts</span>
       </TableCell>
-      <TableCell className="text-center">
+      <TableCell className="text-center hidden sm:table-cell">
         <span className="text-secondary font-semibold">{formatValue(team_value)}</span>
       </TableCell>
     </TableRow>

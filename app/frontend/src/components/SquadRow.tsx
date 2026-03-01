@@ -45,10 +45,10 @@ export const SquadRow = ({ id, name, value, totalPoints, averagePoints, onClick 
       <TableCell className="text-center">
         <span className="font-semibold text-green-600">{totalPoints}</span>
       </TableCell>
-      <TableCell className="text-center">
+      <TableCell className="text-center hidden sm:table-cell">
         <span className="font-semibold">{averagePoints}</span>
       </TableCell>
-      <TableCell className="text-center">
+      <TableCell className="text-center hidden sm:table-cell">
         <span className="text-secondary font-semibold">{formatValue(value)}</span>
       </TableCell>
     </TableRow>

@@ -10,21 +10,6 @@ import { fetchSquadFootballers, Footballer } from "@/lib/api";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
 
-// Sample placeholder data for visualization
-const sampleFootballers: Footballer[] = [
-  { id: 45, name: "Luka Modrić", team: "Real Madrid", value: 25000000, totalPoints: 75, averagePoints: 7.5, onMarket: false, onMarketSince: null },
-  { id: 78, name: "Kevin De Bruyne", team: "Man City", value: 45000000, totalPoints: 41, averagePoints: 7.5, onMarket: true, onMarketSince: "2025-11-05T14:30:00+00:00" },
-  { id: 122, name: "Robert Lewandowski", team: "Barcelona", value: 38000000, totalPoints: 256, averagePoints: 7.5, onMarket: false, onMarketSince: null },
-  { id: 89, name: "Thibaut Courtois", team: "Real Madrid", value: 22000000, totalPoints: 1, averagePoints: 4.5, onMarket: false, onMarketSince: null },
-  { id: 156, name: "João Cancelo", team: "Barcelona", value: 18000000, totalPoints: 38, averagePoints: 7.5, onMarket: true, onMarketSince: "2025-11-07T09:15:00+00:00" },
-  { id: 201, name: "Pedri", team: "Barcelona", value: 35000000, totalPoints: 13, averagePoints: 7.5, onMarket: false, onMarketSince: null },
-  { id: 67, name: "Frenkie de Jong", team: "Barcelona", value: 32000000, totalPoints: 75, averagePoints: 7.5, onMarket: false, onMarketSince: null },
-  { id: 143, name: "Vinícius Júnior", team: "Real Madrid", value: 55000000, totalPoints: 43, averagePoints: 0.5, onMarket: true, onMarketSince: "2025-11-08T16:45:00+00:00" },
-  { id: 98, name: "Marc-André ter Stegen", team: "Barcelona", value: 24000000, totalPoints: 75, averagePoints: 7.51, onMarket: false, onMarketSince: null },
-  { id: 234, name: "Rodri", team: "Man City", value: 42000000, totalPoints: 75, averagePoints: 7.5, onMarket: false, onMarketSince: null },
-  { id: 176, name: "Gavi", team: "Barcelona", value: 28000000, totalPoints: 1, averagePoints: 3.54, onMarket: false, onMarketSince: null },
-];
-
 const Squad = () => {
   const { playerId } = useParams();
   const { user } = useAuth();
@@ -37,14 +22,12 @@ const Squad = () => {
     const loadFootballers = async () => {
       setLoading(true);
       try {
-        // Use playerId from URL params or default to logged-in user
-        const id = playerId || user?.playerId?.toString() || localStorage.getItem("playerId");
+        const id = playerId || user?.playerId?.toString();
         const data = await fetchSquadFootballers(id);
         setFootballers(data);
       } catch (error) {
-        console.log('Failed to fetch squad data, using sample data for visualization');
-        // Use sample data when API is not available
-        setFootballers(sampleFootballers);
+        console.error('Failed to fetch squad data:', error);
+        setFootballers([]);
       } finally {
         setLoading(false);
       }

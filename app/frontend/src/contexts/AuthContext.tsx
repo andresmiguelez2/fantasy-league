@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface User {
-  id: number;        // User ID from database
+  id: number;        // User ID from the users table
   username: string;
   playerId: number;  // Associated player ID in the game
 }
@@ -34,17 +34,49 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load token from localStorage on mount
+  // Load token from localStorage on mount and verify with server
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-    
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+
+    if (!storedToken) {
+      setIsLoading(false);
+      return;
     }
-    
-    setIsLoading(false);
+
+    // Verify token and get fresh user data (including correct player_id) from server
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/me`, {
+      headers: { Authorization: `Bearer ${storedToken}` },
+    })
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (data) {
+          const refreshedUser: User = {
+            id: data.id,
+            username: data.username,
+            playerId: data.player_id,
+          };
+          setToken(storedToken);
+          setUser(refreshedUser);
+          localStorage.setItem('user', JSON.stringify(refreshedUser));
+          localStorage.setItem('playerId', data.player_id.toString());
+        } else {
+          // Token is invalid or expired – clear stored session
+          setToken(null);
+          setUser(null);
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          localStorage.removeItem('playerId');
+        }
+      })
+      .catch(() => {
+        // Network error – clear stored session so the user is prompted to log in
+        setToken(null);
+        setUser(null);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('playerId');
+      })
+      .finally(() => setIsLoading(false));
   }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
@@ -63,9 +95,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       const data = await response.json();
       
-      // Create user object with proper user ID from token payload
       const userData: User = {
-        id: data.player_id,      // Using player_id as user id for backward compatibility
+        id: data.id,           // User ID from the users table
         username: data.username,
         playerId: data.player_id, // The player in the fantasy game
       };
