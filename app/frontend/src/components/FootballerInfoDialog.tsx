@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { BidDialog } from "@/components/BidDialog";
 import { ReleaseClauseDialog } from "@/components/ReleaseClauseDialog";
-import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail, placeBid, payReleaseClause, fetchMarketStatus, changeMarketStatus, fetchPlayerInfo } from "@/lib/api";
+import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail, placeBid, payReleaseClause, fetchMarketStatus, changeMarketStatus } from "@/lib/api";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, Cell } from "recharts";
 import { MoreVertical } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -52,7 +52,6 @@ export const FootballerInfoDialog = ({
   const [bidDialogOpen, setBidDialogOpen] = useState(false);
   const [releaseClauseDialogOpen, setReleaseClauseDialogOpen] = useState(false);
   const [onMarket, setOnMarket] = useState<boolean | null>(null);
-  const [ownerName, setOwnerName] = useState<string | null>(null);
   const { toast } = useToast();
   const { playerId } = useParams();
 
@@ -62,22 +61,12 @@ export const FootballerInfoDialog = ({
       setSelectedFixture(null);
       setFixtureDetail(null);
       setTeamBadgeError(false);
-      setOwnerName(null);
       fetchFootballerInfo(footballerId)
         .then(setInfo)
         .catch(console.error)
         .finally(() => setLoading(false));
     }
   }, [open, footballerId]);
-
-  // Fetch owner name when info (and owner_id) is available
-  useEffect(() => {
-    if (info?.owner_id != null) {
-      fetchPlayerInfo(String(info.owner_id))
-        .then(player => setOwnerName(player.name))
-        .catch((err) => { console.error('Failed to fetch owner name:', err); setOwnerName(String(info.owner_id)); });
-    }
-  }, [info?.owner_id]);
 
   // Fetch market status when the dialog opens (for owned footballers)
   useEffect(() => {
@@ -283,8 +272,8 @@ export const FootballerInfoDialog = ({
                 )}
                 <div className="flex-1 text-center">
                   <h3 className="text-2xl font-bold">{info.name}</h3>
-                  {info.owner_id != null && (
-                    <p className="text-sm text-muted-foreground mt-1">{ownerName ?? info.owner_id}</p>
+                  {info.owner_name != null && (
+                    <p className="text-sm text-muted-foreground mt-1">{info.owner_name}</p>
                   )}
                 </div>
               </div>
