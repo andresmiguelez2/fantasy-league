@@ -126,14 +126,14 @@ const FootballerInfo = () => {
           <LoadingSkeleton type="footballers" />
         ) : (
           <>
-            <div className="rounded-xl border border-border bg-card shadow-lg overflow-hidden">
+            <div className="rounded-xl border border-border bg-card shadow-lg overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent border-border/50">
                     <TableHead className="text-muted-foreground font-semibold">Player</TableHead>
                     <TableHead className="text-center text-muted-foreground font-semibold">Value</TableHead>
                     <TableHead className="text-center text-muted-foreground font-semibold">Total Points</TableHead>
-                    <TableHead className="text-center text-muted-foreground font-semibold">Average Points</TableHead>
+                    <TableHead className="text-center text-muted-foreground font-semibold hidden sm:table-cell">Average Points</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
