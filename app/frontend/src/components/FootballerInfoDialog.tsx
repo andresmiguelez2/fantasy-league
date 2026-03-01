@@ -123,7 +123,7 @@ export const FootballerInfoDialog = ({
   };
 
   const getCurrentPlayerId = () => {
-    return playerId || user?.playerId?.toString() || localStorage.getItem("playerId");
+    return playerId || user?.playerId?.toString();
   };
 
   const extractMessage = (resp: any) => {
