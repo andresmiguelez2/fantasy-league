@@ -46,6 +46,7 @@ export const FootballerInfoDialog = ({
   const [info, setInfo] = useState<FootballerInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [imgError, setImgError] = useState(false);
+  const [teamBadgeError, setTeamBadgeError] = useState(false);
   const [selectedFixture, setSelectedFixture] = useState<number | null>(null);
   const [fixtureDetail, setFixtureDetail] = useState<FixtureDetail | null>(null);
   const [bidDialogOpen, setBidDialogOpen] = useState(false);
@@ -59,6 +60,7 @@ export const FootballerInfoDialog = ({
       setLoading(true);
       setSelectedFixture(null);
       setFixtureDetail(null);
+      setTeamBadgeError(false);
       fetchFootballerInfo(footballerId)
         .then(setInfo)
         .catch(console.error)
@@ -259,8 +261,22 @@ export const FootballerInfoDialog = ({
 
           <div className="space-y-4">
             <Card className="p-4">
-              <h3 className="text-2xl font-bold text-center">{info.name}</h3>
-              <p className="text-sm text-muted-foreground text-center">{info.team}</p>
+              <div className="flex items-center gap-3">
+                {!teamBadgeError && (
+                  <img
+                    src={`${import.meta.env.VITE_BACKEND_URL}/team/image/${encodeURIComponent(info.team)}`}
+                    alt={`${info.team} team badge`}
+                    className="w-10 self-stretch object-contain flex-shrink-0"
+                    onError={() => setTeamBadgeError(true)}
+                  />
+                )}
+                <div className="flex-1 text-center">
+                  <h3 className="text-2xl font-bold">{info.name}</h3>
+                  {info.owner_name != null && (
+                    <p className="text-sm text-muted-foreground mt-1">{info.owner_name}</p>
+                  )}
+                </div>
+              </div>
             </Card>
 
             <Card className="p-4">
