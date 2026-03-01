@@ -171,6 +171,16 @@ class Market:
                 (bidder_id, footballer_id, footballer_id)
             )
 
+            if bidder_id is not None:
+                cursor.execute(
+                    """
+                    UPDATE player
+                    SET budget = budget - %s
+                    WHERE id = %s
+                    """,
+                    (amount, bidder_id)
+                )
+
             logger.info(f"Footballer {footballer_id} assigned to bidder {bidder_id} with amount {amount}.")
             
             
