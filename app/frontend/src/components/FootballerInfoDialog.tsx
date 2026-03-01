@@ -75,7 +75,7 @@ export const FootballerInfoDialog = ({
     if (info?.owner_id != null) {
       fetchPlayerInfo(String(info.owner_id))
         .then(player => setOwnerName(player.name))
-        .catch(() => setOwnerName(String(info.owner_id)));
+        .catch((err) => { console.error('Failed to fetch owner name:', err); setOwnerName(String(info.owner_id)); });
     }
   }, [info?.owner_id]);
 
