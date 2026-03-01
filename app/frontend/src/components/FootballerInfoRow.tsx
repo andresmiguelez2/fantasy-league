@@ -60,7 +60,7 @@ export const FootballerInfoRow = ({
       <TableCell className="text-center">
         <span className="font-semibold">{totalPoints}</span>
       </TableCell>
-      <TableCell className="text-center">
+      <TableCell className="text-center hidden sm:table-cell">
         <span className="font-semibold">{averagePoints}</span>
       </TableCell>
     </TableRow>
