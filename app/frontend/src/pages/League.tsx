@@ -29,11 +29,13 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const API_ENDPOINT = import.meta.env.VITE_BACKEND_URL;
 
 const League = () => {
   const { leagueId } = useParams();
+  const { setActiveLeague } = useAuth();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [fixtures, setFixtures] = useState<number[]>([]);
@@ -53,7 +55,15 @@ const League = () => {
   const [footballerPoints, setFootballerPoints] = useState<Record<number, number | null>>({});
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
   const [fixtureDialogOpen, setFixtureDialogOpen] = useState(false);
-  
+
+  // Set the active league in auth context so that Squad/Market/etc. use the
+  // correct per-league player_id when navigating away from this page.
+  useEffect(() => {
+    if (leagueId) {
+      setActiveLeague(parseInt(leagueId, 10));
+    }
+  }, [leagueId, setActiveLeague]);
+
   // Fetch available fixtures depending on selected player
   useEffect(() => {
     const loadFixtures = async () => {
@@ -78,7 +88,7 @@ const League = () => {
       const loadPlayers = async () => {
         setLoading(true);
         try {
-          const data = await fetchLeaderboard(selectedFixture);
+          const data = await fetchLeaderboard(selectedFixture, leagueId);
           setPlayers(data);
         } catch (error) {
           console.error('Failed to fetch leaderboard data:', error);
@@ -90,7 +100,7 @@ const League = () => {
       
       loadPlayers();
     }
-  }, [selectedFixture, selectedPlayerId]);
+  }, [selectedFixture, selectedPlayerId, leagueId]);
   
   // Fetch player's squad or fixture when a player is selected
   useEffect(() => {

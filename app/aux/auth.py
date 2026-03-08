@@ -79,10 +79,10 @@ def authenticate_user(username: str, password: str) -> Optional[dict]:
         )
         
         user = cursor.fetchone()
-        cursor.close()
-        conn.close()
         
         if not user:
+            cursor.close()
+            conn.close()
             logger.warning(f"User not found: {username}")
             return None
         
@@ -90,13 +90,35 @@ def authenticate_user(username: str, password: str) -> Optional[dict]:
         
         # Verify password
         if not verify_password(password, password_hash):
+            cursor.close()
+            conn.close()
             logger.warning(f"Invalid password for user: {username}")
             return None
+
+        # Fetch all leagues this user participates in
+        cursor.execute(
+            """
+            SELECT ul.league_id, l.name, ul.player_id
+            FROM user_leagues ul
+            JOIN league l ON ul.league_id = l.id
+            WHERE ul.user_id = %s
+            ORDER BY l.name
+            """,
+            (user_id,),
+        )
+        leagues = [
+            {"league_id": row[0], "league_name": row[1], "player_id": row[2]}
+            for row in cursor.fetchall()
+        ]
+
+        cursor.close()
+        conn.close()
         
         return {
             "id": user_id,
             "username": db_username,
-            "player_id": player_id
+            "player_id": player_id,
+            "leagues": leagues,
         }
         
     except Exception as e:

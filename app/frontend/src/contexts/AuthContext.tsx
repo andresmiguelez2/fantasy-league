@@ -1,9 +1,16 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+export interface LeagueEntry {
+  league_id: number;
+  league_name: string;
+  player_id: number;
+}
+
 interface User {
   id: number;        // User ID from the users table
   username: string;
-  playerId: number;  // Associated player ID in the game
+  playerId: number;  // Active league's player ID (updated when a league is selected)
+  leagues: LeagueEntry[];  // All leagues the user participates in
 }
 
 interface AuthContextType {
@@ -11,6 +18,7 @@ interface AuthContextType {
   token: string | null;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
+  setActiveLeague: (leagueId: number) => void;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
@@ -43,22 +51,26 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       return;
     }
 
-    // Verify token and get fresh user data (including correct player_id) from server
+    // Verify token and get fresh user data (including leagues) from server
     fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/me`, {
       headers: { Authorization: `Bearer ${storedToken}` },
     })
       .then(res => (res.ok ? res.json() : null))
       .then(data => {
         if (data) {
+          const storedPlayerId = localStorage.getItem('playerId');
           const refreshedUser: User = {
             id: data.id,
             username: data.username,
-            playerId: data.player_id,
+            playerId: storedPlayerId ? parseInt(storedPlayerId, 10) : data.player_id,
+            leagues: data.leagues ?? [],
           };
           setToken(storedToken);
           setUser(refreshedUser);
           localStorage.setItem('user', JSON.stringify(refreshedUser));
-          localStorage.setItem('playerId', data.player_id.toString());
+          if (!storedPlayerId) {
+            localStorage.setItem('playerId', data.player_id.toString());
+          }
         } else {
           // Token is invalid or expired – clear stored session
           setToken(null);
@@ -94,11 +106,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
 
       const data = await response.json();
-      
+
       const userData: User = {
-        id: data.id,           // User ID from the users table
+        id: data.id,
         username: data.username,
-        playerId: data.player_id, // The player in the fantasy game
+        playerId: data.player_id,
+        leagues: data.leagues ?? [],
       };
 
       setToken(data.access_token);
@@ -116,6 +129,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  /**
+   * Switch the active league. Updates `user.playerId` to the player_id that
+   * corresponds to the given league so that Squad, Market, etc. automatically
+   * show the correct data.
+   */
+  const setActiveLeague = (leagueId: number) => {
+    if (!user) return;
+
+    const entry = user.leagues.find(l => l.league_id === leagueId);
+    if (!entry) return;
+
+    const updatedUser: User = { ...user, playerId: entry.player_id };
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    localStorage.setItem('playerId', entry.player_id.toString());
+  };
+
   const logout = () => {
     // Clear state and localStorage
     // Note: JWT tokens are stateless, so invalidation is handled client-side
@@ -131,6 +161,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     token,
     login,
     logout,
+    setActiveLeague,
     isAuthenticated: !!token && !!user,
     isLoading,
   };

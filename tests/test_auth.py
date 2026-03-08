@@ -77,9 +77,10 @@ class TestAuthentication(unittest.TestCase):
         password = "test_password"
         password_hash = get_password_hash(password)
         
-        # Mock database response
+        # Mock database response: first call returns user row, second fetchall returns leagues
         mock_cursor = MagicMock()
         mock_cursor.fetchone.return_value = (1, "testuser", password_hash, 10)
+        mock_cursor.fetchall.return_value = [(1, "League A", 10)]
         
         mock_conn = MagicMock()
         mock_conn.cursor.return_value = mock_cursor
@@ -93,6 +94,11 @@ class TestAuthentication(unittest.TestCase):
         self.assertEqual(user["id"], 1)
         self.assertEqual(user["username"], "testuser")
         self.assertEqual(user["player_id"], 10)
+        self.assertIn("leagues", user)
+        self.assertEqual(len(user["leagues"]), 1)
+        self.assertEqual(user["leagues"][0]["league_id"], 1)
+        self.assertEqual(user["leagues"][0]["league_name"], "League A")
+        self.assertEqual(user["leagues"][0]["player_id"], 10)
     
     @patch("aux.auth.pg_connect")
     def test_authenticate_user_wrong_password(self, mock_pg_connect):

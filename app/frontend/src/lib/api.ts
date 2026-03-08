@@ -5,6 +5,12 @@ export interface League {
   name: string;
 }
 
+export interface LeagueEntry {
+  league_id: number;
+  league_name: string;
+  player_id: number;
+}
+
 export interface Player {
   id: number;
   name: string;
@@ -38,21 +44,33 @@ export interface MarketFootballer {
 // Simulate API delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const fetchLeagues = async (): Promise<League[]> => {
-  await delay(800);
-  // TODO: Replace with actual API call
-  // const response = await fetch('YOUR_API_ENDPOINT/leagues');
-  // return response.json();
-  
-  return [
-    { id: '1', name: 'League 1' },
-    { id: '2', name: 'League 2' },
-    { id: '3', name: 'League 3' },
-  ];
+export const fetchLeagues = async (token?: string): Promise<League[]> => {
+  // If a token is provided, fetch leagues for the authenticated user
+  if (token) {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leagues/mine`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await response.json();
+    return (data.leagues ?? []).map((l: { id: number; name: string }) => ({
+      id: String(l.id),
+      name: l.name,
+    }));
+  }
+  // Fallback: fetch all public leagues (admin view)
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leagues`);
+  const data = await response.json();
+  return (data.leagues ?? []).map((l: { id: number; name: string }) => ({
+    id: String(l.id),
+    name: l.name,
+  }));
 };
 
-export const fetchLeaderboard = async (fixtureId: string = 'total'): Promise<Player[]> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leaderboard/${fixtureId}`);
+export const fetchLeaderboard = async (fixtureId: string = 'total', leagueId?: string): Promise<Player[]> => {
+  const url = new URL(`${import.meta.env.VITE_BACKEND_URL}/leaderboard/${fixtureId}`);
+  if (leagueId) {
+    url.searchParams.set('league_id', leagueId);
+  }
+  const response = await fetch(url.toString());
   const data = await response.json();
   
   return data.leaderboard.map((player: any[]) => ({

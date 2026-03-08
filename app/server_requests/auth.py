@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
-from typing import Optional
+from typing import List, Optional
 from aux.auth import authenticate_user, create_access_token, verify_token, get_user_by_id
+from aux.database import pg_connect
 from .logger import logger
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -14,24 +15,33 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class LeagueEntry(BaseModel):
+    league_id: int
+    league_name: str
+    player_id: int
+
+
 class LoginResponse(BaseModel):
     access_token: str
     token_type: str
     id: int
     player_id: int
     username: str
+    leagues: List[LeagueEntry]
 
 
 class UserInfo(BaseModel):
     id: int
     username: str
     player_id: int
+    leagues: List[LeagueEntry]
 
 
 @router.post("/login", response_model=LoginResponse)
 def login(request: LoginRequest):
     """
-    Authenticate user and return JWT token
+    Authenticate user and return JWT token together with the list of leagues
+    the user participates in.
     """
     user = authenticate_user(request.username, request.password)
     
@@ -54,7 +64,8 @@ def login(request: LoginRequest):
         "token_type": "bearer",
         "id": user["id"],
         "player_id": user["player_id"],
-        "username": user["username"]
+        "username": user["username"],
+        "leagues": user.get("leagues", []),
     }
 
 
@@ -100,6 +111,29 @@ def logout(credentials: HTTPAuthorizationCredentials = Depends(security)):
 @router.get("/me", response_model=UserInfo)
 def get_current_user(current_user: dict = Depends(get_current_user_from_token)):
     """
-    Get current authenticated user information
+    Get current authenticated user information, including leagues they participate in.
     """
-    return current_user
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT ul.league_id, l.name, ul.player_id
+            FROM user_leagues ul
+            JOIN league l ON ul.league_id = l.id
+            WHERE ul.user_id = %s
+            ORDER BY l.name
+            """,
+            (current_user["id"],),
+        )
+        leagues = [
+            {"league_id": row[0], "league_name": row[1], "player_id": row[2]}
+            for row in cursor.fetchall()
+        ]
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Error fetching leagues for /me: {e}")
+        leagues = []
+
+    return {**current_user, "leagues": leagues}
