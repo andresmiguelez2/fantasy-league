@@ -6,6 +6,7 @@ from server_requests.server_requests import server_app
 from server_requests.footballer import update_footballer_info
 from server_requests.general import footballers_to_update
 from classes.fixture import get_current_fixture, update_fixture_times
+from classes.league import get_leagues
 
 
 logging.basicConfig(
@@ -45,26 +46,29 @@ def wait_loop_time(start_time):
 
 if __name__ == "__main__":
     logger.info("Backend app is starting...")
-    active_market = None
+    
+    leagues = get_leagues()
+    active_markets = [None] * len(leagues)
     n_iteration = 0
 
     while True:
         try:
             start_time = time.time()
 
-            if active_market:
-                active_market.fulfill_market()
+            for active_market, league_id in zip(active_markets, leagues):
+                if active_market:
+                    active_market.fulfill_market()
 
-            active_market = load_market()
+                active_market = load_market(league_id)
+
+                if not active_market:
+                    active_market = load_last_market(league_id)
+                    active_market.fulfill_market()
+
             active_fixture = get_current_fixture(handle_dangling=n_iteration%HANDLE_DANGLING_FIXTURES_INTERVAL==0)
-
             if active_fixture:
-                active_fixture.fulfill_fixture()                
-
-            if not active_market:
-                active_market = load_last_market()
-                active_market.fulfill_market()
-
+                active_fixture.fulfill_fixture()
+            
             cache_data(start_time)
             wait_loop_time(start_time)
             update_data(n_iteration)
