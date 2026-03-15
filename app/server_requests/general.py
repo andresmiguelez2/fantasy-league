@@ -39,7 +39,10 @@ def footballers_to_update(limit: int = 20, time_threshold: int = 30*60):
 
 @router.get('/opened_fixtures')
 def get_opened_fixtures():
-    """Get all the IDs of the fixtures that have been played in the league
+    """Get all the IDs of the fixtures that have been played in the league.
+
+    Args:
+        league_id (int): The league ID to filter by.
     """
     try:
         conn = pg_connect()

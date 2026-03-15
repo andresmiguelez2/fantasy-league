@@ -184,7 +184,7 @@ def get_fixture_lineup(player_id: int, fixture_n: int):
 
 
 @router.get('/fixtures/{player_id}')
-def get_player_fixtures(player_id: int):
+def get_player_fixtures(player_id: int, league_id: int):
     """
     Get the fixtures where the player took part.
     """
@@ -195,10 +195,10 @@ def get_player_fixtures(player_id: int):
             """
             SELECT fixture_n
             FROM fixture_details
-            WHERE player_id = %s
+            WHERE player_id = %s AND league_id = %s
             ORDER BY fixture_n DESC
             """,
-            (player_id,),
+            (player_id, league_id),
         )
 
         fixtures = [row[0] for row in cursor.fetchall()]

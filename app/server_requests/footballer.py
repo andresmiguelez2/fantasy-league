@@ -51,7 +51,7 @@ def get_footballer_info(footballer_id: int, league_id: int):
         db = client["FantasyMDB"]
 
         if (datetime.datetime.now(tz=datetime.timezone.utc) - get_last_updated_time(footballer_id)).seconds > UPDATE_DB_INTERVAL:
-            update_footballer_info(footballer_id, league_id)
+            update_footballer_info(footballer_id)
         else:
             logger.info(f"Footballer {footballer_id} data is up-to-date; no update needed.")
 
@@ -250,6 +250,7 @@ def get_all_footballers(league_id: int, limit: int = 20, offset: int = 0, page: 
         cursor.execute(query, (league_id, f"%{search}%", limit, offset,))
         footballers = cursor.fetchall()
 
+        footballers = cursor.fetchall()
         cursor.close()
         conn.close()
 
