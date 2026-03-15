@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from typing import Optional
 from aux.database import pg_connect, mongo_client
 from .logger import logger
 
@@ -7,7 +8,7 @@ router = APIRouter(prefix="/leaderboard", tags=["leaderboard"])
 
 
 @router.get('/{fixture_id}')
-def leaderboard(fixture_id: str):
+def leaderboard(fixture_id: str, league_id: Optional[int] = None):
     """Get the leaderboard of players
     """
     try:
@@ -19,7 +20,6 @@ def leaderboard(fixture_id: str):
             cursor.execute(
                 """
                 SELECT
-                    -- row_number() OVER (ORDER BY points DESC) AS rank
                     player.id
                     , player.name
                     , player.points
@@ -32,8 +32,10 @@ def leaderboard(fixture_id: str):
                     FROM footballer JOIN footballer_data ON footballer.id = footballer_data.id
                     GROUP BY footballer.owner_id
                 ) AS f ON player.id = f.owner_id
+                WHERE (%s IS NULL OR player.league_id = %s)
                 ORDER BY points DESC
-                """
+                """,
+                (league_id, league_id)
             )
         else:
             cursor.execute(
@@ -58,9 +60,10 @@ def leaderboard(fixture_id: str):
                     FROM fixture_details
                     WHERE fixture_n = %s
                 ) AS fixture ON fixture.player_id = player.id
+                WHERE (%s IS NULL OR player.league_id = %s)
                 ORDER BY points DESC
                 """,
-                (fixture_id,)
+                (fixture_id, league_id, league_id)
             )
         
         players = cursor.fetchall()

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
 import { fetchFootballerShortName, fetchOpenedFixtures, fetchFixtureLineup, fetchFootballerFixturePoints } from "@/lib/api";
@@ -21,13 +22,14 @@ const Fixtures = () => {
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const { user } = useAuth();
+  const { leagueId } = useParams<{ leagueId: string }>();
   const playerId = user?.playerId?.toString();
 
   // Fetch opened fixtures on mount
   useEffect(() => {
     const loadOpenedFixtures = async () => {
       try {
-        const fixtures = await fetchOpenedFixtures();
+        const fixtures = await fetchOpenedFixtures(leagueId);
         setOpenedFixtures(fixtures);
         if (fixtures.length > 0) {
           setSelectedFixture(fixtures[fixtures.length - 1]); // Select latest fixture

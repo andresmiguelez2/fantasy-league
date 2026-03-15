@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from typing import Optional
 from aux.database import pg_connect, mongo_client
 from aux.constants import BANK_NAME
 from .logger import logger
@@ -47,11 +48,12 @@ def market():
 
 
 @router.get("/{player_id}")
-def player_market(player_id: int):
+def player_market(player_id: int, league_id: Optional[int] = None):
     """Get all footballers currently on the market with bid info for a specific player.
     
     Args:
-        player_id (int): The ID of the player to get bid info for."""
+        player_id (int): The ID of the player to get bid info for.
+        league_id (int, optional): Filter to only show footballers owned by players in this league."""
     try:
         conn = pg_connect()
 
@@ -78,9 +80,10 @@ def player_market(player_id: int):
             WHERE
                 on_market = TRUE
                 AND (f.owner_id IS NULL OR f.owner_id != %s)
+                AND (f.owner_id IS NULL OR %s IS NULL OR player.league_id = %s)
             ORDER BY (f.owner_id IS NULL) DESC, on_market_since DESC
             """,
-            (player_id, player_id)
+            (player_id, player_id, league_id, league_id)
         )
         footballers = cursor.fetchall()
 

@@ -35,24 +35,15 @@ export interface MarketFootballer {
   totalPoints: number;
 }
 
-// Simulate API delay
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
 export const fetchLeagues = async (): Promise<League[]> => {
-  await delay(800);
-  // TODO: Replace with actual API call
-  // const response = await fetch('YOUR_API_ENDPOINT/leagues');
-  // return response.json();
-  
-  return [
-    { id: '1', name: 'League 1' },
-    { id: '2', name: 'League 2' },
-    { id: '3', name: 'League 3' },
-  ];
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/general/leagues`);
+  const data = await response.json();
+  return data.leagues || [];
 };
 
-export const fetchLeaderboard = async (fixtureId: string = 'total'): Promise<Player[]> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leaderboard/${fixtureId}`);
+export const fetchLeaderboard = async (fixtureId: string = 'total', leagueId?: string): Promise<Player[]> => {
+  const params = leagueId ? `?league_id=${leagueId}` : '';
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leaderboard/${fixtureId}${params}`);
   const data = await response.json();
   
   return data.leaderboard.map((player: any[]) => ({
@@ -80,8 +71,9 @@ export const fetchSquadFootballers = async (playerId: string): Promise<Footballe
   }));
 };
 
-export const fetchMarketFootballers = async (playerId: string): Promise<MarketFootballer[]> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/${playerId}`);
+export const fetchMarketFootballers = async (playerId: string, leagueId?: string): Promise<MarketFootballer[]> => {
+  const params = leagueId ? `?league_id=${leagueId}` : '';
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/${playerId}${params}`);
   const data = await response.json();
   
   // Transform the array format to objects
@@ -192,8 +184,9 @@ export const fetchFixtureDetail = async (footballerId: number, fixture: number):
   return data.fixture_detail;
 };
 
-export const fetchOpenedFixtures = async (): Promise<number[]> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/general/opened_fixtures`);
+export const fetchOpenedFixtures = async (leagueId?: string): Promise<number[]> => {
+  const params = leagueId ? `?league_id=${leagueId}` : '';
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/general/opened_fixtures${params}`);
   const data = await response.json();
   return data.opened_fixtures;
 };
