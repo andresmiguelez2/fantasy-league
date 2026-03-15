@@ -1,4 +1,4 @@
-// Mock API functions - Replace these endpoints with your actual API URLs
+// API functions
 
 export interface League {
   id: string;

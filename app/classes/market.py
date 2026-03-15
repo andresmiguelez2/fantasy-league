@@ -136,7 +136,7 @@ class Market:
                 on_market_since = now()
             WHERE 
                 id in %s
-                AND league_id = %s;
+                AND league_id = %s
             """,
             (tuple([fa[0] for fa in chosen_free_agents]), self.league_id)
         )
