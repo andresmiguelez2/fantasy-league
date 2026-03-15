@@ -43,7 +43,7 @@ def get_last_updated_time(footballer_id: int):
 
 
 @router.get("/{footballer_id}")
-def get_footballer_info(footballer_id: int):
+def get_footballer_info(footballer_id: int, league_id: int):
     """Get information about a specific footballer."""
     try:
         conn = pg_connect()
@@ -69,10 +69,10 @@ def get_footballer_info(footballer_id: int):
                 , p.name as owner_name
             FROM footballer_data fd
             LEFT JOIN footballer f ON fd.id = f.id
-            LEFT JOIN player p ON f.owner_id = p.id
-            WHERE fd.id = %s
+            LEFT JOIN player p ON f.owner_id = p.id AND f.league_id = p.league_id
+            WHERE fd.id = %s AND f.league_id = %s
             """,
-            (footballer_id,)
+            (footballer_id, league_id)
         )
 
         footballer_data = cursor.fetchone()
@@ -181,7 +181,7 @@ def get_fixture_points(footballer_id: int, fixture: int):
 
 
 @router.get("s")
-def get_all_footballers(limit: int = 20, offset: int = 0, page: int | None = None, sort: str = 'name', invert: str = "false", search: str = "", league_id: int = None):
+def get_all_footballers(league_id: int, limit: int = 20, offset: int = 0, page: int | None = None, sort: str = 'name', invert: str = "false", search: str = ""):
     """Get all footballers with pagination and total count.
 
     Supports either `offset` or `page` (1-based). If `page` is provided it takes precedence and offset is computed as (page-1)*limit.
@@ -213,56 +213,29 @@ def get_all_footballers(limit: int = 20, offset: int = 0, page: int | None = Non
         conn = pg_connect()
         cursor = conn.cursor()
 
-        if league_id is not None:
-            cursor.execute("SELECT COUNT(*) FROM footballer_data fd LEFT JOIN footballer f ON fd.id = f.id WHERE f.league_id = %s", (league_id,))
-            total = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM footballer_data fd LEFT JOIN footballer f ON fd.id = f.id WHERE f.league_id = %s AND unaccent(fd.full_name) ILIKE unaccent(%s)", (league_id, f"%{search}%"))
+        total = cursor.fetchone()[0]
 
-            query = f"""
-                SELECT
-                    f.id
-                    , fd.name
-                    , fd.value
-                    , p.name AS owner_name
-                    , NULL as on_market_since
-                    , NULL as bid_amount
-                    , fd.average_points
-                    , fd.total_points
-                FROM footballer_data fd
-                LEFT JOIN footballer f ON fd.id = f.id
-                LEFT JOIN player p on f.owner_id = p.id
-                WHERE unaccent(fd.full_name) ILIKE unaccent(%s) AND f.league_id = %s
-                ORDER BY {sort_col} {direction}
-                LIMIT %s
-                OFFSET %s
-                """
+        query = f"""
+            SELECT
+                f.id
+                , fd.name
+                , fd.value
+                , p.name AS owner_name
+                , NULL as on_market_since
+                , NULL as bid_amount
+                , fd.average_points
+                , fd.total_points
+            FROM footballer_data fd
+            LEFT JOIN footballer f ON fd.id = f.id
+            LEFT JOIN player p on f.owner_id = p.id AND f.league_id = p.league_id
+            WHERE f.league_id = %s AND unaccent(fd.full_name) ILIKE unaccent(%s)
+            ORDER BY {sort_col} {direction}
+            LIMIT %s
+            OFFSET %s
+            """
 
-            cursor.execute(query, (f"%{search}%", league_id, limit, offset,))
-        else:
-            # total count for pagination meta (respect search filter)
-            # Use unaccent() so searches are accent-insensitive (e -> é matches)
-            cursor.execute("SELECT COUNT(*) FROM footballer_data")
-            total = cursor.fetchone()[0]
-
-            query = f"""
-                SELECT
-                    f.id
-                    , fd.name
-                    , fd.value
-                    , p.name AS owner_name
-                    , NULL as on_market_since
-                    , NULL as bid_amount
-                    , fd.average_points
-                    , fd.total_points
-                FROM footballer_data fd
-                LEFT JOIN footballer f ON fd.id = f.id
-                LEFT JOIN player p on f.owner_id = p.id
-                WHERE unaccent(fd.full_name) ILIKE unaccent(%s)
-                ORDER BY {sort_col} {direction}
-                LIMIT %s
-                OFFSET %s
-                """
-
-            cursor.execute(query, (f"%{search}%", limit, offset,))
+        cursor.execute(query, (league_id, f"%{search}%", limit, offset,))
 
         footballers = cursor.fetchall()
         cursor.close()

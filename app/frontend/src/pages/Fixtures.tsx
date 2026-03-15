@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
 import { fetchFootballerShortName, fetchOpenedFixtures, fetchFixtureLineup, fetchFootballerFixturePoints } from "@/lib/api";
@@ -8,11 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
 import { useAuth } from "@/contexts/AuthContext";
+import { getActiveLeagueId } from "@/lib/api";
 
 const API_ENDPOINT = import.meta.env.VITE_BACKEND_URL;
 
 const Fixtures = () => {
-  const { leagueId } = useParams();
   const [openedFixtures, setOpenedFixtures] = useState<number[]>([]);
   const [selectedFixture, setSelectedFixture] = useState<number | null>(null);
   const [formation, setFormation] = useState<number[]>([]);
@@ -24,12 +23,13 @@ const Fixtures = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const { user } = useAuth();
   const playerId = user?.playerId?.toString();
+  const leagueId = getActiveLeagueId();
 
   // Fetch opened fixtures on mount
   useEffect(() => {
     const loadOpenedFixtures = async () => {
       try {
-        const fixtures = await fetchOpenedFixtures(leagueId);
+        const fixtures = await fetchOpenedFixtures();
         setOpenedFixtures(fixtures);
         if (fixtures.length > 0) {
           setSelectedFixture(fixtures[fixtures.length - 1]); // Select latest fixture
@@ -40,7 +40,7 @@ const Fixtures = () => {
     };
 
     loadOpenedFixtures();
-  }, [leagueId]);
+  }, []);
 
   // Fetch lineup when selected fixture changes
   useEffect(() => {
@@ -160,7 +160,7 @@ const Fixtures = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <NavigationTabs />
+      <NavigationTabs leagueId={leagueId} />
       
       <main className="container mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="max-w-4xl mx-auto">

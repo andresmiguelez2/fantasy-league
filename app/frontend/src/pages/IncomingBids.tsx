@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
@@ -20,19 +19,20 @@ import { MessageSquareReply } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { getActiveLeagueId } from "@/lib/api";
 
 const IncomingBids = () => {
-  const { leagueId } = useParams();
   const [selectedBid, setSelectedBid] = useState<IncomingBid | null>(null);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const playerId = user?.playerId?.toString();
+  const leagueId = getActiveLeagueId();
 
   const { data: bids = [], isLoading } = useQuery({
-    queryKey: ["incomingBids", playerId, leagueId],
-    queryFn: () => fetchIncomingBids(playerId, leagueId),
+    queryKey: ["incomingBids", playerId],
+    queryFn: () => fetchIncomingBids(playerId),
   });
 
   const formatTimestamp = (timestamp: string) => {
@@ -75,7 +75,7 @@ const IncomingBids = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       <Header />
-      <NavigationTabs />
+      <NavigationTabs leagueId={leagueId} />
       
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {isLoading ? (

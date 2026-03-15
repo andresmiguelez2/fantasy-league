@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,9 +10,10 @@ import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowUpDown } from "lucide-react";
+import { getActiveLeagueId } from "@/lib/api";
 
 const FootballerInfo = () => {
-  const { leagueId } = useParams();
+  const leagueId = getActiveLeagueId();
   const [footballers, setFootballers] = useState<MarketFootballer[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -39,7 +39,7 @@ const FootballerInfo = () => {
         setLoadingMore(true);
       }
 
-      const data = await fetchAllFootballers(pageNum, 30, sort, order, searchTerm, leagueId);
+      const data = await fetchAllFootballers(pageNum, 30, sort, order, searchTerm);
       
       if (data.length < 30) {
         setHasMore(false);
@@ -59,7 +59,7 @@ const FootballerInfo = () => {
     setPage(1);
     setHasMore(true);
     loadFootballers(1, sortBy, sortOrder, search, true);
-  }, [sortBy, sortOrder, search, leagueId, loadFootballers]);
+  }, [sortBy, sortOrder, search, loadFootballers]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -92,7 +92,7 @@ const FootballerInfo = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <Header />
-      <NavigationTabs />
+      <NavigationTabs leagueId={leagueId} />
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col gap-4 mb-6">

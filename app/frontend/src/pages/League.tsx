@@ -29,6 +29,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { setActiveLeagueId } from "@/lib/api";
 
 const API_ENDPOINT = import.meta.env.VITE_BACKEND_URL;
 
@@ -53,16 +54,22 @@ const League = () => {
   const [footballerPoints, setFootballerPoints] = useState<Record<number, number | null>>({});
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
   const [fixtureDialogOpen, setFixtureDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (leagueId) {
+      setActiveLeagueId(leagueId);
+    }
+  }, [leagueId]);
   
   // Fetch available fixtures depending on selected player
   useEffect(() => {
     const loadFixtures = async () => {
       try {
         if (selectedPlayerId === null) {
-          const data = await fetchOpenedFixtures(leagueId);
+          const data = await fetchOpenedFixtures();
           setFixtures(data);
         } else {
-          const data = await fetchPlayerFixtures(selectedPlayerId.toString(), leagueId);
+          const data = await fetchPlayerFixtures(selectedPlayerId.toString());
           setFixtures(data);
         }
       } catch (error) {
@@ -70,7 +77,7 @@ const League = () => {
       }
     };
     loadFixtures();
-  }, [selectedPlayerId, leagueId]);
+  }, [selectedPlayerId]);
 
   // Fetch leaderboard when selectedFixture changes or when returning to leaderboard view
   useEffect(() => {
@@ -78,7 +85,7 @@ const League = () => {
       const loadPlayers = async () => {
         setLoading(true);
         try {
-          const data = await fetchLeaderboard(selectedFixture, leagueId);
+          const data = await fetchLeaderboard(selectedFixture);
           setPlayers(data);
         } catch (error) {
           console.error('Failed to fetch leaderboard data:', error);
@@ -90,7 +97,7 @@ const League = () => {
       
       loadPlayers();
     }
-  }, [selectedFixture, selectedPlayerId, leagueId]);
+  }, [selectedFixture, selectedPlayerId]);
   
   // Fetch player's squad or fixture when a player is selected
   useEffect(() => {
@@ -101,7 +108,7 @@ const League = () => {
       try {
         if (selectedFixture === "total") {
           // Show squad view
-          const data = await fetchSquadFootballers(selectedPlayerId.toString(), leagueId);
+          const data = await fetchSquadFootballers(selectedPlayerId.toString());
           setFootballers(data);
         } else {
           // Show fixture view

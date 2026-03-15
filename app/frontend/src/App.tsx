@@ -30,15 +30,6 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<ProtectedRoute><Landing /></ProtectedRoute>} />
             <Route path="/league/:leagueId" element={<ProtectedRoute><League /></ProtectedRoute>} />
-            <Route path="/league/:leagueId/squad" element={<ProtectedRoute><Squad /></ProtectedRoute>} />
-            <Route path="/league/:leagueId/squad/:playerId" element={<ProtectedRoute><Squad /></ProtectedRoute>} />
-            <Route path="/league/:leagueId/lineup" element={<ProtectedRoute><Lineup /></ProtectedRoute>} />
-            <Route path="/league/:leagueId/fixtures" element={<ProtectedRoute><Fixtures /></ProtectedRoute>} />
-            <Route path="/league/:leagueId/market" element={<ProtectedRoute><Market /></ProtectedRoute>} />
-            <Route path="/league/:leagueId/market/incoming" element={<ProtectedRoute><IncomingBids /></ProtectedRoute>} />
-            <Route path="/league/:leagueId/market/outgoing" element={<ProtectedRoute><OutgoingBids /></ProtectedRoute>} />
-            <Route path="/league/:leagueId/footballer-info" element={<ProtectedRoute><FootballerInfo /></ProtectedRoute>} />
-            {/* Legacy routes for backward compatibility */}
             <Route path="/squad" element={<ProtectedRoute><Squad /></ProtectedRoute>} />
             <Route path="/squad/:playerId" element={<ProtectedRoute><Squad /></ProtectedRoute>} />
             <Route path="/lineup" element={<ProtectedRoute><Lineup /></ProtectedRoute>} />

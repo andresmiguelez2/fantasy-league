@@ -1,4 +1,4 @@
-// API functions
+// Mock API functions - Replace these endpoints with your actual API URLs
 
 export interface League {
   id: string;
@@ -35,6 +35,34 @@ export interface MarketFootballer {
   totalPoints: number;
 }
 
+const ACTIVE_LEAGUE_KEY = 'activeLeagueId';
+const DEFAULT_LEAGUE_ID = '1';
+
+export const setActiveLeagueId = (leagueId: string) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  localStorage.setItem(ACTIVE_LEAGUE_KEY, leagueId);
+};
+
+export const getActiveLeagueId = (): string => {
+  if (typeof window === 'undefined') {
+    return DEFAULT_LEAGUE_ID;
+  }
+
+  return localStorage.getItem(ACTIVE_LEAGUE_KEY) || DEFAULT_LEAGUE_ID;
+};
+
+const withLeagueId = (params: Record<string, string>) => {
+  const searchParams = new URLSearchParams({
+    ...params,
+    league_id: getActiveLeagueId(),
+  });
+
+  return searchParams.toString();
+};
+
 export const fetchLeagues = async (): Promise<League[]> => {
   try {
     const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leagues`);
@@ -49,9 +77,8 @@ export const fetchLeagues = async (): Promise<League[]> => {
   }
 };
 
-export const fetchLeaderboard = async (fixtureId: string = 'total', leagueId?: string): Promise<Player[]> => {
-  const params = leagueId ? `?league_id=${leagueId}` : '';
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leaderboard/${fixtureId}${params}`);
+export const fetchLeaderboard = async (fixtureId: string = 'total'): Promise<Player[]> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leaderboard/${fixtureId}?${withLeagueId({})}`);
   const data = await response.json();
   
   return data.leaderboard.map((player: any[]) => ({
@@ -62,9 +89,8 @@ export const fetchLeaderboard = async (fixtureId: string = 'total', leagueId?: s
   }));
 };
 
-export const fetchSquadFootballers = async (playerId: string, leagueId?: string): Promise<Footballer[]> => {
-  const params = leagueId ? `?league_id=${leagueId}` : '';
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/squad/${playerId}${params}`);
+export const fetchSquadFootballers = async (playerId: string): Promise<Footballer[]> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/squad/${playerId}?${withLeagueId({})}`);
   const data = await response.json();
   
   // Transform the array format to objects
@@ -80,9 +106,8 @@ export const fetchSquadFootballers = async (playerId: string, leagueId?: string)
   }));
 };
 
-export const fetchMarketFootballers = async (playerId: string, leagueId?: string): Promise<MarketFootballer[]> => {
-  const params = leagueId ? `?league_id=${leagueId}` : '';
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/${playerId}${params}`);
+export const fetchMarketFootballers = async (playerId: string): Promise<MarketFootballer[]> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/${playerId}?${withLeagueId({})}`);
   const data = await response.json();
   
   // Transform the array format to objects
@@ -136,8 +161,7 @@ export const fetchPlayerInfo = async (playerId: string): Promise<Player> => {
 export const placeBid = async (
   footballerId: number,
   playerId: string,
-  amount: number,
-  leagueId?: string
+  amount: number
 ): Promise<any> => {
   const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/bid`, {
     method: 'POST',
@@ -148,7 +172,7 @@ export const placeBid = async (
       footballer_id: footballerId,
       player_id: playerId,
       bid_amount: amount,
-      ...(leagueId !== undefined && { league_id: Number(leagueId) }),
+      league_id: parseInt(getActiveLeagueId()),
     }),
   });
 
@@ -184,7 +208,9 @@ export interface FixtureDetail {
 }
 
 export const fetchFootballerInfo = async (footballerId: number): Promise<FootballerInfo> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/footballer/${footballerId}`);
+  const response = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/footballer/${footballerId}?${withLeagueId({})}`
+  );
   const data = await response.json();
   return data.footballer_info;
 };
@@ -195,16 +221,14 @@ export const fetchFixtureDetail = async (footballerId: number, fixture: number):
   return data.fixture_detail;
 };
 
-export const fetchOpenedFixtures = async (leagueId?: string): Promise<number[]> => {
-  const params = leagueId ? `?league_id=${leagueId}` : '';
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/general/opened_fixtures${params}`);
+export const fetchOpenedFixtures = async (): Promise<number[]> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/general/opened_fixtures?${withLeagueId({})}`);
   const data = await response.json();
   return data.opened_fixtures;
 };
 
-export const fetchPlayerFixtures = async (playerId: string, leagueId?: string): Promise<number[]> => {
-  const params = leagueId ? `?league_id=${leagueId}` : '';
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/player/fixtures/${playerId}${params}`);
+export const fetchPlayerFixtures = async (playerId: string): Promise<number[]> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/player/fixtures/${playerId}?${withLeagueId({})}`);
   const data = await response.json();
   return data.fixtures || [];
 };
@@ -229,8 +253,7 @@ export const fetchAllFootballers = async (
   limit: number = 25,
   sortBy: 'name' | 'points' | 'value' = 'name',
   sortOrder: 'asc' | 'desc' = 'asc',
-  search: string = '',
-  leagueId?: string
+  search: string = ''
 ): Promise<MarketFootballer[]> => {
   const params = new URLSearchParams({
     page: page.toString(),
@@ -238,10 +261,8 @@ export const fetchAllFootballers = async (
     sort: sortBy,
     invert: sortOrder === 'desc' ? 'true' : 'false',
     search: search,
+    league_id: getActiveLeagueId(),
   });
-  if (leagueId !== undefined) {
-    params.set('league_id', leagueId);
-  }
   
   const response = await fetch(
     `${import.meta.env.VITE_BACKEND_URL}/footballers?${params}`
@@ -316,6 +337,7 @@ export const setLineup = async (playerId: string, footballerId: number, onLineup
     body: JSON.stringify({
       player_id: parseInt(playerId),
       footballer_id: footballerId,
+      league_id: parseInt(getActiveLeagueId()),
       on_lineup: onLineup,
     }),
   });
@@ -332,9 +354,8 @@ export interface IncomingBid {
   amount: number;
 }
 
-export const fetchIncomingBids = async (playerId: string, leagueId?: string): Promise<IncomingBid[]> => {
-  const params = leagueId ? `?league_id=${leagueId}` : '';
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/incoming_bids/${playerId}${params}`);
+export const fetchIncomingBids = async (playerId: string): Promise<IncomingBid[]> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/incoming_bids/${playerId}?${withLeagueId({})}`);
   const data = await response.json();
   
   return data.bids.map((bid: any[]) => ({
@@ -365,9 +386,8 @@ export interface OutgoingBid {
   amount: number;
 }
 
-export const fetchOutgoingBids = async (playerId: string, leagueId?: string): Promise<OutgoingBid[]> => {
-  const params = leagueId ? `?league_id=${leagueId}` : '';
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/outgoing_bids/${playerId}${params}`);
+export const fetchOutgoingBids = async (playerId: string): Promise<OutgoingBid[]> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/outgoing_bids/${playerId}?${withLeagueId({})}`);
   const data = await response.json();
   
   return data.bids.map((bid: any[]) => ({
@@ -380,7 +400,7 @@ export const fetchOutgoingBids = async (playerId: string, leagueId?: string): Pr
   }));
 };
 
-export const submitBid = async (footballerId: number, playerId: string, amount: number, leagueId?: string): Promise<boolean> => {
+export const submitBid = async (footballerId: number, playerId: string, amount: number): Promise<boolean> => {
   const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/bid`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -388,7 +408,7 @@ export const submitBid = async (footballerId: number, playerId: string, amount: 
       footballer_id: footballerId,
       player_id: playerId,
       bid_amount: amount,
-      ...(leagueId !== undefined && { league_id: Number(leagueId) }),
+      league_id: parseInt(getActiveLeagueId()),
     }),
   });
   const data = await response.json();
@@ -411,13 +431,17 @@ export interface PayReleaseClauseResponse {
 }
 
 export const fetchReleaseClauseData = async (footballerId: number): Promise<ReleaseClauseData> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/footballer/release_clause_data/${footballerId}`);
+  const response = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/footballer/release_clause_data/${footballerId}?${withLeagueId({})}`
+  );
   const data = await response.json();
   return data;
 };
 
 export const fetchMarketStatus = async (footballerId: number): Promise<boolean> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/footballer/market_status/${footballerId}`);
+  const response = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/footballer/market_status/${footballerId}?${withLeagueId({})}`
+  );
   const data = await response.json();
   if (data.status !== "success") {
     throw new Error(data.message || "Failed to fetch market status");
@@ -427,7 +451,7 @@ export const fetchMarketStatus = async (footballerId: number): Promise<boolean> 
 
 export const changeMarketStatus = async (footballerId: number, onMarket: boolean): Promise<any> => {
   const response = await fetch(
-    `${import.meta.env.VITE_BACKEND_URL}/footballer/change_market_status/${footballerId}?on_market=${onMarket}`,
+    `${import.meta.env.VITE_BACKEND_URL}/footballer/change_market_status/${footballerId}?${withLeagueId({ on_market: String(onMarket) })}`,
     { method: 'POST' }
   );
   return response.json();
