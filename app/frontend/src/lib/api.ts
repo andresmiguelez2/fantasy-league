@@ -66,9 +66,15 @@ const withLeagueId = (params: Record<string, string>) => {
   return searchParams.toString();
 };
 
-export const fetchLeagues = async (): Promise<League[]> => {
+export const fetchLeagues = async (playerId?: string): Promise<League[]> => {
   try {
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leagues`);
+    const resolvedPlayerId = playerId ?? (typeof window !== 'undefined' ? localStorage.getItem('playerId') : null);
+    if (!resolvedPlayerId) {
+      throw new Error('Missing player_id for leagues request');
+    }
+
+    const query = new URLSearchParams({ player_id: resolvedPlayerId }).toString();
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leagues?${query}`);
     const data = await response.json();
     return data.leagues.map((league: { id: number; name: string }) => ({
       id: String(league.id),
