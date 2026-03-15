@@ -38,7 +38,7 @@ def footballers_to_update(limit: int = 20, time_threshold: int = 30*60):
 
 
 @router.get('/opened_fixtures')
-def get_opened_fixtures(league_id: int):
+def get_opened_fixtures():
     """Get all the IDs of the fixtures that have been played in the league.
 
     Args:
@@ -51,10 +51,9 @@ def get_opened_fixtures(league_id: int):
             """
             SELECT n
             FROM FIXTURE
-            WHERE opened = True AND league_id = %s
+            WHERE opened = True
             ORDER BY n ASC
-            """,
-            (league_id,)
+            """
         )
 
         opened_fixtures = [row[0] for row in cursor.fetchall()]
