@@ -100,7 +100,11 @@ const handleFootballerClick = (rowIndex: number, footballerId?: number) => {
   const handleFormationChange = async (newFormation: number[]) => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_ENDPOINT}/player/update/lineup/${playerId}`, {
+      if (!leagueId) {
+        throw new Error("No active league selected");
+      }
+
+      const response = await fetch(`${API_ENDPOINT}/player/update/lineup/${playerId}?league_id=${leagueId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

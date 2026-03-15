@@ -141,7 +141,7 @@ export interface PlayerInfo {
 
 // Return a `Player` shape for UI convenience (maps budget -> team_value)
 export const fetchPlayerInfo = async (playerId: string): Promise<Player> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/player/${playerId}`);
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/player/${playerId}?${withLeagueId({})}`);
   const data = await response.json();
 
   // The API returns [id, name, budget, points]
@@ -307,7 +307,7 @@ export interface LineupFormation {
 }
 
 export const fetchLineupFormation = async (playerId: string): Promise<number[]> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/player/lineup/${playerId}`);
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/player/lineup/${playerId}?${withLeagueId({})}`);
   const data: LineupFormation = await response.json();
   return data.lineup;
 };
@@ -336,7 +336,7 @@ export interface Substitute {
 
 export const fetchAvailableSubs = async (playerId: string, position: number): Promise<Substitute[]> => {
   const response = await fetch(
-    `${import.meta.env.VITE_BACKEND_URL}/player/available_subs/${playerId}?position=${position}`
+    `${import.meta.env.VITE_BACKEND_URL}/player/available_subs/${playerId}?${withLeagueId({ position: position.toString() })}`
   );
   const data = await response.json();
   
