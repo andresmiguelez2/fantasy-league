@@ -316,6 +316,7 @@ def update_footballer_info(footballer_id: int):
             SELECT url_name
             FROM footballer
             WHERE id = %s
+            LIMIT 1
             """,
             (footballer_id,)
         )
