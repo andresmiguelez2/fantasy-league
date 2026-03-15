@@ -73,12 +73,13 @@ def get_player_lineup(player_id: int):
 
 
 @router.get('/lineup_footballers/{player_id}')
-def get_footballers_on_lineup(player_id: int):
+def get_footballers_on_lineup(player_id: int, league_id: int):
     """
     Get the footballers on the player's lineup
 
     Args:
         player_id (int): The player ID
+        league_id (int): The league ID
 
     API Returns:
         list[list[int]]: A list of lists containing the footballer IDs on the lineup. Includes GK, DF, MD, FW
@@ -96,9 +97,10 @@ def get_footballers_on_lineup(player_id: int):
             WHERE
                 f.owner_id = %s
                 AND f.on_lineup = true
+                AND f.league_id = %s
             ORDER BY fd.position, f.id
             """,
-            (player_id,),
+            (player_id, league_id),
         )
 
         footballers_on_lineup = cursor.fetchall()
@@ -118,13 +120,14 @@ def get_footballers_on_lineup(player_id: int):
     
 
 @router.get('/fixture_lineup/{player_id}')
-def get_fixture_lineup(player_id: int, fixture_n: int):
+def get_fixture_lineup(player_id: int, fixture_n: int, league_id: int):
     """
     Get the footballers on the player's lineup for a specific fixture
 
     Args:
         player_id (int): The player ID
         fixture_id (int): The fixture number
+        league_id (int): The league ID
     
     API Returns:
         list[list[int]]: A list of lists containing the footballer IDs on the lineup. Includes GK, DF, MD, FW
@@ -147,10 +150,11 @@ def get_fixture_lineup(player_id: int, fixture_n: int):
                 WHERE
                     fixture_n = %s
                     AND player_id = %s
+                    AND league_id = %s
             ) AS fx LEFT JOIN footballer_data AS fd ON fx.footballer_id = fd.id
             ORDER BY position, fx.footballer_id
             """,
-            (fixture_n, player_id),
+            (fixture_n, player_id, league_id),
         )
         footballers_on_lineup = cursor.fetchall()
 
@@ -158,9 +162,9 @@ def get_fixture_lineup(player_id: int, fixture_n: int):
             """
             SELECT lineup
             FROM fixture_details
-            WHERE fixture_n = %s AND player_id = %s
+            WHERE fixture_n = %s AND player_id = %s AND league_id = %s
             """,
-            (fixture_n, player_id),
+            (fixture_n, player_id, league_id),
         )
         formation_result = cursor.fetchone()
         formation = formation_result[0] if formation_result else []

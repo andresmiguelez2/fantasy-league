@@ -247,7 +247,9 @@ export const fetchPlayerFixtures = async (playerId: string): Promise<number[]> =
 };
 
 export const fetchFixtureLineup = async (playerId: string, fixtureN: number): Promise<{ lineup: number[]; lineupFootballers: number[][] }> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/player/fixture_lineup/${playerId}?fixture_n=${fixtureN}`);
+  const response = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/player/fixture_lineup/${playerId}?${withLeagueId({ fixture_n: fixtureN.toString() })}`
+  );
   const data = await response.json();
   return {
     lineup: data.lineup || [],
@@ -311,7 +313,9 @@ export const fetchLineupFormation = async (playerId: string): Promise<number[]> 
 };
 
 export const fetchLineupFootballers = async (playerId: string): Promise<number[][]> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/player/lineup_footballers/${playerId}`);
+  const response = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/player/lineup_footballers/${playerId}?${withLeagueId({})}`
+  );
   const data = await response.json();
   return data.lineup_footballers || [];
 };
