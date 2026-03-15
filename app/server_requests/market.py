@@ -275,7 +275,7 @@ def get_player_incoming_bids(player_id: int, league_id: int):
                 , fd.name AS footballer_name
                 , b.amount
             FROM bid AS b
-                LEFT JOIN footballer AS f ON b.footballer_id = f.id
+                LEFT JOIN footballer AS f ON b.footballer_id = f.id AND b.league_id = f.league_id
                 LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
                 LEFT JOIN player AS p on b.bidder_id = p.id
             WHERE f.owner_id = %s AND b.league_id = %s
@@ -315,7 +315,7 @@ def get_player_outgoing_bids(player_id: int, league_id: int):
                 , fd.name AS footballer_name
                 , b.amount
             FROM bid AS b
-                LEFT JOIN footballer AS f ON b.footballer_id = f.id
+                LEFT JOIN footballer AS f ON b.footballer_id = f.id AND b.league_id = f.league_id
                 LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
                 LEFT JOIN player AS p on f.owner_id = p.id
             WHERE b.bidder_id = %s AND b.league_id = %s
