@@ -43,7 +43,7 @@ def get_last_updated_time(footballer_id: int):
 
 
 @router.get("/{footballer_id}")
-def get_footballer_info(footballer_id: int):
+def get_footballer_info(footballer_id: int, league_id: int):
     """Get information about a specific footballer."""
     try:
         conn = pg_connect()
@@ -51,7 +51,7 @@ def get_footballer_info(footballer_id: int):
         db = client["FantasyMDB"]
 
         if (datetime.datetime.now(tz=datetime.timezone.utc) - get_last_updated_time(footballer_id)).seconds > UPDATE_DB_INTERVAL:
-            update_footballer_info(footballer_id)
+            update_footballer_info(footballer_id, league_id)
         else:
             logger.info(f"Footballer {footballer_id} data is up-to-date; no update needed.")
 
@@ -69,10 +69,10 @@ def get_footballer_info(footballer_id: int):
                 , p.name as owner_name
             FROM footballer_data fd
             LEFT JOIN footballer f ON fd.id = f.id
-            LEFT JOIN player p ON f.owner_id = p.id
-            WHERE fd.id = %s
+            LEFT JOIN player p ON f.owner_id = p.id AND f.league_id = p.league_id
+            WHERE fd.id = %s AND f.league_id = %s
             """,
-            (footballer_id,)
+            (footballer_id, league_id)
         )
 
         footballer_data = cursor.fetchone()
@@ -181,7 +181,7 @@ def get_fixture_points(footballer_id: int, fixture: int):
 
 
 @router.get("s")
-def get_all_footballers(limit: int = 20, offset: int = 0, page: int | None = None, sort: str = 'name', invert: str = "false", search: str = ""):
+def get_all_footballers(league_id: int, limit: int = 20, offset: int = 0, page: int | None = None, sort: str = 'name', invert: str = "false", search: str = ""):
     """Get all footballers with pagination and total count.
 
     Supports either `offset` or `page` (1-based). If `page` is provided it takes precedence and offset is computed as (page-1)*limit.
@@ -215,7 +215,16 @@ def get_all_footballers(limit: int = 20, offset: int = 0, page: int | None = Non
 
         # total count for pagination meta (respect search filter)
         # Use unaccent() so searches are accent-insensitive (e -> é matches)
-        cursor.execute("SELECT COUNT(*) FROM footballer_data")
+        cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM footballer f
+            JOIN footballer_data fd ON fd.id = f.id
+            WHERE f.league_id = %s
+                AND unaccent(fd.full_name) ILIKE unaccent(%s)
+            """,
+            (league_id, f"%{search}%")
+        )
         total = cursor.fetchone()[0]
 
         query = f"""
@@ -228,16 +237,17 @@ def get_all_footballers(limit: int = 20, offset: int = 0, page: int | None = Non
                 , NULL as bid_amount
                 , fd.average_points
                 , fd.total_points
-            FROM footballer_data fd
-            LEFT JOIN footballer f ON fd.id = f.id
-            LEFT JOIN player p on f.owner_id = p.id
-            WHERE unaccent(fd.full_name) ILIKE unaccent(%s)
+            FROM footballer f
+            JOIN footballer_data fd ON fd.id = f.id
+            LEFT JOIN player p on f.owner_id = p.id AND f.league_id = p.league_id
+            WHERE f.league_id = %s
+                AND unaccent(fd.full_name) ILIKE unaccent(%s)
             ORDER BY {sort_col} {direction}
             LIMIT %s
             OFFSET %s
             """
 
-        cursor.execute(query, (f"%{search}%", limit, offset,))
+        cursor.execute(query, (league_id, f"%{search}%", limit, offset,))
         footballers = cursor.fetchall()
 
         cursor.close()
@@ -376,7 +386,7 @@ def update_footballer_info(footballer_id: int):
 
 
 @router.post("/update_field/{footballer_id}")
-def update_footballer_field(footballer_id: int, field: str = None):
+def update_footballer_field(footballer_id: int, league_id: int, field: str | None = None):
     """Update a specific field of footballer data in the database."""
     init_time = time.time()
 
@@ -389,6 +399,7 @@ def update_footballer_field(footballer_id: int, field: str = None):
             SELECT url_name
             FROM footballer
             WHERE id = %s
+            LIMIT 1
             """,
             (footballer_id,)
         )
@@ -439,7 +450,7 @@ def update_footballer_field(footballer_id: int, field: str = None):
         return {"status": "error", "message": str(e)}
 
 
-def count_footballers_per_position(player_id: int):
+def count_footballers_per_position(player_id: int, league_id: int):
     """Count the number of footballers per position in a player's lineup."""
     try:
         conn = pg_connect()
@@ -453,10 +464,11 @@ def count_footballers_per_position(player_id: int):
             FROM footballer JOIN footballer_data ON footballer.id = footballer_data.id
             WHERE
                 footballer.owner_id = %s
+                AND footballer.league_id = %s
                 AND footballer.on_lineup = TRUE
             GROUP BY footballer_data.position
             """,
-            (player_id,)
+            (player_id, league_id)
         )
 
         counts = dict(cursor.fetchall())
@@ -473,12 +485,13 @@ def count_footballers_per_position(player_id: int):
 class LineUpFotballer(BaseModel):
     player_id: int
     footballer_id: int
+    league_id: int
     on_lineup: bool
 @router.post("/set_lineup/")
 def set_footballer_on_lineup(data: LineUpFotballer):
     """Set or unset a footballer in a player's lineup."""
     try:
-        update_footballer_field(data.footballer_id, 'position')
+        update_footballer_field(data.footballer_id, data.league_id, 'position')
 
         conn = pg_connect()
         cursor = conn.cursor()
@@ -488,11 +501,14 @@ def set_footballer_on_lineup(data: LineUpFotballer):
             SELECT lineup
             FROM player join footballer
             ON player.id = footballer.owner_id
+                AND player.league_id = footballer.league_id
             WHERE
                 player.id = %s
                 AND footballer.id = %s
+                AND player.league_id = %s
+                AND footballer.league_id = %s
             """
-        , (data.player_id, data.footballer_id))
+        , (data.player_id, data.footballer_id, data.league_id, data.league_id))
 
         lineup = cursor.fetchone()
 
@@ -507,12 +523,12 @@ def set_footballer_on_lineup(data: LineUpFotballer):
             """
             UPDATE footballer
             SET on_lineup = %s
-            WHERE id = %s
+            WHERE id = %s AND league_id = %s
             """,
-            (data.on_lineup, data.footballer_id)
+            (data.on_lineup, data.footballer_id, data.league_id)
         )
 
-        footballers_per_position = count_footballers_per_position(data.player_id)
+        footballers_per_position = count_footballers_per_position(data.player_id, data.league_id)
         logger.info(footballers_per_position)
 
         for n_spots, pos_name in zip([1] + lineup, LINEUP_POSITIONS):
@@ -533,7 +549,7 @@ def set_footballer_on_lineup(data: LineUpFotballer):
 
     
 @router.get("/market_status/{footballer_id}")
-def get_market_status(footballer_id: int):
+def get_market_status(footballer_id: int, league_id: int):
     """Get the market status of a footballer."""
     try:
         conn = pg_connect()
@@ -543,39 +559,9 @@ def get_market_status(footballer_id: int):
             """
             SELECT on_market
             FROM footballer
-            WHERE id = %s
+            WHERE id = %s AND league_id = %s
             """,
-            (footballer_id,)
-        )
-
-        data = cursor.fetchone()
-
-        cursor.close()
-        conn.close()
-
-        if not data:
-            return {"status": "error", "message": "Footballer not found."}
-        
-        return {"status": "success", "on_market": data[0]}
-    except Exception as e:
-        logger.error(f"Error getting footballer market status: {e}")
-        return {"status": "error", "message": str(e)}
-
-
-@router.get("/market_status/{footballer_id}")
-def get_market_status(footballer_id: int):
-    """Get the market status of a footballer."""
-    try:
-        conn = pg_connect()
-        cursor = conn.cursor()
-
-        cursor.execute(
-            """
-            SELECT on_market
-            FROM footballer
-            WHERE id = %s
-            """,
-            (footballer_id,)
+            (footballer_id, league_id)
         )
 
         row = cursor.fetchone()
@@ -592,7 +578,7 @@ def get_market_status(footballer_id: int):
 
 
 @router.post("/change_market_status/{footballer_id}")
-def change_market_status(footballer_id: int, on_market: bool):
+def change_market_status(footballer_id: int, league_id: int, on_market: bool):
     """Change the market status of a footballer."""
     try:
         conn = pg_connect()
@@ -604,9 +590,9 @@ def change_market_status(footballer_id: int, on_market: bool):
             SET
                 on_market = %s
                 , on_market_since = CASE WHEN %s THEN NOW() ELSE NULL END
-            WHERE id = %s
+            WHERE id = %s AND league_id = %s
             """,
-            (on_market, on_market, footballer_id)
+            (on_market, on_market, footballer_id, league_id)
         )
 
         conn.commit()
@@ -621,7 +607,7 @@ def change_market_status(footballer_id: int, on_market: bool):
 
 
 @router.get("/release_clause_data/{footballer_id}")
-def get_release_clause_data(footballer_id: int):
+def get_release_clause_data(footballer_id: int, league_id: int):
     """Get the release clause data for a footballer."""
     try:
         conn = pg_connect()
@@ -634,9 +620,9 @@ def get_release_clause_data(footballer_id: int):
                 , release_clause
                 , (acquisition_ts + interval '%s days' - now()) AS time_until_rc
             FROM footballer
-            WHERE id = %s
+            WHERE id = %s AND league_id = %s
             """,
-            (RELEASE_CLAUSE_DAYS, RELEASE_CLAUSE_DAYS, footballer_id)
+            (RELEASE_CLAUSE_DAYS, RELEASE_CLAUSE_DAYS, footballer_id, league_id)
         )
 
         data = cursor.fetchone()
