@@ -55,15 +55,15 @@ if __name__ == "__main__":
         try:
             start_time = time.time()
 
-            for i, league_id in enumerate(leagues):
-                if active_markets[i]:
-                    active_markets[i].fulfill_market()
+            for active_market, league_id in zip(active_markets, leagues):
+                if active_market:
+                    active_market.fulfill_market()
 
-                active_markets[i] = load_market(league_id)
+                active_market = load_market(league_id)
 
-                if not active_markets[i]:
-                    active_markets[i] = load_last_market(league_id)
-                    active_markets[i].fulfill_market()
+                if not active_market:
+                    active_market = load_last_market(league_id)
+                    active_market.fulfill_market()
 
             active_fixture = get_current_fixture(handle_dangling=n_iteration%HANDLE_DANGLING_FIXTURES_INTERVAL==0)
             if active_fixture:
