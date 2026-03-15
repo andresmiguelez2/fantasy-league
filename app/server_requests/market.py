@@ -49,20 +49,29 @@ def market():
 @router.get("/{player_id}")
 def player_market(player_id: int):
     """Get all footballers currently on the market with bid info for a specific player.
+    Results are filtered to only show footballers belonging to the same league as the player.
     
     Args:
         player_id (int): The ID of the player to get bid info for."""
     try:
         conn = pg_connect()
-
         cursor = conn.cursor()
+
+        # Retrieve the player's league once, then use it in the main query
+        cursor.execute(
+            "SELECT league_id FROM player WHERE id = %s",
+            (player_id,)
+        )
+        row = cursor.fetchone()
+        player_league_id = row[0] if row else None
+
         cursor.execute(
             """
             SELECT 
                 f.id
                 , f_data.name
                 , f_data.value
-                , player.name
+                , owner.name
                 , date_trunc('second', f.on_market_since) AS on_market_since
                 , b.amount AS bid_amount
                 , f_data.average_points
@@ -74,13 +83,14 @@ def player_market(player_id: int):
                 FROM bid
                 WHERE bidder_id = %s
             ) AS b ON f.id = b.footballer_id
-            LEFT JOIN player ON player.id = f.owner_id
+            LEFT JOIN player AS owner ON owner.id = f.owner_id
             WHERE
-                on_market = TRUE
+                f.on_market = TRUE
                 AND (f.owner_id IS NULL OR f.owner_id != %s)
-            ORDER BY (f.owner_id IS NULL) DESC, on_market_since DESC
+                AND (f.league_id = %s OR f.league_id IS NULL)
+            ORDER BY (f.owner_id IS NULL) DESC, f.on_market_since DESC
             """,
-            (player_id, player_id)
+            (player_id, player_id, player_league_id)
         )
         footballers = cursor.fetchall()
 

@@ -35,24 +35,21 @@ export interface MarketFootballer {
   totalPoints: number;
 }
 
-// Simulate API delay
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+// Note: the delay helper was removed after mock fetchLeagues was replaced with a real API call.
 
 export const fetchLeagues = async (): Promise<League[]> => {
-  await delay(800);
-  // TODO: Replace with actual API call
-  // const response = await fetch('YOUR_API_ENDPOINT/leagues');
-  // return response.json();
-  
-  return [
-    { id: '1', name: 'League 1' },
-    { id: '2', name: 'League 2' },
-    { id: '3', name: 'League 3' },
-  ];
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leagues`);
+  const data = await response.json();
+  if (!data.leagues) return [];
+  return data.leagues.map((league: { id: string | number; name: string }) => ({
+    id: String(league.id),
+    name: league.name,
+  }));
 };
 
-export const fetchLeaderboard = async (fixtureId: string = 'total'): Promise<Player[]> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leaderboard/${fixtureId}`);
+export const fetchLeaderboard = async (fixtureId: string = 'total', leagueId?: string): Promise<Player[]> => {
+  const params = leagueId ? `?league_id=${leagueId}` : '';
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leaderboard/${fixtureId}${params}`);
   const data = await response.json();
   
   return data.leaderboard.map((player: any[]) => ({

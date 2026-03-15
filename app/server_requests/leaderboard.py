@@ -1,56 +1,58 @@
 from fastapi import APIRouter
-from aux.database import pg_connect, mongo_client
+from aux.database import pg_connect
 from .logger import logger
+from typing import Optional
 
 
 router = APIRouter(prefix="/leaderboard", tags=["leaderboard"])
 
 
 @router.get('/{fixture_id}')
-def leaderboard(fixture_id: str):
-    """Get the leaderboard of players
+def leaderboard(fixture_id: str, league_id: Optional[int] = None):
+    """Get the leaderboard of players, optionally filtered by league.
+
+    Args:
+        fixture_id (str): The fixture number or "total" for overall standings.
+        league_id (int, optional): Filter results to players belonging to this league.
     """
     try:
         conn = pg_connect()
-
         cursor = conn.cursor()
 
-        if fixture_id == "total":
-            cursor.execute(
-                """
+        team_value_subquery = """
+            (
                 SELECT
-                    -- row_number() OVER (ORDER BY points DESC) AS rank
+                    footballer.owner_id
+                    , SUM(footballer_data.value) AS team_value
+                FROM footballer JOIN footballer_data ON footballer.id = footballer_data.id
+                GROUP BY footballer.owner_id
+            ) AS f
+        """
+
+        league_filter = "WHERE player.league_id = %s" if league_id is not None else ""
+
+        if fixture_id == "total":
+            query = f"""
+                SELECT
                     player.id
                     , player.name
                     , player.points
                     , f.team_value
                 FROM player
-                LEFT JOIN (
-                    SELECT
-                        footballer.owner_id
-                        , SUM(footballer_data.value) AS team_value
-                    FROM footballer JOIN footballer_data ON footballer.id = footballer_data.id
-                    GROUP BY footballer.owner_id
-                ) AS f ON player.id = f.owner_id
+                LEFT JOIN {team_value_subquery} ON player.id = f.owner_id
+                {league_filter}
                 ORDER BY points DESC
-                """
-            )
+            """
+            params = (league_id,) if league_id is not None else ()
         else:
-            cursor.execute(
-                """
+            query = f"""
                 SELECT
                     player.id
                     , player.name
                     , fixture.points
                     , f.team_value
                 FROM player
-                LEFT JOIN (
-                    SELECT
-                        footballer.owner_id
-                        , SUM(footballer_data.value) AS team_value
-                    FROM footballer JOIN footballer_data ON footballer.id = footballer_data.id
-                    GROUP BY footballer.owner_id
-                ) AS f ON player.id = f.owner_id
+                LEFT JOIN {team_value_subquery} ON player.id = f.owner_id
                 RIGHT JOIN (
                     SELECT
                         player_id
@@ -58,11 +60,12 @@ def leaderboard(fixture_id: str):
                     FROM fixture_details
                     WHERE fixture_n = %s
                 ) AS fixture ON fixture.player_id = player.id
+                {league_filter}
                 ORDER BY points DESC
-                """,
-                (fixture_id,)
-            )
-        
+            """
+            params = (fixture_id, league_id) if league_id is not None else (fixture_id,)
+
+        cursor.execute(query, params)
         players = cursor.fetchall()
 
         cursor.close()

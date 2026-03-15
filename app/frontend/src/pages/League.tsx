@@ -78,7 +78,7 @@ const League = () => {
       const loadPlayers = async () => {
         setLoading(true);
         try {
-          const data = await fetchLeaderboard(selectedFixture);
+          const data = await fetchLeaderboard(selectedFixture, leagueId);
           setPlayers(data);
         } catch (error) {
           console.error('Failed to fetch leaderboard data:', error);
@@ -239,7 +239,7 @@ const League = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       <Header showBackButton />
-      <NavigationTabs leagueId={leagueId} />
+      <NavigationTabs />
       
       <main className="container mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="max-w-4xl mb-4 flex flex-wrap items-center gap-2 sm:gap-4">
