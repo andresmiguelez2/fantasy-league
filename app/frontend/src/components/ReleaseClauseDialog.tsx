@@ -8,6 +8,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { fetchReleaseClauseData } from "@/lib/api";
 
 interface ReleaseClauseDialogProps {
   open: boolean;
@@ -37,8 +38,7 @@ export const ReleaseClauseDialog = ({
   useEffect(() => {
     if (open && footballerId) {
       setLoading(true);
-      fetch(`${import.meta.env.VITE_BACKEND_URL}/footballer/release_clause_data/${footballerId}`)
-        .then(res => res.json())
+      fetchReleaseClauseData(footballerId)
         .then(data => {
           setData(data);
           setLoading(false);

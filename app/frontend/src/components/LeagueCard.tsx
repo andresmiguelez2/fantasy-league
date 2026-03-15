@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Trophy } from "lucide-react";
+import { setActiveLeagueId } from "@/lib/api";
 
 interface LeagueCardProps {
   id: string;
@@ -16,10 +17,15 @@ const gradients = [
 export const LeagueCard = ({ id, name }: LeagueCardProps) => {
   const navigate = useNavigate();
   const gradientIndex = parseInt(id) % gradients.length;
+
+  const handleClick = () => {
+    setActiveLeagueId(id);
+    navigate(`/league/${id}`);
+  };
   
   return (
     <Card
-      onClick={() => navigate(`/league/${id}`)}
+      onClick={handleClick}
       className={`p-8 cursor-pointer hover-lift fade-in border-0 ${gradients[gradientIndex]} relative overflow-hidden group`}
     >
       <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />

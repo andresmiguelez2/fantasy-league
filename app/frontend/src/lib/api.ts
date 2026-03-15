@@ -35,6 +35,34 @@ export interface MarketFootballer {
   totalPoints: number;
 }
 
+const ACTIVE_LEAGUE_KEY = 'activeLeagueId';
+const DEFAULT_LEAGUE_ID = '1';
+
+export const setActiveLeagueId = (leagueId: string) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  localStorage.setItem(ACTIVE_LEAGUE_KEY, leagueId);
+};
+
+export const getActiveLeagueId = (): string => {
+  if (typeof window === 'undefined') {
+    return DEFAULT_LEAGUE_ID;
+  }
+
+  return localStorage.getItem(ACTIVE_LEAGUE_KEY) || DEFAULT_LEAGUE_ID;
+};
+
+const withLeagueId = (params: Record<string, string>) => {
+  const searchParams = new URLSearchParams({
+    ...params,
+    league_id: getActiveLeagueId(),
+  });
+
+  return searchParams.toString();
+};
+
 // Simulate API delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -181,7 +209,9 @@ export interface FixtureDetail {
 }
 
 export const fetchFootballerInfo = async (footballerId: number): Promise<FootballerInfo> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/footballer/${footballerId}`);
+  const response = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/footballer/${footballerId}?${withLeagueId({})}`
+  );
   const data = await response.json();
   return data.footballer_info;
 };
@@ -232,6 +262,7 @@ export const fetchAllFootballers = async (
     sort: sortBy,
     invert: sortOrder === 'desc' ? 'true' : 'false',
     search: search,
+    league_id: getActiveLeagueId(),
   });
   
   const response = await fetch(
@@ -307,6 +338,7 @@ export const setLineup = async (playerId: string, footballerId: number, onLineup
     body: JSON.stringify({
       player_id: parseInt(playerId),
       footballer_id: footballerId,
+      league_id: parseInt(getActiveLeagueId()),
       on_lineup: onLineup,
     }),
   });
@@ -399,13 +431,17 @@ export interface PayReleaseClauseResponse {
 }
 
 export const fetchReleaseClauseData = async (footballerId: number): Promise<ReleaseClauseData> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/footballer/release_clause_data/${footballerId}`);
+  const response = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/footballer/release_clause_data/${footballerId}?${withLeagueId({})}`
+  );
   const data = await response.json();
   return data;
 };
 
 export const fetchMarketStatus = async (footballerId: number): Promise<boolean> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/footballer/market_status/${footballerId}`);
+  const response = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/footballer/market_status/${footballerId}?${withLeagueId({})}`
+  );
   const data = await response.json();
   if (data.status !== "success") {
     throw new Error(data.message || "Failed to fetch market status");
@@ -415,7 +451,7 @@ export const fetchMarketStatus = async (footballerId: number): Promise<boolean> 
 
 export const changeMarketStatus = async (footballerId: number, onMarket: boolean): Promise<any> => {
   const response = await fetch(
-    `${import.meta.env.VITE_BACKEND_URL}/footballer/change_market_status/${footballerId}?on_market=${onMarket}`,
+    `${import.meta.env.VITE_BACKEND_URL}/footballer/change_market_status/${footballerId}?${withLeagueId({ on_market: String(onMarket) })}`,
     { method: 'POST' }
   );
   return response.json();

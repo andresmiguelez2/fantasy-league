@@ -29,6 +29,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { setActiveLeagueId } from "@/lib/api";
 
 const API_ENDPOINT = import.meta.env.VITE_BACKEND_URL;
 
@@ -53,6 +54,12 @@ const League = () => {
   const [footballerPoints, setFootballerPoints] = useState<Record<number, number | null>>({});
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
   const [fixtureDialogOpen, setFixtureDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (leagueId) {
+      setActiveLeagueId(leagueId);
+    }
+  }, [leagueId]);
   
   // Fetch available fixtures depending on selected player
   useEffect(() => {
