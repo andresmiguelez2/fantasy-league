@@ -38,20 +38,34 @@ def footballers_to_update(limit: int = 20, time_threshold: int = 30*60):
 
 
 @router.get('/opened_fixtures')
-def get_opened_fixtures():
-    """Get all the IDs of the fixtures that have been played in the league
+def get_opened_fixtures(league_id: int = None):
+    """Get all the IDs of the fixtures that have been played in the league.
+
+    Args:
+        league_id (int, optional): The league ID to filter by.
     """
     try:
         conn = pg_connect()
         cursor = conn.cursor()
-        cursor.execute(
-            """
-            SELECT n
-            FROM FIXTURE
-            WHERE opened = True
-            ORDER BY n ASC
-            """
-        )
+        if league_id is not None:
+            cursor.execute(
+                """
+                SELECT n
+                FROM FIXTURE
+                WHERE opened = True AND league_id = %s
+                ORDER BY n ASC
+                """,
+                (league_id,)
+            )
+        else:
+            cursor.execute(
+                """
+                SELECT n
+                FROM FIXTURE
+                WHERE opened = True
+                ORDER BY n ASC
+                """
+            )
 
         opened_fixtures = [row[0] for row in cursor.fetchall()]
         return {"status": "success", "opened_fixtures": opened_fixtures}

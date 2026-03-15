@@ -11,7 +11,7 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components
 import { useAuth } from "@/contexts/AuthContext";
 
 const Squad = () => {
-  const { playerId } = useParams();
+  const { playerId, leagueId } = useParams();
   const { user } = useAuth();
   const [footballers, setFootballers] = useState<Footballer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,7 +23,7 @@ const Squad = () => {
       setLoading(true);
       try {
         const id = playerId || user?.playerId?.toString();
-        const data = await fetchSquadFootballers(id);
+        const data = await fetchSquadFootballers(id, leagueId);
         setFootballers(data);
       } catch (error) {
         console.error('Failed to fetch squad data:', error);
@@ -34,7 +34,7 @@ const Squad = () => {
     };
     
     loadFootballers();
-  }, [playerId, user?.playerId]);
+  }, [playerId, leagueId, user?.playerId]);
 
   const handleFootballerClick = (footballer: Footballer) => {
     setSelectedFootballer(footballer);

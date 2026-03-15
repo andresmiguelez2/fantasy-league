@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
 import { fetchFootballerShortName, fetchOpenedFixtures, fetchFixtureLineup, fetchFootballerFixturePoints } from "@/lib/api";
@@ -11,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const API_ENDPOINT = import.meta.env.VITE_BACKEND_URL;
 
 const Fixtures = () => {
+  const { leagueId } = useParams();
   const [openedFixtures, setOpenedFixtures] = useState<number[]>([]);
   const [selectedFixture, setSelectedFixture] = useState<number | null>(null);
   const [formation, setFormation] = useState<number[]>([]);
@@ -27,7 +29,7 @@ const Fixtures = () => {
   useEffect(() => {
     const loadOpenedFixtures = async () => {
       try {
-        const fixtures = await fetchOpenedFixtures();
+        const fixtures = await fetchOpenedFixtures(leagueId);
         setOpenedFixtures(fixtures);
         if (fixtures.length > 0) {
           setSelectedFixture(fixtures[fixtures.length - 1]); // Select latest fixture
@@ -38,7 +40,7 @@ const Fixtures = () => {
     };
 
     loadOpenedFixtures();
-  }, []);
+  }, [leagueId]);
 
   // Fetch lineup when selected fixture changes
   useEffect(() => {

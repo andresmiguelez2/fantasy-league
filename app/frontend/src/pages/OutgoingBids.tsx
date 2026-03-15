@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
@@ -21,6 +22,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
 const OutgoingBids = () => {
+  const { leagueId } = useParams();
   const [selectedBid, setSelectedBid] = useState<OutgoingBid | null>(null);
   const [bidDialogOpen, setBidDialogOpen] = useState(false);
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
@@ -29,8 +31,8 @@ const OutgoingBids = () => {
   const playerId = user?.playerId?.toString();
 
   const { data: bids = [], isLoading } = useQuery({
-    queryKey: ["outgoingBids", playerId],
-    queryFn: () => fetchOutgoingBids(playerId),
+    queryKey: ["outgoingBids", playerId, leagueId],
+    queryFn: () => fetchOutgoingBids(playerId, leagueId),
   });
 
   const formatTimestamp = (timestamp: string) => {
@@ -61,7 +63,7 @@ const OutgoingBids = () => {
     if (!selectedBid) return;
     
     try {
-      await submitBid(selectedBid.footballerId, playerId, amount);
+      await submitBid(selectedBid.footballerId, playerId, amount, leagueId);
       toast.success(amount === 0 ? "Bid deleted" : "Bid updated");
       queryClient.invalidateQueries({ queryKey: ["outgoingBids"] });
       setBidDialogOpen(false);

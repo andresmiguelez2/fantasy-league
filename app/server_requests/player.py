@@ -184,22 +184,33 @@ def get_fixture_lineup(player_id: int, fixture_n: int):
 
 
 @router.get('/fixtures/{player_id}')
-def get_player_fixtures(player_id: int):
+def get_player_fixtures(player_id: int, league_id: int = None):
     """
     Get the fixtures where the player took part.
     """
     try:
         conn = pg_connect()
         cursor = conn.cursor()
-        cursor.execute(
-            """
-            SELECT fixture_n
-            FROM fixture_details
-            WHERE player_id = %s
-            ORDER BY fixture_n DESC
-            """,
-            (player_id,),
-        )
+        if league_id is not None:
+            cursor.execute(
+                """
+                SELECT fixture_n
+                FROM fixture_details
+                WHERE player_id = %s AND league_id = %s
+                ORDER BY fixture_n DESC
+                """,
+                (player_id, league_id),
+            )
+        else:
+            cursor.execute(
+                """
+                SELECT fixture_n
+                FROM fixture_details
+                WHERE player_id = %s
+                ORDER BY fixture_n DESC
+                """,
+                (player_id,),
+            )
 
         fixtures = [row[0] for row in cursor.fetchall()]
 

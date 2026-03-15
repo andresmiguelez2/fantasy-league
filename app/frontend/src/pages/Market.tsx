@@ -12,7 +12,7 @@ import { useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Market = () => {
-  const { playerId } = useParams();
+  const { playerId, leagueId } = useParams();
   const { user } = useAuth();
   const [footballers, setFootballers] = useState<MarketFootballer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +26,7 @@ const Market = () => {
       setLoading(true);
       try {
         const id = playerId || user?.playerId?.toString();
-        const data = await fetchMarketFootballers(id);
+        const data = await fetchMarketFootballers(id, leagueId);
         setFootballers(data);
       } catch (error) {
         console.error('Failed to fetch market data:', error);
@@ -37,7 +37,7 @@ const Market = () => {
     };
     
     loadFootballers();
-  }, [playerId, user?.playerId]);
+  }, [playerId, leagueId, user?.playerId]);
   
   const handleBidClick = (footballer: MarketFootballer) => {
     setSelectedFootballer(footballer);
@@ -53,7 +53,7 @@ const Market = () => {
     if (!selectedFootballer) return;
     
     const id = playerId || user?.playerId?.toString();
-    const resp = await placeBid(selectedFootballer.id, id, amount);
+    const resp = await placeBid(selectedFootballer.id, id, amount, leagueId);
 
     // Determine message from API response
     let message = '';

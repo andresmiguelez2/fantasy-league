@@ -59,10 +59,10 @@ const League = () => {
     const loadFixtures = async () => {
       try {
         if (selectedPlayerId === null) {
-          const data = await fetchOpenedFixtures();
+          const data = await fetchOpenedFixtures(leagueId);
           setFixtures(data);
         } else {
-          const data = await fetchPlayerFixtures(selectedPlayerId.toString());
+          const data = await fetchPlayerFixtures(selectedPlayerId.toString(), leagueId);
           setFixtures(data);
         }
       } catch (error) {
@@ -70,7 +70,7 @@ const League = () => {
       }
     };
     loadFixtures();
-  }, [selectedPlayerId]);
+  }, [selectedPlayerId, leagueId]);
 
   // Fetch leaderboard when selectedFixture changes or when returning to leaderboard view
   useEffect(() => {
@@ -78,7 +78,7 @@ const League = () => {
       const loadPlayers = async () => {
         setLoading(true);
         try {
-          const data = await fetchLeaderboard(selectedFixture);
+          const data = await fetchLeaderboard(selectedFixture, leagueId);
           setPlayers(data);
         } catch (error) {
           console.error('Failed to fetch leaderboard data:', error);
@@ -90,7 +90,7 @@ const League = () => {
       
       loadPlayers();
     }
-  }, [selectedFixture, selectedPlayerId]);
+  }, [selectedFixture, selectedPlayerId, leagueId]);
   
   // Fetch player's squad or fixture when a player is selected
   useEffect(() => {
@@ -101,7 +101,7 @@ const League = () => {
       try {
         if (selectedFixture === "total") {
           // Show squad view
-          const data = await fetchSquadFootballers(selectedPlayerId.toString());
+          const data = await fetchSquadFootballers(selectedPlayerId.toString(), leagueId);
           setFootballers(data);
         } else {
           // Show fixture view

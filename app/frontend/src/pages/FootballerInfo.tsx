@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { ArrowUpDown } from "lucide-react";
 
 const FootballerInfo = () => {
+  const { leagueId } = useParams();
   const [footballers, setFootballers] = useState<MarketFootballer[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -37,7 +39,7 @@ const FootballerInfo = () => {
         setLoadingMore(true);
       }
 
-      const data = await fetchAllFootballers(pageNum, 30, sort, order, searchTerm);
+      const data = await fetchAllFootballers(pageNum, 30, sort, order, searchTerm, leagueId);
       
       if (data.length < 30) {
         setHasMore(false);
@@ -57,7 +59,7 @@ const FootballerInfo = () => {
     setPage(1);
     setHasMore(true);
     loadFootballers(1, sortBy, sortOrder, search, true);
-  }, [sortBy, sortOrder, search, loadFootballers]);
+  }, [sortBy, sortOrder, search, leagueId, loadFootballers]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(

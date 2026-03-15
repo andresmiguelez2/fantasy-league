@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
@@ -21,6 +22,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
 const IncomingBids = () => {
+  const { leagueId } = useParams();
   const [selectedBid, setSelectedBid] = useState<IncomingBid | null>(null);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
@@ -29,8 +31,8 @@ const IncomingBids = () => {
   const playerId = user?.playerId?.toString();
 
   const { data: bids = [], isLoading } = useQuery({
-    queryKey: ["incomingBids", playerId],
-    queryFn: () => fetchIncomingBids(playerId),
+    queryKey: ["incomingBids", playerId, leagueId],
+    queryFn: () => fetchIncomingBids(playerId, leagueId),
   });
 
   const formatTimestamp = (timestamp: string) => {
