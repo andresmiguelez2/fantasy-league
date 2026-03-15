@@ -3,7 +3,6 @@ from aux.database import pg_connect, mongo_client
 from aux.constants import BANK_NAME
 from .logger import logger
 from pydantic import BaseModel
-from typing import Optional
 from classes.footballer import Footballer
 from classes.player import debit_player_value
 
@@ -12,35 +11,25 @@ router = APIRouter(prefix="/market", tags=["market"])
 
 
 @router.get("")
-def market(league_id: int = None):
+def market(league_id: int):
     """Get all footballers currently on the market.
 
     Args:
-        league_id (int, optional): The league ID to filter by.
+        league_id (int): The league ID to filter by.
     """
     try:
         conn = pg_connect()
 
         cursor = conn.cursor()
-        if league_id is not None:
-            cursor.execute(
-                """
-                SELECT *
-                FROM footballer
-                WHERE on_market = TRUE AND league_id = %s
-                ORDER BY owner_id, on_market_since
-                """,
-                (league_id,)
-            )
-        else:
-            cursor.execute(
-                """
-                SELECT *
-                FROM footballer
-                WHERE on_market = TRUE
-                ORDER BY owner_id, on_market_since 
-                """
-            )
+        cursor.execute(
+            """
+            SELECT *
+            FROM footballer
+            WHERE on_market = TRUE AND league_id = %s
+            ORDER BY owner_id, on_market_since
+            """,
+            (league_id,)
+        )
         footballers = cursor.fetchall()
 
         cursor.close()
@@ -63,72 +52,44 @@ def market(league_id: int = None):
 
 
 @router.get("/{player_id}")
-def player_market(player_id: int, league_id: int = None):
+def player_market(player_id: int, league_id: int):
     """Get all footballers currently on the market with bid info for a specific player.
     
     Args:
         player_id (int): The ID of the player to get bid info for.
-        league_id (int, optional): The league ID to filter by.
+        league_id (int): The league ID to filter by.
     """
     try:
         conn = pg_connect()
 
         cursor = conn.cursor()
-        if league_id is not None:
-            cursor.execute(
-                """
-                SELECT 
-                    f.id
-                    , f_data.name
-                    , f_data.value
-                    , player.name
-                    , date_trunc('second', f.on_market_since) AS on_market_since
-                    , b.amount AS bid_amount
-                    , f_data.average_points
-                    , f_data.total_points
-                FROM footballer AS f 
-                LEFT JOIN footballer_data AS f_data ON f.id = f_data.id
-                LEFT JOIN (
-                    SELECT *
-                    FROM bid
-                    WHERE bidder_id = %s AND league_id = %s
-                ) AS b ON f.id = b.footballer_id
-                LEFT JOIN player ON player.id = f.owner_id
-                WHERE
-                    on_market = TRUE
-                    AND (f.owner_id IS NULL OR f.owner_id != %s)
-                    AND f.league_id = %s
-                ORDER BY (f.owner_id IS NULL) DESC, on_market_since DESC
-                """,
-                (player_id, league_id, player_id, league_id)
-            )
-        else:
-            cursor.execute(
-                """
-                SELECT 
-                    f.id
-                    , f_data.name
-                    , f_data.value
-                    , player.name
-                    , date_trunc('second', f.on_market_since) AS on_market_since
-                    , b.amount AS bid_amount
-                    , f_data.average_points
-                    , f_data.total_points
-                FROM footballer AS f 
-                LEFT JOIN footballer_data AS f_data ON f.id = f_data.id
-                LEFT JOIN (
-                    SELECT *
-                    FROM bid
-                    WHERE bidder_id = %s
-                ) AS b ON f.id = b.footballer_id
-                LEFT JOIN player ON player.id = f.owner_id
-                WHERE
-                    on_market = TRUE
-                    AND (f.owner_id IS NULL OR f.owner_id != %s)
-                ORDER BY (f.owner_id IS NULL) DESC, on_market_since DESC
-                """,
-                (player_id, player_id)
-            )
+        cursor.execute(
+            """
+            SELECT 
+                f.id
+                , f_data.name
+                , f_data.value
+                , player.name
+                , date_trunc('second', f.on_market_since) AS on_market_since
+                , b.amount AS bid_amount
+                , f_data.average_points
+                , f_data.total_points
+            FROM footballer AS f 
+            LEFT JOIN footballer_data AS f_data ON f.id = f_data.id
+            LEFT JOIN (
+                SELECT *
+                FROM bid
+                WHERE bidder_id = %s AND league_id = %s
+            ) AS b ON f.id = b.footballer_id
+            LEFT JOIN player ON player.id = f.owner_id
+            WHERE
+                on_market = TRUE
+                AND (f.owner_id IS NULL OR f.owner_id != %s)
+                AND f.league_id = %s
+            ORDER BY (f.owner_id IS NULL) DESC, on_market_since DESC
+            """,
+            (player_id, league_id, player_id, league_id)
+        )
         footballers = cursor.fetchall()
 
         cursor.close()
@@ -156,13 +117,13 @@ class BidRequest(BaseModel):
     player_id: int
     footballer_id: int
     bid_amount: int
-    league_id: Optional[int] = None
+    league_id: int
 
 @router.post("/bid")
 def place_bid(bid: BidRequest):
     """Place or remove a bid on a footballer. To remove a bid, bid an amount of 0.
     Args:
-        bid (BidRequest): The bid request containing player_id, footballer_id, bid_amount, and optional league_id.
+        bid (BidRequest): The bid request containing player_id, footballer_id, bid_amount, and league_id.
     """
     try:
         conn = pg_connect()        
@@ -206,22 +167,13 @@ def place_bid(bid: BidRequest):
             conn.close()
             return {"status": "success", "message": "Bid removed successfully."}
         else:
-            if bid.league_id is not None:
-                cursor.execute(
-                    """
-                    INSERT INTO bid (footballer_id, bidder_id, amount, timestamp, league_id)
-                    VALUES (%s, %s, %s, now(), %s)
-                    """,
-                    (bid.footballer_id, bid.player_id, bid.bid_amount, bid.league_id)
-                )
-            else:
-                cursor.execute(
-                    """
-                    INSERT INTO bid (footballer_id, bidder_id, amount, timestamp)
-                    VALUES (%s, %s, %s, now())
-                    """,
-                    (bid.footballer_id, bid.player_id, bid.bid_amount)
-                )
+            cursor.execute(
+                """
+                INSERT INTO bid (footballer_id, bidder_id, amount, timestamp, league_id)
+                VALUES (%s, %s, %s, now(), %s)
+                """,
+                (bid.footballer_id, bid.player_id, bid.bid_amount, bid.league_id)
+            )
             logger.info(f"Received bid: Player {bid.player_id} bids {bid.bid_amount} on footballer {bid.footballer_id}")
             conn.commit()
             cursor.close()
@@ -302,55 +254,35 @@ def reply_to_bid(bid_id: int, accept: bool):
 
 
 @router.get("/incoming_bids/{player_id}")
-def get_player_incoming_bids(player_id: int, league_id: int = None):
+def get_player_incoming_bids(player_id: int, league_id: int):
     """Get all incoming bids for a player's footballers.
     
     Args:
         player_id (int): The ID of the player to get incoming bids for.
-        league_id (int, optional): The league ID to filter by.
+        league_id (int): The league ID to filter by.
     """
     try:
         conn = pg_connect()
 
         cursor = conn.cursor()
-        if league_id is not None:
-            cursor.execute(
-                """
-                SELECT
-                    b.id AS bid_id
-                    , b.timestamp
-                    , f.id AS footballer_id
-                    , COALESCE(p.name, %s) AS bidder_name
-                    , fd.name AS footballer_name
-                    , b.amount
-                FROM bid AS b
-                    LEFT JOIN footballer AS f ON b.footballer_id = f.id
-                    LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
-                    LEFT JOIN player AS p on b.bidder_id = p.id
-                WHERE f.owner_id = %s AND b.league_id = %s
-                ORDER BY footballer_id, b.timestamp DESC
-                """,
-                (BANK_NAME, player_id, league_id)
-            )
-        else:
-            cursor.execute(
-                """
-                SELECT
-                    b.id AS bid_id
-                    , b.timestamp
-                    , f.id AS footballer_id
-                    , COALESCE(p.name, %s) AS bidder_name
-                    , fd.name AS footballer_name
-                    , b.amount
-                FROM bid AS b
-                    LEFT JOIN footballer AS f ON b.footballer_id = f.id
-                    LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
-                    LEFT JOIN player AS p on b.bidder_id = p.id
-                WHERE f.owner_id = %s
-                ORDER BY footballer_id, b.timestamp DESC
-                """,
-                (BANK_NAME, player_id)
-            )
+        cursor.execute(
+            """
+            SELECT
+                b.id AS bid_id
+                , b.timestamp
+                , f.id AS footballer_id
+                , COALESCE(p.name, %s) AS bidder_name
+                , fd.name AS footballer_name
+                , b.amount
+            FROM bid AS b
+                LEFT JOIN footballer AS f ON b.footballer_id = f.id
+                LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
+                LEFT JOIN player AS p on b.bidder_id = p.id
+            WHERE f.owner_id = %s AND b.league_id = %s
+            ORDER BY footballer_id, b.timestamp DESC
+            """,
+            (BANK_NAME, player_id, league_id)
+        )
         bids = cursor.fetchall()
 
         cursor.close()
@@ -362,55 +294,35 @@ def get_player_incoming_bids(player_id: int, league_id: int = None):
     
 
 @router.get("/outgoing_bids/{player_id}")
-def get_player_outgoing_bids(player_id: int, league_id: int = None):
+def get_player_outgoing_bids(player_id: int, league_id: int):
     """Get all outgoing bids made by a player.
     
     Args:
         player_id (int): The ID of the player to get outgoing bids for.
-        league_id (int, optional): The league ID to filter by.
+        league_id (int): The league ID to filter by.
     """
     try:
         conn = pg_connect()
 
         cursor = conn.cursor()
-        if league_id is not None:
-            cursor.execute(
-                """
-                SELECT
-                    b.id AS bid_id
-                    , b.timestamp
-                    , f.id AS footballer_id
-                    , COALESCE(p.name, %s) AS owner_name
-                    , fd.name AS footballer_name
-                    , b.amount
-                FROM bid AS b
-                    LEFT JOIN footballer AS f ON b.footballer_id = f.id
-                    LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
-                    LEFT JOIN player AS p on f.owner_id = p.id
-                WHERE b.bidder_id = %s AND b.league_id = %s
-                ORDER BY footballer_id, b.timestamp DESC
-                """,
-                (BANK_NAME, player_id, league_id)
-            )
-        else:
-            cursor.execute(
-                """
-                SELECT
-                    b.id AS bid_id
-                    , b.timestamp
-                    , f.id AS footballer_id
-                    , COALESCE(p.name, %s) AS owner_name
-                    , fd.name AS footballer_name
-                    , b.amount
-                FROM bid AS b
-                    LEFT JOIN footballer AS f ON b.footballer_id = f.id
-                    LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
-                    LEFT JOIN player AS p on f.owner_id = p.id
-                WHERE b.bidder_id = %s
-                ORDER BY footballer_id, b.timestamp DESC
-                """,
-                (BANK_NAME, player_id)
-            )
+        cursor.execute(
+            """
+            SELECT
+                b.id AS bid_id
+                , b.timestamp
+                , f.id AS footballer_id
+                , COALESCE(p.name, %s) AS owner_name
+                , fd.name AS footballer_name
+                , b.amount
+            FROM bid AS b
+                LEFT JOIN footballer AS f ON b.footballer_id = f.id
+                LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
+                LEFT JOIN player AS p on f.owner_id = p.id
+            WHERE b.bidder_id = %s AND b.league_id = %s
+            ORDER BY footballer_id, b.timestamp DESC
+            """,
+            (BANK_NAME, player_id, league_id)
+        )
         bids = cursor.fetchall()
 
         cursor.close()

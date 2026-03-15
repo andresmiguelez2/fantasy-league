@@ -36,7 +36,6 @@ export interface MarketFootballer {
 }
 
 const ACTIVE_LEAGUE_KEY = 'activeLeagueId';
-const DEFAULT_LEAGUE_ID = '1';
 
 export const setActiveLeagueId = (leagueId: string) => {
   if (typeof window === 'undefined') {
@@ -46,18 +45,22 @@ export const setActiveLeagueId = (leagueId: string) => {
   localStorage.setItem(ACTIVE_LEAGUE_KEY, leagueId);
 };
 
-export const getActiveLeagueId = (): string => {
+export const getActiveLeagueId = (): string | null => {
   if (typeof window === 'undefined') {
-    return DEFAULT_LEAGUE_ID;
+    return null;
   }
 
-  return localStorage.getItem(ACTIVE_LEAGUE_KEY) || DEFAULT_LEAGUE_ID;
+  return localStorage.getItem(ACTIVE_LEAGUE_KEY);
 };
 
 const withLeagueId = (params: Record<string, string>) => {
+  const leagueId = getActiveLeagueId();
+  if (!leagueId) {
+    throw new Error('No active league selected');
+  }
   const searchParams = new URLSearchParams({
     ...params,
-    league_id: getActiveLeagueId(),
+    league_id: leagueId,
   });
 
   return searchParams.toString();
@@ -163,6 +166,10 @@ export const placeBid = async (
   playerId: string,
   amount: number
 ): Promise<any> => {
+  const leagueId = getActiveLeagueId();
+  if (!leagueId) {
+    throw new Error('No active league selected');
+  }
   const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/bid`, {
     method: 'POST',
     headers: {
@@ -172,7 +179,7 @@ export const placeBid = async (
       footballer_id: footballerId,
       player_id: playerId,
       bid_amount: amount,
-      league_id: parseInt(getActiveLeagueId()),
+      league_id: parseInt(leagueId),
     }),
   });
 
@@ -255,13 +262,17 @@ export const fetchAllFootballers = async (
   sortOrder: 'asc' | 'desc' = 'asc',
   search: string = ''
 ): Promise<MarketFootballer[]> => {
+  const leagueId = getActiveLeagueId();
+  if (!leagueId) {
+    throw new Error('No active league selected');
+  }
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString(),
     sort: sortBy,
     invert: sortOrder === 'desc' ? 'true' : 'false',
     search: search,
-    league_id: getActiveLeagueId(),
+    league_id: leagueId,
   });
   
   const response = await fetch(
@@ -329,6 +340,10 @@ export const fetchAvailableSubs = async (playerId: string, position: number): Pr
 };
 
 export const setLineup = async (playerId: string, footballerId: number, onLineup: boolean): Promise<boolean> => {
+  const leagueId = getActiveLeagueId();
+  if (!leagueId) {
+    throw new Error('No active league selected');
+  }
   const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/footballer/set_lineup/`, {
     method: 'POST',
     headers: {
@@ -337,7 +352,7 @@ export const setLineup = async (playerId: string, footballerId: number, onLineup
     body: JSON.stringify({
       player_id: parseInt(playerId),
       footballer_id: footballerId,
-      league_id: parseInt(getActiveLeagueId()),
+      league_id: parseInt(leagueId),
       on_lineup: onLineup,
     }),
   });
@@ -401,6 +416,10 @@ export const fetchOutgoingBids = async (playerId: string): Promise<OutgoingBid[]
 };
 
 export const submitBid = async (footballerId: number, playerId: string, amount: number): Promise<boolean> => {
+  const leagueId = getActiveLeagueId();
+  if (!leagueId) {
+    throw new Error('No active league selected');
+  }
   const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/bid`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -408,7 +427,7 @@ export const submitBid = async (footballerId: number, playerId: string, amount: 
       footballer_id: footballerId,
       player_id: playerId,
       bid_amount: amount,
-      league_id: parseInt(getActiveLeagueId()),
+      league_id: parseInt(leagueId),
     }),
   });
   const data = await response.json();

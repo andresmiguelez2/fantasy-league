@@ -8,53 +8,34 @@ router = APIRouter(prefix="/squad", tags=["squad"])
 
 
 @router.get("/{player_id}")
-def squad(player_id: int, league_id: int = None):
+def squad(player_id: int, league_id: int):
     """Get the squad of a player.
 
     Args:
         player_id (int): The player ID.
-        league_id (int, optional): The league ID to filter by.
+        league_id (int): The league ID to filter by.
     """
     try:
         conn = pg_connect()
 
         cursor = conn.cursor()
-        if league_id is not None:
-            cursor.execute(
-                """
-                SELECT
-                    f.id
-                    , fd.name
-                    , fd.team
-                    , fd.value
-                    , fd.total_points
-                    , fd.average_points
-                    , f.on_market
-                    , f.on_market_since
-                FROM footballer f LEFT JOIN footballer_data fd ON f.id = fd.id
-                WHERE f.owner_id = %s AND f.league_id = %s
-                ORDER BY id
-                """,
-                (player_id, league_id),
-            )
-        else:
-            cursor.execute(
-                """
-                SELECT
-                    f.id
-                    , fd.name
-                    , fd.team
-                    , fd.value
-                    , fd.total_points
-                    , fd.average_points
-                    , f.on_market
-                    , f.on_market_since
-                FROM footballer f LEFT JOIN footballer_data fd ON f.id = fd.id
-                WHERE f.owner_id = %s
-                ORDER BY id
-                """,
-                (player_id,),
-            )
+        cursor.execute(
+            """
+            SELECT
+                f.id
+                , fd.name
+                , fd.team
+                , fd.value
+                , fd.total_points
+                , fd.average_points
+                , f.on_market
+                , f.on_market_since
+            FROM footballer f LEFT JOIN footballer_data fd ON f.id = fd.id
+            WHERE f.owner_id = %s AND f.league_id = %s
+            ORDER BY id
+            """,
+            (player_id, league_id),
+        )
         footballers = cursor.fetchall()
         cursor.close()
         conn.close()
