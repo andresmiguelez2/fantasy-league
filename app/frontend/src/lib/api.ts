@@ -1,4 +1,4 @@
-// Mock API functions - Replace these endpoints with your actual API URLs
+// API functions
 
 export interface League {
   id: string;
@@ -35,21 +35,59 @@ export interface MarketFootballer {
   totalPoints: number;
 }
 
-// Note: the delay helper was removed after mock fetchLeagues was replaced with a real API call.
+const ACTIVE_LEAGUE_KEY = 'activeLeagueId';
 
-export const fetchLeagues = async (): Promise<League[]> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leagues`);
-  const data = await response.json();
-  if (!data.leagues) return [];
-  return data.leagues.map((league: { id: string | number; name: string }) => ({
-    id: String(league.id),
-    name: league.name,
-  }));
+export const setActiveLeagueId = (leagueId: string) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  localStorage.setItem(ACTIVE_LEAGUE_KEY, leagueId);
 };
 
-export const fetchLeaderboard = async (fixtureId: string = 'total', leagueId?: string): Promise<Player[]> => {
-  const params = leagueId ? `?league_id=${leagueId}` : '';
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leaderboard/${fixtureId}${params}`);
+export const getActiveLeagueId = (): string | null => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  return localStorage.getItem(ACTIVE_LEAGUE_KEY);
+};
+
+const withLeagueId = (params: Record<string, string>) => {
+  const leagueId = getActiveLeagueId();
+  if (!leagueId) {
+    throw new Error('No active league selected');
+  }
+  const searchParams = new URLSearchParams({
+    ...params,
+    league_id: leagueId,
+  });
+
+  return searchParams.toString();
+};
+
+export const fetchLeagues = async (playerId?: string): Promise<League[]> => {
+  try {
+    const resolvedPlayerId = playerId ?? (typeof window !== 'undefined' ? localStorage.getItem('playerId') : null);
+    if (!resolvedPlayerId) {
+      throw new Error('Missing player_id for leagues request');
+    }
+
+    const query = new URLSearchParams({ player_id: resolvedPlayerId }).toString();
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leagues?${query}`);
+    const data = await response.json();
+    return data.leagues.map((league: { id: number; name: string }) => ({
+      id: String(league.id),
+      name: league.name,
+    }));
+  } catch (error) {
+    console.error('Failed to fetch leagues:', error);
+    return [];
+  }
+};
+
+export const fetchLeaderboard = async (fixtureId: string = 'total'): Promise<Player[]> => {
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leaderboard/${fixtureId}?${withLeagueId({})}`);
   const data = await response.json();
   
   return data.leaderboard.map((player: any[]) => ({
@@ -61,7 +99,7 @@ export const fetchLeaderboard = async (fixtureId: string = 'total', leagueId?: s
 };
 
 export const fetchSquadFootballers = async (playerId: string): Promise<Footballer[]> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/squad/${playerId}`);
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/squad/${playerId}?${withLeagueId({})}`);
   const data = await response.json();
   
   // Transform the array format to objects
@@ -78,7 +116,7 @@ export const fetchSquadFootballers = async (playerId: string): Promise<Footballe
 };
 
 export const fetchMarketFootballers = async (playerId: string): Promise<MarketFootballer[]> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/${playerId}`);
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/${playerId}?${withLeagueId({})}`);
   const data = await response.json();
   
   // Transform the array format to objects
@@ -103,7 +141,7 @@ export interface PlayerInfo {
 
 // Return a `Player` shape for UI convenience (maps budget -> team_value)
 export const fetchPlayerInfo = async (playerId: string): Promise<Player> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/player/${playerId}`);
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/player/${playerId}?${withLeagueId({})}`);
   const data = await response.json();
 
   // The API returns [id, name, budget, points]
@@ -134,6 +172,10 @@ export const placeBid = async (
   playerId: string,
   amount: number
 ): Promise<any> => {
+  const leagueId = getActiveLeagueId();
+  if (!leagueId) {
+    throw new Error('No active league selected');
+  }
   const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/bid`, {
     method: 'POST',
     headers: {
@@ -143,6 +185,7 @@ export const placeBid = async (
       footballer_id: footballerId,
       player_id: playerId,
       bid_amount: amount,
+      league_id: parseInt(leagueId),
     }),
   });
 
@@ -178,7 +221,9 @@ export interface FixtureDetail {
 }
 
 export const fetchFootballerInfo = async (footballerId: number): Promise<FootballerInfo> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/footballer/${footballerId}`);
+  const response = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/footballer/${footballerId}?${withLeagueId({})}`
+  );
   const data = await response.json();
   return data.footballer_info;
 };
@@ -190,19 +235,21 @@ export const fetchFixtureDetail = async (footballerId: number, fixture: number):
 };
 
 export const fetchOpenedFixtures = async (): Promise<number[]> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/general/opened_fixtures`);
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/general/opened_fixtures?${withLeagueId({})}`);
   const data = await response.json();
   return data.opened_fixtures;
 };
 
 export const fetchPlayerFixtures = async (playerId: string): Promise<number[]> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/player/fixtures/${playerId}`);
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/player/fixtures/${playerId}?${withLeagueId({})}`);
   const data = await response.json();
   return data.fixtures || [];
 };
 
 export const fetchFixtureLineup = async (playerId: string, fixtureN: number): Promise<{ lineup: number[]; lineupFootballers: number[][] }> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/player/fixture_lineup/${playerId}?fixture_n=${fixtureN}`);
+  const response = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/player/fixture_lineup/${playerId}?${withLeagueId({ fixture_n: fixtureN.toString() })}`
+  );
   const data = await response.json();
   return {
     lineup: data.lineup || [],
@@ -223,12 +270,17 @@ export const fetchAllFootballers = async (
   sortOrder: 'asc' | 'desc' = 'asc',
   search: string = ''
 ): Promise<MarketFootballer[]> => {
+  const leagueId = getActiveLeagueId();
+  if (!leagueId) {
+    throw new Error('No active league selected');
+  }
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString(),
     sort: sortBy,
     invert: sortOrder === 'desc' ? 'true' : 'false',
     search: search,
+    league_id: leagueId,
   });
   
   const response = await fetch(
@@ -255,13 +307,15 @@ export interface LineupFormation {
 }
 
 export const fetchLineupFormation = async (playerId: string): Promise<number[]> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/player/lineup/${playerId}`);
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/player/lineup/${playerId}?${withLeagueId({})}`);
   const data: LineupFormation = await response.json();
   return data.lineup;
 };
 
 export const fetchLineupFootballers = async (playerId: string): Promise<number[][]> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/player/lineup_footballers/${playerId}`);
+  const response = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/player/lineup_footballers/${playerId}?${withLeagueId({})}`
+  );
   const data = await response.json();
   return data.lineup_footballers || [];
 };
@@ -282,7 +336,7 @@ export interface Substitute {
 
 export const fetchAvailableSubs = async (playerId: string, position: number): Promise<Substitute[]> => {
   const response = await fetch(
-    `${import.meta.env.VITE_BACKEND_URL}/player/available_subs/${playerId}?position=${position}`
+    `${import.meta.env.VITE_BACKEND_URL}/player/available_subs/${playerId}?${withLeagueId({ position: position.toString() })}`
   );
   const data = await response.json();
   
@@ -296,6 +350,10 @@ export const fetchAvailableSubs = async (playerId: string, position: number): Pr
 };
 
 export const setLineup = async (playerId: string, footballerId: number, onLineup: boolean): Promise<boolean> => {
+  const leagueId = getActiveLeagueId();
+  if (!leagueId) {
+    throw new Error('No active league selected');
+  }
   const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/footballer/set_lineup/`, {
     method: 'POST',
     headers: {
@@ -304,6 +362,7 @@ export const setLineup = async (playerId: string, footballerId: number, onLineup
     body: JSON.stringify({
       player_id: parseInt(playerId),
       footballer_id: footballerId,
+      league_id: parseInt(leagueId),
       on_lineup: onLineup,
     }),
   });
@@ -321,7 +380,7 @@ export interface IncomingBid {
 }
 
 export const fetchIncomingBids = async (playerId: string): Promise<IncomingBid[]> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/incoming_bids/${playerId}`);
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/incoming_bids/${playerId}?${withLeagueId({})}`);
   const data = await response.json();
   
   return data.bids.map((bid: any[]) => ({
@@ -353,7 +412,7 @@ export interface OutgoingBid {
 }
 
 export const fetchOutgoingBids = async (playerId: string): Promise<OutgoingBid[]> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/outgoing_bids/${playerId}`);
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/outgoing_bids/${playerId}?${withLeagueId({})}`);
   const data = await response.json();
   
   return data.bids.map((bid: any[]) => ({
@@ -367,6 +426,10 @@ export const fetchOutgoingBids = async (playerId: string): Promise<OutgoingBid[]
 };
 
 export const submitBid = async (footballerId: number, playerId: string, amount: number): Promise<boolean> => {
+  const leagueId = getActiveLeagueId();
+  if (!leagueId) {
+    throw new Error('No active league selected');
+  }
   const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/market/bid`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -374,6 +437,7 @@ export const submitBid = async (footballerId: number, playerId: string, amount: 
       footballer_id: footballerId,
       player_id: playerId,
       bid_amount: amount,
+      league_id: parseInt(leagueId),
     }),
   });
   const data = await response.json();
@@ -396,13 +460,17 @@ export interface PayReleaseClauseResponse {
 }
 
 export const fetchReleaseClauseData = async (footballerId: number): Promise<ReleaseClauseData> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/footballer/release_clause_data/${footballerId}`);
+  const response = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/footballer/release_clause_data/${footballerId}?${withLeagueId({})}`
+  );
   const data = await response.json();
   return data;
 };
 
 export const fetchMarketStatus = async (footballerId: number): Promise<boolean> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/footballer/market_status/${footballerId}`);
+  const response = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/footballer/market_status/${footballerId}?${withLeagueId({})}`
+  );
   const data = await response.json();
   if (data.status !== "success") {
     throw new Error(data.message || "Failed to fetch market status");
@@ -412,7 +480,7 @@ export const fetchMarketStatus = async (footballerId: number): Promise<boolean> 
 
 export const changeMarketStatus = async (footballerId: number, onMarket: boolean): Promise<any> => {
   const response = await fetch(
-    `${import.meta.env.VITE_BACKEND_URL}/footballer/change_market_status/${footballerId}?on_market=${onMarket}`,
+    `${import.meta.env.VITE_BACKEND_URL}/footballer/change_market_status/${footballerId}?${withLeagueId({ on_market: String(onMarket) })}`,
     { method: 'POST' }
   );
   return response.json();

@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from aux.database import pg_connect
 from .logger import logger
 
@@ -6,18 +6,18 @@ from .logger import logger
 router = APIRouter(prefix="/leagues", tags=["leagues"])
 
 
-@router.get("")
-def get_leagues():
-    """Get all available leagues."""
+def _get_player_leagues(player_id: int):
+    """Get all leagues."""
     try:
         conn = pg_connect()
         cursor = conn.cursor()
         cursor.execute(
             """
-            SELECT id, name
-            FROM league
+            SELECT league.id, league.name
+            FROM league RIGHT JOIN player on player.league_id = league.id
+            WHERE player.id = %s
             ORDER BY id
-            """
+            """, (player_id,)
         )
         leagues = cursor.fetchall()
         cursor.close()
@@ -27,30 +27,15 @@ def get_leagues():
             "leagues": [{"id": row[0], "name": row[1]} for row in leagues],
         }
     except Exception as e:
-        logger.error(f"Error fetching leagues: {e}")
+        logger.error(f"Error retrieving leagues: {e}")
         return {"status": "error", "leagues": []}
 
 
-@router.get("/{league_id}")
-def get_league(league_id: int):
-    """Get details of a specific league."""
-    try:
-        conn = pg_connect()
-        cursor = conn.cursor()
-        cursor.execute(
-            """
-            SELECT id, name
-            FROM league
-            WHERE id = %s
-            """,
-            (league_id,),
-        )
-        row = cursor.fetchone()
-        cursor.close()
-        conn.close()
-        if not row:
-            return {"status": "error", "message": "League not found."}
-        return {"status": "success", "league": {"id": row[0], "name": row[1]}}
-    except Exception as e:
-        logger.error(f"Error fetching league {league_id}: {e}")
-        return {"status": "error", "message": str(e)}
+@router.get("")
+def get_player_leagues_query(player_id: int = Query(...)):
+    return _get_player_leagues(player_id)
+
+
+@router.get("/{player_id}")
+def get_player_leagues(player_id: int):
+    return _get_player_leagues(player_id)

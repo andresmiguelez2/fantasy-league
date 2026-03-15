@@ -9,7 +9,7 @@ router = APIRouter(prefix="/player", tags=["player"])
 
 
 @router.get('/{player_id}')
-def get_player_info(player_id: int):
+def get_player_info(player_id: int, league_id: int):
     """Get the player information
     """
     try:
@@ -24,9 +24,9 @@ def get_player_info(player_id: int):
                 , budget
                 , points
             FROM player
-            WHERE id = %s
+            WHERE id = %s AND league_id = %s
             """,
-            (player_id,),
+            (player_id, league_id),
         )
         player = cursor.fetchone()
 
@@ -43,7 +43,7 @@ def get_player_info(player_id: int):
 
 
 @router.get('/lineup/{player_id}')
-def get_player_lineup(player_id: int):
+def get_player_lineup(player_id: int, league_id: int):
     """Get the player lineup
     """
     try:
@@ -55,9 +55,9 @@ def get_player_lineup(player_id: int):
             SELECT
                 lineup
             FROM player
-            WHERE id = %s
+            WHERE id = %s AND league_id = %s
             """,
-            (player_id,),
+            (player_id, league_id),
         )
         lineup = cursor.fetchone()[0]
 
@@ -73,12 +73,13 @@ def get_player_lineup(player_id: int):
 
 
 @router.get('/lineup_footballers/{player_id}')
-def get_footballers_on_lineup(player_id: int):
+def get_footballers_on_lineup(player_id: int, league_id: int):
     """
     Get the footballers on the player's lineup
 
     Args:
         player_id (int): The player ID
+        league_id (int): The league ID
 
     API Returns:
         list[list[int]]: A list of lists containing the footballer IDs on the lineup. Includes GK, DF, MD, FW
@@ -96,9 +97,10 @@ def get_footballers_on_lineup(player_id: int):
             WHERE
                 f.owner_id = %s
                 AND f.on_lineup = true
+                AND f.league_id = %s
             ORDER BY fd.position, f.id
             """,
-            (player_id,),
+            (player_id, league_id),
         )
 
         footballers_on_lineup = cursor.fetchall()
@@ -118,13 +120,14 @@ def get_footballers_on_lineup(player_id: int):
     
 
 @router.get('/fixture_lineup/{player_id}')
-def get_fixture_lineup(player_id: int, fixture_n: int):
+def get_fixture_lineup(player_id: int, fixture_n: int, league_id: int):
     """
     Get the footballers on the player's lineup for a specific fixture
 
     Args:
         player_id (int): The player ID
         fixture_id (int): The fixture number
+        league_id (int): The league ID
     
     API Returns:
         list[list[int]]: A list of lists containing the footballer IDs on the lineup. Includes GK, DF, MD, FW
@@ -147,10 +150,11 @@ def get_fixture_lineup(player_id: int, fixture_n: int):
                 WHERE
                     fixture_n = %s
                     AND player_id = %s
+                    AND league_id = %s
             ) AS fx LEFT JOIN footballer_data AS fd ON fx.footballer_id = fd.id
             ORDER BY position, fx.footballer_id
             """,
-            (fixture_n, player_id),
+            (fixture_n, player_id, league_id),
         )
         footballers_on_lineup = cursor.fetchall()
 
@@ -158,9 +162,9 @@ def get_fixture_lineup(player_id: int, fixture_n: int):
             """
             SELECT lineup
             FROM fixture_details
-            WHERE fixture_n = %s AND player_id = %s
+            WHERE fixture_n = %s AND player_id = %s AND league_id = %s
             """,
-            (fixture_n, player_id),
+            (fixture_n, player_id, league_id),
         )
         formation_result = cursor.fetchone()
         formation = formation_result[0] if formation_result else []
@@ -184,7 +188,7 @@ def get_fixture_lineup(player_id: int, fixture_n: int):
 
 
 @router.get('/fixtures/{player_id}')
-def get_player_fixtures(player_id: int):
+def get_player_fixtures(player_id: int, league_id: int):
     """
     Get the fixtures where the player took part.
     """
@@ -195,10 +199,10 @@ def get_player_fixtures(player_id: int):
             """
             SELECT fixture_n
             FROM fixture_details
-            WHERE player_id = %s
+            WHERE player_id = %s AND league_id = %s
             ORDER BY fixture_n DESC
             """,
-            (player_id,),
+            (player_id, league_id),
         )
 
         fixtures = [row[0] for row in cursor.fetchall()]
@@ -213,7 +217,7 @@ def get_player_fixtures(player_id: int):
 
 
 @router.get('/benched_footballers/{player_id}')
-def get_footballers_not_on_lineup(player_id: int, target_position: str = None):
+def get_footballers_not_on_lineup(player_id: int, league_id: int, target_position: str = None):
     """
     """
     try:
@@ -228,11 +232,12 @@ def get_footballers_not_on_lineup(player_id: int, target_position: str = None):
             FROM footballer AS f JOIN footballer_data AS fd ON f.id = fd.id
             WHERE
                 f.owner_id = %s
+                AND league_id = %s
                 AND f.on_lineup = false
                 AND (%s IS NULL OR fd.position = %s)
             ORDER BY fd.position, f.id
             """,
-            (player_id, target_position, target_position),
+            (player_id, league_id, target_position, target_position),
         )
 
         footballers_on_lineup = cursor.fetchall()
@@ -259,7 +264,7 @@ def get_footballers_not_on_lineup(player_id: int, target_position: str = None):
     
 
 @router.get('/available_subs/{player_id}')
-def get_available_substitutes(player_id: int, position: str):
+def get_available_substitutes(player_id: int, league_id: int, position: str):
     """Get the available substitutes for a given position
     """
     try:
@@ -284,9 +289,10 @@ def get_available_substitutes(player_id: int, position: str):
                 f.owner_id = %s
                 AND f.on_lineup = false
                 AND fd.position = %s
+                AND f.league_id = %s
             ORDER BY id
             """,
-            (player_id, position),
+            (player_id, position, league_id),
         )
 
         substitutes = cursor.fetchall()
@@ -304,7 +310,7 @@ def get_available_substitutes(player_id: int, position: str):
     
 
 @router.post('/update/lineup/{player_id}')
-def update_player_lineup(player_id: int, lineup: list[int]):
+def update_player_lineup(player_id: int, league_id: int, lineup: list[int]):
     """Update the player lineup. This should be a list of three integers representing the number of defenders, midfielders, and forwards.
     """
     assert len(lineup) == 3, logger.error("Lineup must contain exactly 3 elements: [DF, MD, FW]")
@@ -320,9 +326,9 @@ def update_player_lineup(player_id: int, lineup: list[int]):
             """
             UPDATE player
             SET lineup = %s
-            WHERE id = %s
+            WHERE id = %s AND league_id = %s
             """,
-            (lineup, player_id),
+            (lineup, player_id, league_id),
         )
         conn.commit()
 
@@ -336,7 +342,7 @@ def update_player_lineup(player_id: int, lineup: list[int]):
         return {"status": "error"}
     
 
-def validate_lineup(player_id: int, lineup: list[int]):
+def validate_lineup(player_id: int, league_id: int, lineup: list[int]):
     """
     Validate the player's lineup and remove incompatible footballers
     """
@@ -353,10 +359,11 @@ def validate_lineup(player_id: int, lineup: list[int]):
             FROM footballer AS f JOIN footballer_data AS fd ON f.id = fd.id
             WHERE
                 f.owner_id = %s
+                AND f.league_id = %s
                 AND f.on_lineup = true
             ORDER BY fd.position, f.id
             """,
-            (player_id,),
+            (player_id, league_id),
         )
 
         footballers_on_lineup = cursor.fetchall()

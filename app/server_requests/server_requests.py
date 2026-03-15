@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # import sub-routers
 from . import auth
+from . import league
 from . import market
 from . import leaderboard
 from . import footballer
@@ -11,7 +12,6 @@ from . import squad
 from . import player
 from . import general
 from . import team
-from . import league
 
 
 server_app = FastAPI()
@@ -34,6 +34,7 @@ def ping():
 
 
 server_app.include_router(auth.router)
+server_app.include_router(league.router)
 server_app.include_router(market.router)
 server_app.include_router(leaderboard.router)
 server_app.include_router(footballer.router)
@@ -41,4 +42,3 @@ server_app.include_router(squad.router)
 server_app.include_router(player.router)
 server_app.include_router(general.router)
 server_app.include_router(team.router)
-server_app.include_router(league.router)

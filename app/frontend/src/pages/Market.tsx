@@ -10,10 +10,12 @@ import { fetchMarketFootballers, placeBid, MarketFootballer } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { getActiveLeagueId } from "@/lib/api";
 
 const Market = () => {
   const { playerId } = useParams();
   const { user } = useAuth();
+  const leagueId = getActiveLeagueId();
   const [footballers, setFootballers] = useState<MarketFootballer[]>([]);
   const [loading, setLoading] = useState(true);
   const [bidDialogOpen, setBidDialogOpen] = useState(false);
@@ -85,7 +87,7 @@ const Market = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       <Header showBackButton />
-      <NavigationTabs />
+      <NavigationTabs leagueId={leagueId} />
       
       <main className="container mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
         {loading ? (

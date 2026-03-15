@@ -1,69 +1,62 @@
-import { useNavigate, useLocation, useParams } from "react-router-dom";
+import { useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { getActiveLeagueId, setActiveLeagueId } from "@/lib/api";
 
 interface NavigationTabsProps {
   leagueId?: string;
 }
 
-export const NavigationTabs = ({ leagueId: leagueIdProp }: NavigationTabsProps) => {
+export const NavigationTabs = ({ leagueId }: NavigationTabsProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { leagueId: leagueIdParam } = useParams<{ leagueId: string }>();
+  const activeLeagueId = leagueId || getActiveLeagueId();
 
-  // Prefer the param from the URL; fall back to the prop if provided
-  const leagueId = leagueIdParam ?? leagueIdProp ?? "1";
-
+  useEffect(() => {
+    if (leagueId && leagueId !== getActiveLeagueId()) {
+      setActiveLeagueId(leagueId);
+    }
+  }, [leagueId]);
+  
   const mainTabs = [
-    { id: "league", label: "Leaderboard", path: `/league/${leagueId}` },
-    { id: "team", label: "Team", path: `/league/${leagueId}/squad` },
-    { id: "market", label: "Market", path: `/league/${leagueId}/market` },
-    { id: "footballer-info", label: "Footballer Info", path: `/league/${leagueId}/footballer-info` },
+    { id: "league", label: "Leaderboard", path: `/league/${activeLeagueId}` },
+    { id: "team", label: "Team", path: "/squad" },
+    { id: "market", label: "Market", path: "/market" },
+    { id: "footballer-info", label: "Footballer Info", path: "/footballer-info" },
   ];
 
   const teamSubTabs = [
-    { id: "squad", label: "Squad", path: `/league/${leagueId}/squad` },
-    { id: "lineup", label: "Lineup", path: `/league/${leagueId}/lineup` },
-    { id: "fixtures", label: "Fixtures", path: `/league/${leagueId}/fixtures` },
+    { id: "squad", label: "Squad", path: "/squad" },
+    { id: "lineup", label: "Lineup", path: "/lineup" },
+    { id: "fixtures", label: "Fixtures", path: "/fixtures" },
   ];
 
   const marketSubTabs = [
-    { id: "current-market", label: "Current Market", path: `/league/${leagueId}/market` },
-    { id: "incoming-bids", label: "Incoming Bids", path: `/league/${leagueId}/market/incoming` },
-    { id: "outgoing-bids", label: "Outgoing Bids", path: `/league/${leagueId}/market/outgoing` },
+    { id: "current-market", label: "Current Market", path: "/market" },
+    { id: "incoming-bids", label: "Incoming Bids", path: "/market/incoming" },
+    { id: "outgoing-bids", label: "Outgoing Bids", path: "/market/outgoing" },
   ];
-
-  const leagueBase = `/league/${leagueId}`;
-
+  
   const isMainTabActive = (tab: typeof mainTabs[0]) => {
     if (tab.id === "team") {
-      return (
-        location.pathname === `${leagueBase}/squad` ||
-        location.pathname.startsWith(`${leagueBase}/squad/`) ||
-        location.pathname === `${leagueBase}/lineup` ||
-        location.pathname === `${leagueBase}/fixtures`
-      );
+      return location.pathname === "/squad" || location.pathname.startsWith("/squad/") || location.pathname === "/lineup" || location.pathname === "/fixtures";
     }
     if (tab.id === "market") {
-      return location.pathname.startsWith(`${leagueBase}/market`);
+      return location.pathname.startsWith("/market");
     }
     return location.pathname === tab.path;
   };
 
   const isSubTabActive = (path: string) => {
-    if (path === `${leagueBase}/market`) {
-      return location.pathname === `${leagueBase}/market`;
+    if (path === "/market") {
+      return location.pathname === "/market";
     }
     return location.pathname === path || location.pathname.startsWith(path + "/");
   };
 
-  const showTeamSubTabs =
-    location.pathname === `${leagueBase}/squad` ||
-    location.pathname.startsWith(`${leagueBase}/squad/`) ||
-    location.pathname === `${leagueBase}/lineup` ||
-    location.pathname === `${leagueBase}/fixtures`;
-
-  const showMarketSubTabs = location.pathname.startsWith(`${leagueBase}/market`);
-
+  const showTeamSubTabs = location.pathname === "/squad" || location.pathname.startsWith("/squad/") || location.pathname === "/lineup" || location.pathname === "/fixtures";
+  const showMarketSubTabs = location.pathname.startsWith("/market");
+  
   return (
     <div className="border-b border-border bg-card">
       <div className="container mx-auto px-3 sm:px-6 lg:px-8">
