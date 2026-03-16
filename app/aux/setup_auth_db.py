@@ -1,7 +1,7 @@
 """
-Database setup script for users table
+Database setup script for users table and league tables
 
-This script creates the users table if it doesn't exist.
+This script creates the users table and league tables if they don't exist.
 Run this script before using the authentication system.
 """
 import logging
@@ -20,6 +20,45 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
+
+
+def create_league_tables():
+    """Create the league table and add league_id columns to player and footballer if they don't exist."""
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        # Create league table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS league (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) UNIQUE NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # Add league_id to player table if not present
+        cursor.execute("""
+            ALTER TABLE player
+            ADD COLUMN IF NOT EXISTS league_id INTEGER REFERENCES league(id)
+        """)
+
+        # Add league_id to footballer table if not present
+        cursor.execute("""
+            ALTER TABLE footballer
+            ADD COLUMN IF NOT EXISTS league_id INTEGER REFERENCES league(id)
+        """)
+
+        conn.commit()
+        logger.info("League tables and columns created/verified successfully")
+
+        cursor.close()
+        conn.close()
+
+        return True
+    except Exception as e:
+        logger.error(f"Error creating league tables: {e}")
+        return False
 
 
 def create_users_table():
@@ -124,7 +163,14 @@ def migrate_users_from_file():
 
 if __name__ == "__main__":
     logger.info("Starting database setup...")
-    
+
+    # Create league table and add league_id columns
+    if create_league_tables():
+        logger.info("✓ League tables setup complete")
+    else:
+        logger.error("✗ Failed to create league tables")
+        sys.exit(1)
+
     # Create users table
     if create_users_table():
         logger.info("✓ Users table setup complete")
