@@ -250,7 +250,6 @@ def get_all_footballers(league_id: int, limit: int = 20, offset: int = 0, page: 
         cursor.execute(query, (league_id, f"%{search}%", limit, offset,))
         footballers = cursor.fetchall()
 
-        footballers = cursor.fetchall()
         cursor.close()
         conn.close()
 
