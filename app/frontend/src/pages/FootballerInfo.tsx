@@ -10,8 +10,10 @@ import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowUpDown } from "lucide-react";
+import { getActiveLeagueId } from "@/lib/api";
 
 const FootballerInfo = () => {
+  const leagueId = getActiveLeagueId();
   const [footballers, setFootballers] = useState<MarketFootballer[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -90,7 +92,7 @@ const FootballerInfo = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <Header />
-      <NavigationTabs />
+      <NavigationTabs leagueId={leagueId} />
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col gap-4 mb-6">

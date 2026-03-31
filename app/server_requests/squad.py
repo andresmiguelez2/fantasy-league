@@ -8,8 +8,13 @@ router = APIRouter(prefix="/squad", tags=["squad"])
 
 
 @router.get("/{player_id}")
-def squad(player_id: int):
-    """Get the squad of a player."""
+def squad(player_id: int, league_id: int):
+    """Get the squad of a player.
+
+    Args:
+        player_id (int): The player ID.
+        league_id (int): The league ID to filter by.
+    """
     try:
         conn = pg_connect()
 
@@ -26,10 +31,10 @@ def squad(player_id: int):
                 , f.on_market
                 , f.on_market_since
             FROM footballer f LEFT JOIN footballer_data fd ON f.id = fd.id
-            WHERE f.owner_id = %s
+            WHERE f.owner_id = %s AND f.league_id = %s
             ORDER BY id
             """,
-            (player_id,),
+            (player_id, league_id),
         )
         footballers = cursor.fetchall()
         cursor.close()

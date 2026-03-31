@@ -9,10 +9,12 @@ import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
 import { fetchSquadFootballers, Footballer } from "@/lib/api";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
+import { getActiveLeagueId } from "@/lib/api";
 
 const Squad = () => {
   const { playerId } = useParams();
   const { user } = useAuth();
+  const leagueId = getActiveLeagueId();
   const [footballers, setFootballers] = useState<Footballer[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedFootballer, setSelectedFootballer] = useState<Footballer | null>(null);
@@ -44,7 +46,7 @@ const Squad = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       <Header showBackButton />
-      <NavigationTabs />
+      <NavigationTabs leagueId={leagueId} />
       
       <main className="container mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
         {loading ? (

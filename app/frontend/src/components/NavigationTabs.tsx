@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { getActiveLeagueId, setActiveLeagueId } from "@/lib/api";
 
 interface NavigationTabsProps {
   leagueId?: string;
@@ -8,9 +10,16 @@ interface NavigationTabsProps {
 export const NavigationTabs = ({ leagueId }: NavigationTabsProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const activeLeagueId = leagueId || getActiveLeagueId();
+
+  useEffect(() => {
+    if (leagueId && leagueId !== getActiveLeagueId()) {
+      setActiveLeagueId(leagueId);
+    }
+  }, [leagueId]);
   
   const mainTabs = [
-    { id: "league", label: "Leaderboard", path: leagueId ? `/league/${leagueId}` : "/league/1" },
+    { id: "league", label: "Leaderboard", path: `/league/${activeLeagueId}` },
     { id: "team", label: "Team", path: "/squad" },
     { id: "market", label: "Market", path: "/market" },
     { id: "footballer-info", label: "Footballer Info", path: "/footballer-info" },

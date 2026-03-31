@@ -13,9 +13,7 @@ export const Header = ({ showBackButton = false }: HeaderProps) => {
   const { toast } = useToast();
 
   const handleFantasyClick = () => {
-    if (showBackButton) {
-      navigate("/");
-    }
+    navigate("/");
   };
 
   const handleLogout = () => {
@@ -34,9 +32,7 @@ export const Header = ({ showBackButton = false }: HeaderProps) => {
           <Button
             variant="ghost"
             onClick={handleFantasyClick}
-            className={`text-base sm:text-lg font-semibold px-2 sm:px-4 ${
-              showBackButton ? "cursor-pointer hover:bg-accent" : "cursor-default hover:bg-transparent"
-            }`}
+            className="text-base sm:text-lg font-semibold px-2 sm:px-4 cursor-pointer hover:bg-accent"
           >
             Fantasy
           </Button>

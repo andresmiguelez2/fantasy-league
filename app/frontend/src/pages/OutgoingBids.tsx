@@ -19,6 +19,7 @@ import { Edit } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { getActiveLeagueId } from "@/lib/api";
 
 const OutgoingBids = () => {
   const [selectedBid, setSelectedBid] = useState<OutgoingBid | null>(null);
@@ -27,6 +28,7 @@ const OutgoingBids = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const playerId = user?.playerId?.toString();
+  const leagueId = getActiveLeagueId();
 
   const { data: bids = [], isLoading } = useQuery({
     queryKey: ["outgoingBids", playerId],
@@ -73,7 +75,7 @@ const OutgoingBids = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       <Header />
-      <NavigationTabs />
+      <NavigationTabs leagueId={leagueId} />
       
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {isLoading ? (
