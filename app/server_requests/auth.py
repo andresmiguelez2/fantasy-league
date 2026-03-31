@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from typing import Optional
-from aux.auth import authenticate_user, create_access_token, verify_token, get_user_by_id
+from aux.auth import authenticate_user, create_access_token, verify_token, get_user_by_id, get_password_hash
+from aux.database import pg_connect
 from .logger import logger
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -10,6 +11,11 @@ security = HTTPBearer()
 
 
 class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class RegisterRequest(BaseModel):
     username: str
     password: str
 
@@ -56,6 +62,62 @@ def login(request: LoginRequest):
         "player_id": user["player_id"],
         "username": user["username"]
     }
+
+
+@router.post("/register", status_code=status.HTTP_201_CREATED)
+def register(request: RegisterRequest):
+    """
+    Register a new user account
+    """
+    if len(request.password) < 6:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Password must be at least 6 characters long",
+        )
+
+    conn = None
+    cursor = None
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        # Check if username already exists
+        cursor.execute("SELECT id FROM users WHERE username = %s", (request.username,))
+        if cursor.fetchone():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Username already taken",
+            )
+
+        password_hash = get_password_hash(request.password)
+
+        cursor.execute(
+            """
+            INSERT INTO users (username, password_hash)
+            VALUES (%s, %s)
+            RETURNING id
+            """,
+            (request.username, password_hash),
+        )
+        user_id = cursor.fetchone()[0]
+        conn.commit()
+
+        logger.info(f"New user registered: {request.username} (ID: {user_id})")
+
+        return {"id": user_id, "username": request.username}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error registering user: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while creating the user",
+        )
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 
 def get_current_user_from_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
