@@ -66,8 +66,37 @@ const withLeagueId = (params: Record<string, string>) => {
   return searchParams.toString();
 };
 
+const getAuthToken = (): string | null =>
+  typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
+const getCurrentUserId = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  const userStr = localStorage.getItem('user');
+  return userStr ? (JSON.parse(userStr) as { id?: number })?.id?.toString() ?? null : null;
+};
+
 export const fetchLeagues = async (playerId?: string): Promise<League[]> => {
   try {
+    // Prefer user_id so that all leagues (across multiple players) are returned
+    const userId = getCurrentUserId();
+
+    if (userId) {
+      try {
+        const query = new URLSearchParams({ user_id: userId }).toString();
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leagues?${query}`);
+        const data = await response.json();
+        if (data.status === 'success') {
+          return (data.leagues as { id: number; name: string }[]).map((league) => ({
+            id: String(league.id),
+            name: league.name,
+          }));
+        }
+      } catch {
+        // Fall through to player_id fallback below
+      }
+    }
+
+    // Fallback: use player_id (single-league behaviour / pre-migration)
     const resolvedPlayerId = playerId ?? (typeof window !== 'undefined' ? localStorage.getItem('playerId') : null);
     if (!resolvedPlayerId) {
       throw new Error('Missing player_id for leagues request');
@@ -76,12 +105,45 @@ export const fetchLeagues = async (playerId?: string): Promise<League[]> => {
     const query = new URLSearchParams({ player_id: resolvedPlayerId }).toString();
     const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leagues?${query}`);
     const data = await response.json();
-    return data.leagues.map((league: { id: number; name: string }) => ({
+    return (data.leagues as { id: number; name: string }[]).map((league) => ({
       id: String(league.id),
       name: league.name,
     }));
   } catch (error) {
     console.error('Failed to fetch leagues:', error);
+    return [];
+  }
+};
+
+export const createLeague = async (leagueName: string, playerName: string): Promise<{ status: string; league?: { id: number; name: string }; player_id?: number; detail?: string }> => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+
+  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leagues`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ league_name: leagueName, player_name: playerName }),
+  });
+  return response.json();
+};
+
+export const fetchPlayerNames = async (): Promise<string[]> => {
+  try {
+    const token = getAuthToken();
+    if (!token) return [];
+
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leagues/player-names`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const data = await response.json();
+    return (data.names as string[]) ?? [];
+  } catch (error) {
+    console.error('Failed to fetch player names:', error);
     return [];
   }
 };

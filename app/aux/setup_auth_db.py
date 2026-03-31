@@ -161,6 +161,44 @@ def migrate_users_from_file():
         return False
 
 
+def create_user_players_table():
+    """Create user_players join table to support multiple leagues per user.
+
+    Also migrates existing users.player_id rows into the new table so that
+    existing accounts keep working after the schema change.
+    """
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_players (
+                user_id INTEGER REFERENCES users(id),
+                player_id INTEGER REFERENCES player(id),
+                PRIMARY KEY (user_id, player_id)
+            )
+        """)
+
+        # Migrate existing one-to-one relationships from users.player_id
+        cursor.execute("""
+            INSERT INTO user_players (user_id, player_id)
+            SELECT id, player_id FROM users
+            WHERE player_id IS NOT NULL
+            ON CONFLICT DO NOTHING
+        """)
+
+        conn.commit()
+        logger.info("user_players table created/migrated successfully")
+
+        cursor.close()
+        conn.close()
+
+        return True
+    except Exception as e:
+        logger.error(f"Error creating user_players table: {e}")
+        return False
+
+
 if __name__ == "__main__":
     logger.info("Starting database setup...")
 
@@ -177,7 +215,14 @@ if __name__ == "__main__":
     else:
         logger.error("✗ Failed to create users table")
         sys.exit(1)
-    
+
+    # Create user_players join table (multi-league support)
+    if create_user_players_table():
+        logger.info("✓ user_players table setup complete")
+    else:
+        logger.error("✗ Failed to create user_players table")
+        sys.exit(1)
+
     # Optionally migrate users from file
     logger.info("Attempting to migrate users from file...")
     migrate_users_from_file()
