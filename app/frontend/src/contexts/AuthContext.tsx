@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { BACKEND_URL } from '@/lib/api';
 
 interface User {
   id: number;        // User ID from the users table
@@ -44,7 +45,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
 
     // Verify token and get fresh user data (including correct player_id) from server
-    fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/me`, {
+    fetch(`${BACKEND_URL}/auth/me`, {
       headers: { Authorization: `Bearer ${storedToken}` },
     })
       .then(res => (res.ok ? res.json() : null))
@@ -81,7 +82,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/login`, {
+      const response = await fetch(`${BACKEND_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

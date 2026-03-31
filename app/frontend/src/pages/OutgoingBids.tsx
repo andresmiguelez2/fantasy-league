@@ -5,7 +5,7 @@ import { NavigationTabs } from "@/components/NavigationTabs";
 import { PlayerInfoRibbon } from "@/components/PlayerInfoRibbon";
 import { BidDialog } from "@/components/BidDialog";
 import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
-import { fetchOutgoingBids, submitBid, OutgoingBid } from "@/lib/api";
+import { fetchOutgoingBids, submitBid, OutgoingBid, BACKEND_URL } from "@/lib/api";
 import {
   Table,
   TableBody,
@@ -104,7 +104,7 @@ const OutgoingBids = () => {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <img
-                          src={`${import.meta.env.VITE_BACKEND_URL}/footballer/image/${bid.footballerId}`}
+                          src={`${BACKEND_URL}/footballer/image/${bid.footballerId}`}
                           alt={bid.footballerName}
                           className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover flex-shrink-0"
                         />

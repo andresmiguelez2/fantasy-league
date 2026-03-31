@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
-import { fetchFootballerShortName, fetchOpenedFixtures, fetchFixtureLineup, fetchFootballerFixturePoints } from "@/lib/api";
+import { fetchFootballerShortName, fetchOpenedFixtures, fetchFixtureLineup, fetchFootballerFixturePoints, BACKEND_URL } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -9,7 +9,7 @@ import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { getActiveLeagueId } from "@/lib/api";
 
-const API_ENDPOINT = import.meta.env.VITE_BACKEND_URL;
+const API_ENDPOINT = BACKEND_URL;
 
 const Fixtures = () => {
   const [openedFixtures, setOpenedFixtures] = useState<number[]>([]);
