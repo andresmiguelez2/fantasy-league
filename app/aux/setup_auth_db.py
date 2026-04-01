@@ -91,7 +91,7 @@ def create_users_table():
         return False
 
 
-def create_user(username: str, password: str, player_id: int):
+def create_user(username: str, password: str):
     """Create a new user"""
     try:
         conn = pg_connect()
@@ -101,11 +101,11 @@ def create_user(username: str, password: str, player_id: int):
         
         cursor.execute(
             """
-            INSERT INTO users (username, password_hash, player_id)
-            VALUES (%s, %s, %s)
+            INSERT INTO users (username, password_hash)
+            VALUES (%s, %s)
             RETURNING id
             """,
-            (username, password_hash, player_id)
+            (username, password_hash)
         )
         
         user_id = cursor.fetchone()[0]

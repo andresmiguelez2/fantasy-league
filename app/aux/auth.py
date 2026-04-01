@@ -71,9 +71,14 @@ def authenticate_user(username: str, password: str) -> Optional[dict]:
         # Query user from database
         cursor.execute(
             """
-            SELECT id, username, password_hash, player_id
-            FROM users
+            SELECT
+                users.id AS user_id
+                , users.username
+                , users.password_hash
+                , player.id AS player_id
+            FROM users JOIN player on users.id = player.user_id
             WHERE username = %s
+            LIMIT 1
             """,
             (username,)
         )
@@ -112,7 +117,7 @@ def get_user_by_id(user_id: int) -> Optional[dict]:
         
         cursor.execute(
             """
-            SELECT id, username, player_id
+            SELECT id, username
             FROM users
             WHERE id = %s
             """,
@@ -126,11 +131,10 @@ def get_user_by_id(user_id: int) -> Optional[dict]:
         if not user:
             return None
         
-        user_id, username, player_id = user
+        user_id, username = user
         return {
             "id": user_id,
             "username": username,
-            "player_id": player_id
         }
         
     except Exception as e:
