@@ -115,7 +115,7 @@ const IncomingBids = () => {
                       </div>
                     </TableCell>
                     <TableCell className="text-center text-muted-foreground hidden sm:table-cell">
-                      {bid.bidderId}
+                      {bid.bidderName}
                     </TableCell>
                     <TableCell className="text-center text-muted-foreground hidden sm:table-cell">
                       {formatTimestamp(bid.timestamp)}

@@ -130,49 +130,30 @@ const getCurrentUserId = (): string | null => {
   return userStr ? (JSON.parse(userStr) as { id?: number })?.id?.toString() ?? null : null;
 };
 
-export const fetchLeagues = async (playerId?: string): Promise<League[]> => {
+export const fetchLeagues = async (): Promise<League[]> => {
   try {
     const token = getAuthToken();
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
 
-    // Prefer user_id so that all leagues (across multiple players) are returned
     const userId = getCurrentUserId();
-
-    if (userId) {
-      try {
-        const query = new URLSearchParams({ user_id: userId }).toString();
-        const response = await fetch(`${BACKEND_URL}/leagues?${query}`, { headers });
-        if (!response.ok) {
-          throw new Error(`Failed to fetch leagues by user_id (${response.status})`);
-        }
-        const data = await response.json();
-        if (data.status === 'success') {
-          return (data.leagues as { id: number; name: string }[]).map((league) => ({
-            id: String(league.id),
-            name: league.name,
-          }));
-        }
-      } catch {
-        // Fall through to player_id fallback below
-      }
-    }
-
-    // Fallback: use player_id (single-league behaviour / pre-migration)
-    const resolvedPlayerId = playerId ?? (typeof window !== 'undefined' ? localStorage.getItem('playerId') : null);
-    if (!resolvedPlayerId) {
+    if (!userId) {
       return [];
     }
 
-    const query = new URLSearchParams({ player_id: resolvedPlayerId }).toString();
+    const query = new URLSearchParams({ user_id: userId }).toString();
     const response = await fetch(`${BACKEND_URL}/leagues?${query}`, { headers });
     if (!response.ok) {
-      throw new Error(`Failed to fetch leagues by player_id (${response.status})`);
+      throw new Error(`Failed to fetch leagues (${response.status})`);
     }
     const data = await response.json();
-    return (data.leagues as { id: number; name: string }[]).map((league) => ({
-      id: String(league.id),
-      name: league.name,
-    }));
+    if (data.status === 'success') {
+      return (data.leagues as { id: number; name: string }[]).map((league) => ({
+        id: String(league.id),
+        name: league.name,
+      }));
+    }
+    console.warn('Unexpected leagues response:', data);
+    return [];
   } catch (error) {
     console.error('Failed to fetch leagues:', error);
     return [];
@@ -185,7 +166,7 @@ export const createLeague = async (leagueName: string, playerName: string): Prom
     throw new Error('Not authenticated');
   }
 
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leagues`, {
+  const response = await fetch(`${BACKEND_URL}/leagues`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -201,7 +182,7 @@ export const fetchPlayerNames = async (): Promise<string[]> => {
     const token = getAuthToken();
     if (!token) return [];
 
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/leagues/player-names`, {
+    const response = await fetch(`${BACKEND_URL}/leagues/player-names`, {
       headers: { 'Authorization': `Bearer ${token}` },
     });
     const data = await response.json();
@@ -554,7 +535,7 @@ export interface IncomingBid {
   bidId: number;
   timestamp: string;
   footballerId: number;
-  bidderId: number;
+  bidderName: string;
   footballerName: string;
   amount: number;
 }
@@ -572,7 +553,7 @@ export const fetchIncomingBids = async (playerId?: string): Promise<IncomingBid[
     bidId: bid[0],
     timestamp: bid[1],
     footballerId: bid[2],
-    bidderId: bid[3],
+    bidderName: bid[3],
     footballerName: bid[4],
     amount: bid[5],
   }));
@@ -591,7 +572,7 @@ export interface OutgoingBid {
   bidId: number;
   timestamp: string;
   footballerId: number;
-  ownerId: number | null;
+  ownerName: string | null;
   footballerName: string;
   amount: number;
 }
@@ -609,7 +590,7 @@ export const fetchOutgoingBids = async (playerId?: string): Promise<OutgoingBid[
     bidId: bid[0],
     timestamp: bid[1],
     footballerId: bid[2],
-    ownerId: bid[3],
+    ownerName: bid[3],
     footballerName: bid[4],
     amount: bid[5],
   }));
