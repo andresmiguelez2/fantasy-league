@@ -9,10 +9,6 @@ from .logger import logger
 router = APIRouter(prefix="/leagues", tags=["leagues"])
 security = HTTPBearer()
 
-# Default values for a newly created player
-_DEFAULT_BUDGET = 100_000_000
-_DEFAULT_LINEUP = [4, 3, 3]
-
 
 def _get_player_leagues(player_id: int):
     """Get all leagues for a specific player ID."""
@@ -118,11 +114,11 @@ def create_league(
             # Create a player for this user in the new league
             cursor.execute(
                 """
-                INSERT INTO player (name, budget, points, lineup, league_id)
-                VALUES (%s, %s, 0, %s, %s)
+                INSERT INTO player (name, league_id)
+                VALUES (%s, %s)
                 RETURNING id
                 """,
-                (request.player_name, _DEFAULT_BUDGET, _DEFAULT_LINEUP, league_id),
+                (request.player_name, league_id),
             )
             player_id = cursor.fetchone()[0]
 
