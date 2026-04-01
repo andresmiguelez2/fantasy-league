@@ -97,6 +97,7 @@ def logout(credentials: HTTPAuthorizationCredentials = Depends(security)):
     return {"message": "Logged out successfully"}
 
 
+
 @router.get("/me", response_model=UserInfo)
 def get_current_user(current_user: dict = Depends(get_current_user_from_token)):
     """

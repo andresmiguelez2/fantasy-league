@@ -3,6 +3,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, field_validator
 from aux.database import pg_connect
 from aux.auth import verify_token
+from .player import get_player_id
 from .logger import logger
 
 
@@ -45,11 +46,13 @@ def _get_user_leagues(user_id: int):
         try:
             cursor.execute(
                 """
-                SELECT DISTINCT league.id, league.name
+                SELECT
+                    league.id
+                    , league.name
                 FROM league
                 JOIN player ON player.league_id = league.id
-                JOIN user_players ON user_players.player_id = player.id
-                WHERE user_players.user_id = %s
+                JOIN users ON users.id = player.user_id
+                WHERE users.id = %s
                 ORDER BY league.id
                 """, (user_id,)
             )
@@ -111,25 +114,17 @@ def create_league(
             )
             league_id = cursor.fetchone()[0]
 
+            # get player_id
+            player_id = get_player_id(user_id)
+
             # Create a player for this user in the new league
             cursor.execute(
                 """
-                INSERT INTO player (name, league_id)
-                VALUES (%s, %s)
+                INSERT INTO player (name, league_id, user_id, id)
+                VALUES (%s, %s, %s, %s)
                 RETURNING id
                 """,
-                (request.player_name, league_id),
-            )
-            player_id = cursor.fetchone()[0]
-
-            # Link user → player via the join table
-            cursor.execute(
-                """
-                INSERT INTO user_players (user_id, player_id)
-                VALUES (%s, %s)
-                ON CONFLICT DO NOTHING
-                """,
-                (user_id, player_id),
+                (request.player_name, league_id, user_id, player_id),
             )
 
             conn.commit()
@@ -139,13 +134,12 @@ def create_league(
 
         logger.info(
             f"Created league '{request.league_name}' (ID: {league_id}) "
-            f"with player '{request.player_name}' (ID: {player_id}) "
+            f"with player '{request.player_name}' (ID: {player_id})"
             f"for user {user_id}"
         )
         return {
             "status": "success",
             "league": {"id": league_id, "name": request.league_name},
-            "player_id": player_id,
         }
     except Exception as e:
         logger.error(f"Error creating league for user {user_id}: {e}")
@@ -167,8 +161,8 @@ def get_player_names(
                 """
                 SELECT DISTINCT p.name
                 FROM player p
-                JOIN user_players up ON up.player_id = p.id
-                WHERE up.user_id = %s
+                JOIN users u ON p.user_id = u.id
+                WHERE u.id = %s
                 ORDER BY p.name
                 """,
                 (user_id,),
