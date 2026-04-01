@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { BACKEND_URL } from '@/lib/api';
+import { BACKEND_URL, clearActivePlayerId } from '@/lib/api';
 
 interface User {
   id: number;        // User ID from the users table
@@ -66,6 +66,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setUser(null);
           localStorage.removeItem('token');
           localStorage.removeItem('user');
+          clearActivePlayerId();
           // localStorage.removeItem('playerId');
         }
       })
@@ -75,6 +76,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUser(null);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        clearActivePlayerId();
         // localStorage.removeItem('playerId');
       })
       .finally(() => setIsLoading(false));
@@ -124,6 +126,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    clearActivePlayerId();
     // localStorage.removeItem('playerId');
   };
 

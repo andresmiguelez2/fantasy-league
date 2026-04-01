@@ -6,8 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
-import { useAuth } from "@/contexts/AuthContext";
-import { getActiveLeagueId } from "@/lib/api";
+import { getActiveLeagueId, getActivePlayerId } from "@/lib/api";
 
 const API_ENDPOINT = BACKEND_URL;
 
@@ -21,8 +20,7 @@ const Fixtures = () => {
   const [loading, setLoading] = useState(true);
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const { user } = useAuth();
-  const playerId = user?.playerId?.toString();
+  const playerId = getActivePlayerId();
   const leagueId = getActiveLeagueId();
 
   // Fetch opened fixtures on mount
@@ -52,6 +50,12 @@ const Fixtures = () => {
     const loadLineupData = async () => {
       setLoading(true);
       try {
+        if (!playerId) {
+          setFormation([]);
+          setLineupFootballers([]);
+          return;
+        }
+
         const { lineup, lineupFootballers: footballersData } = await fetchFixtureLineup(playerId, selectedFixture);
         setFormation(lineup || []);
         setLineupFootballers(footballersData || []);

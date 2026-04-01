@@ -13,8 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { POSSIBLE_FORMATIONS } from "@/lib/constants";
-import { useAuth } from "@/contexts/AuthContext";
-import { getActiveLeagueId } from "@/lib/api";
+import { getActiveLeagueId, getActivePlayerId } from "@/lib/api";
 
 const API_ENDPOINT = BACKEND_URL;
 
@@ -26,12 +25,17 @@ const Lineup = () => {
 const [selectedPosition, setSelectedPosition] = useState<number>(0);
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | undefined>();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const { user } = useAuth();
-  const playerId = user?.playerId?.toString();
+  const playerId = getActivePlayerId();
   const leagueId = getActiveLeagueId();
 
   useEffect(() => {
     const loadLineupData = async () => {
+      if (!playerId) {
+        setFormation([4, 4, 2]);
+        setLineupFootballers([]);
+        setLoading(false);
+        return;
+      }
       try {
         const [formationData, footballersData] = await Promise.all([
           fetchLineupFormation(playerId),
@@ -71,6 +75,10 @@ const handleFootballerClick = (rowIndex: number, footballerId?: number) => {
   };
 
   const handleSwapComplete = async () => {
+    if (!playerId) {
+      return;
+    }
+
     setLoading(true);
     try {
       const [formationData, footballersData] = await Promise.all([

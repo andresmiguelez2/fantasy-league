@@ -16,10 +16,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { BidDialog } from "@/components/BidDialog";
 import { ReleaseClauseDialog } from "@/components/ReleaseClauseDialog";
-import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail, placeBid, payReleaseClause, fetchMarketStatus, changeMarketStatus, BACKEND_URL } from "@/lib/api";
+import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail, placeBid, payReleaseClause, fetchMarketStatus, changeMarketStatus, getActivePlayerId, BACKEND_URL } from "@/lib/api";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, Cell } from "recharts";
 import { MoreVertical } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useParams } from "react-router-dom";
 
@@ -42,7 +41,6 @@ export const FootballerInfoDialog = ({
   ownerId,
   onBid,
 }: FootballerInfoDialogProps) => {
-  const { user } = useAuth();
   const [info, setInfo] = useState<FootballerInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [imgError, setImgError] = useState(false);
@@ -125,7 +123,7 @@ export const FootballerInfoDialog = ({
   };
 
   const getCurrentPlayerId = () => {
-    return playerId || user?.playerId?.toString();
+    return playerId || getActivePlayerId();
   };
 
   const extractMessage = (resp: any) => {

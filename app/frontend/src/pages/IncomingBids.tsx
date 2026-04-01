@@ -18,21 +18,24 @@ import { Button } from "@/components/ui/button";
 import { MessageSquareReply } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
-import { getActiveLeagueId } from "@/lib/api";
+import { getActiveLeagueId, getActivePlayerId } from "@/lib/api";
 
 const IncomingBids = () => {
   const [selectedBid, setSelectedBid] = useState<IncomingBid | null>(null);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const playerId = user?.playerId?.toString();
+  const playerId = getActivePlayerId();
   const leagueId = getActiveLeagueId();
 
   const { data: bids = [], isLoading } = useQuery({
     queryKey: ["incomingBids", playerId],
-    queryFn: () => fetchIncomingBids(playerId),
+    queryFn: () => {
+      if (!playerId) {
+        return Promise.resolve([]);
+      }
+      return fetchIncomingBids(playerId);
+    },
   });
 
   const formatTimestamp = (timestamp: string) => {

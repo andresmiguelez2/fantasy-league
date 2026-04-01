@@ -30,7 +30,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { setActiveLeagueId } from "@/lib/api";
+import { setActiveLeagueContext } from "@/lib/api";
 
 const API_ENDPOINT = BACKEND_URL;
 
@@ -58,7 +58,9 @@ const League = () => {
 
   useEffect(() => {
     if (leagueId) {
-      setActiveLeagueId(leagueId);
+      setActiveLeagueContext(leagueId).catch((error) => {
+        console.error("Failed to set active league context:", error);
+      });
     }
   }, [leagueId]);
   

@@ -187,6 +187,52 @@ def get_player_names(
         return {"status": "error", "names": []}
 
 
+@router.get("/active-player")
+def get_active_player_for_league(
+    league_id: int = Query(...),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """Return the player_id for the authenticated user in a specific league."""
+    user_id = _get_user_id_from_token(credentials)
+
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                SELECT p.id
+                FROM player p
+                JOIN league l ON p.league_id = l.id
+                WHERE p.user_id = %s AND l.id = %s
+                """,
+                (user_id, league_id),
+            )
+            result = cursor.fetchone()
+        finally:
+            cursor.close()
+            conn.close()
+
+        if not result:
+            return {
+                "status": "error",
+                "detail": "Player not found for this user and league",
+            }
+
+        return {
+            "status": "success",
+            "player_id": result[0],
+        }
+    except Exception as e:
+        logger.error(
+            f"Error retrieving active player for user {user_id}, league {league_id}: {e}"
+        )
+        return {
+            "status": "error",
+            "detail": "Failed to retrieve active player",
+        }
+
+
 @router.get("")
 def get_player_leagues_query(
     player_id: int = Query(None), user_id: int = Query(None)

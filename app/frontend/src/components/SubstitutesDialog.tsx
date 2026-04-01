@@ -21,7 +21,7 @@ interface Substitute {
 interface SubstitutesDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  playerId: string;
+  playerId?: string;
   position: number;
   currentFootballerId?: number;
   onSwapComplete?: () => void;
@@ -41,6 +41,12 @@ export const SubstitutesDialog = ({
 
   useEffect(() => {
     if (open) {
+      if (!playerId) {
+        setSubstitutes([]);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       fetchAvailableSubs(playerId, position)
         .then((data) => {
