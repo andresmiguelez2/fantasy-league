@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
-import { fetchLineupFormation, fetchLineupFootballers, fetchFootballerShortName } from "@/lib/api";
+import { fetchLineupFormation, fetchLineupFootballers, fetchFootballerShortName, BACKEND_URL } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { SubstitutesDialog } from "@/components/SubstitutesDialog";
@@ -16,7 +16,7 @@ import { POSSIBLE_FORMATIONS } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { getActiveLeagueId } from "@/lib/api";
 
-const API_ENDPOINT = import.meta.env.VITE_BACKEND_URL;
+const API_ENDPOINT = BACKEND_URL;
 
 const Lineup = () => {
   const [formation, setFormation] = useState<number[]>([]);

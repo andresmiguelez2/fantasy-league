@@ -16,7 +16,8 @@ import {
   fetchFootballerShortName,
   fetchFootballerFixturePoints,
   Player,
-  Footballer 
+  Footballer,
+  BACKEND_URL
 } from "@/lib/api";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -31,7 +32,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { setActiveLeagueId } from "@/lib/api";
 
-const API_ENDPOINT = import.meta.env.VITE_BACKEND_URL;
+const API_ENDPOINT = BACKEND_URL;
 
 const League = () => {
   const { leagueId } = useParams();
