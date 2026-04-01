@@ -118,14 +118,24 @@ def create_league(
             player_id = get_player_id(user_id)
 
             # Create a player for this user in the new league
-            cursor.execute(
-                """
-                INSERT INTO player (name, league_id, user_id, id)
-                VALUES (%s, %s, %s, %s)
-                RETURNING id
-                """,
-                (request.player_name, league_id, user_id, player_id),
-            )
+            if player_id is not None:
+                cursor.execute(
+                    """
+                    INSERT INTO player (name, league_id, user_id, id)
+                    VALUES (%s, %s, %s, %s)
+                    RETURNING id
+                    """,
+                    (request.player_name, league_id, user_id, player_id),
+                )
+            else:
+                cursor.execute(
+                    """
+                    INSERT INTO player (name, league_id, user_id)
+                    VALUES (%s, %s, %s)
+                    RETURNING id
+                    """,
+                    (request.player_name, league_id, user_id),
+                )
 
             conn.commit()
         finally:

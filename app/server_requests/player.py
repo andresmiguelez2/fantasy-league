@@ -421,7 +421,7 @@ def get_player_id(user_id: int) -> int | None:
         if result:
             return result[0]
         else:
-            logger.warning(f"No player found for user ID {user_id}")
+            logger.warning(f"No player found for user ID {user_id}. Generating a new player for the user.")
             return None
     except Exception as e:
         logger.error(f"Error retrieving player ID for user {user_id}: {e}")
