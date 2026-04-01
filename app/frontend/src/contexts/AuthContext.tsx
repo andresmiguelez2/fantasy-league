@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 interface User {
   id: number;        // User ID from the users table
   username: string;
-  playerId: number;  // Associated player ID in the game
+  // playerId: number;  // Associated player ID in the game
 }
 
 interface AuthContextType {
@@ -53,19 +53,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           const refreshedUser: User = {
             id: data.id,
             username: data.username,
-            playerId: data.player_id,
+            // playerId: data.player_id,
           };
           setToken(storedToken);
           setUser(refreshedUser);
           localStorage.setItem('user', JSON.stringify(refreshedUser));
-          localStorage.setItem('playerId', data.player_id.toString());
+          // localStorage.setItem('playerId', data.player_id.toString());
         } else {
           // Token is invalid or expired – clear stored session
           setToken(null);
           setUser(null);
           localStorage.removeItem('token');
           localStorage.removeItem('user');
-          localStorage.removeItem('playerId');
+          // localStorage.removeItem('playerId');
         }
       })
       .catch(() => {
@@ -74,7 +74,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUser(null);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        localStorage.removeItem('playerId');
+        // localStorage.removeItem('playerId');
       })
       .finally(() => setIsLoading(false));
   }, []);
@@ -98,7 +98,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const userData: User = {
         id: data.id,           // User ID from the users table
         username: data.username,
-        playerId: data.player_id, // The player in the fantasy game
+        // playerId: data.player_id, // The player in the fantasy game
       };
 
       setToken(data.access_token);
@@ -107,7 +107,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Store in localStorage
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('playerId', data.player_id.toString());
+      // localStorage.setItem('playerId', data.player_id.toString());
 
       return true;
     } catch (error) {
@@ -123,7 +123,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    localStorage.removeItem('playerId');
+    // localStorage.removeItem('playerId');
   };
 
   const value: AuthContextType = {

@@ -75,8 +75,7 @@ def authenticate_user(username: str, password: str) -> Optional[dict]:
                 users.id AS user_id
                 , users.username
                 , users.password_hash
-                , player.id AS player_id
-            FROM users JOIN player on users.id = player.user_id
+            FROM users
             WHERE username = %s
             LIMIT 1
             """,
@@ -91,7 +90,7 @@ def authenticate_user(username: str, password: str) -> Optional[dict]:
             logger.warning(f"User not found: {username}")
             return None
         
-        user_id, db_username, password_hash, player_id = user
+        user_id, db_username, password_hash = user
         
         # Verify password
         if not verify_password(password, password_hash):
@@ -101,7 +100,6 @@ def authenticate_user(username: str, password: str) -> Optional[dict]:
         return {
             "id": user_id,
             "username": db_username,
-            "player_id": player_id
         }
         
     except Exception as e:

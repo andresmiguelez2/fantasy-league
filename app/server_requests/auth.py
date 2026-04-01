@@ -18,14 +18,12 @@ class LoginResponse(BaseModel):
     access_token: str
     token_type: str
     id: int
-    player_id: int
     username: str
 
 
 class UserInfo(BaseModel):
     id: int
     username: str
-    player_id: int
 
 
 @router.post("/login", response_model=LoginResponse)
@@ -44,7 +42,7 @@ def login(request: LoginRequest):
     
     # Create access token
     access_token = create_access_token(
-        data={"sub": str(user["id"]), "username": user["username"], "player_id": user["player_id"]}
+        data={"sub": str(user["id"]), "username": user["username"]}
     )
     
     logger.info(f"User {user['username']} logged in successfully")
@@ -53,7 +51,6 @@ def login(request: LoginRequest):
         "access_token": access_token,
         "token_type": "bearer",
         "id": user["id"],
-        "player_id": user["player_id"],
         "username": user["username"]
     }
 
