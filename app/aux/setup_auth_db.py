@@ -22,76 +22,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def create_league_tables():
-    """Create the league table and add league_id columns to player and footballer if they don't exist."""
-    try:
-        conn = pg_connect()
-        cursor = conn.cursor()
-
-        # Create league table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS league (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(255) UNIQUE NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-
-        # Add league_id to player table if not present
-        cursor.execute("""
-            ALTER TABLE player
-            ADD COLUMN IF NOT EXISTS league_id INTEGER REFERENCES league(id)
-        """)
-
-        # Add league_id to footballer table if not present
-        cursor.execute("""
-            ALTER TABLE footballer
-            ADD COLUMN IF NOT EXISTS league_id INTEGER REFERENCES league(id)
-        """)
-
-        conn.commit()
-        logger.info("League tables and columns created/verified successfully")
-
-        cursor.close()
-        conn.close()
-
-        return True
-    except Exception as e:
-        logger.error(f"Error creating league tables: {e}")
-        return False
-
-
-def create_users_table():
-    """Create the users table if it doesn't exist"""
-    try:
-        conn = pg_connect()
-        cursor = conn.cursor()
-        
-        # Create users table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                username VARCHAR(255) UNIQUE NOT NULL,
-                password_hash VARCHAR(255) NOT NULL,
-                player_id INTEGER REFERENCES player(id),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        conn.commit()
-        logger.info("Users table created successfully")
-        
-        cursor.close()
-        conn.close()
-        
-        return True
-    except Exception as e:
-        logger.error(f"Error creating users table: {e}")
-        return False
-
-
-def create_user(username: str, password: str, player_id: int):
+def create_user(username: str, password: str):
     """Create a new user"""
     try:
         conn = pg_connect()
@@ -101,11 +32,11 @@ def create_user(username: str, password: str, player_id: int):
         
         cursor.execute(
             """
-            INSERT INTO users (username, password_hash, player_id)
-            VALUES (%s, %s, %s)
+            INSERT INTO users (username, password_hash)
+            VALUES (%s, %s)
             RETURNING id
             """,
-            (username, password_hash, player_id)
+            (username, password_hash)
         )
         
         user_id = cursor.fetchone()[0]
@@ -162,23 +93,6 @@ def migrate_users_from_file():
 
 
 if __name__ == "__main__":
-    logger.info("Starting database setup...")
-
-    # Create league table and add league_id columns
-    if create_league_tables():
-        logger.info("✓ League tables setup complete")
-    else:
-        logger.error("✗ Failed to create league tables")
-        sys.exit(1)
-
-    # Create users table
-    if create_users_table():
-        logger.info("✓ Users table setup complete")
-    else:
-        logger.error("✗ Failed to create users table")
-        sys.exit(1)
-    
-    # Optionally migrate users from file
     logger.info("Attempting to migrate users from file...")
     migrate_users_from_file()
     
