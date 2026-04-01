@@ -332,7 +332,7 @@ def update_player_lineup(player_id: int, league_id: int, lineup: list[int]):
         )
         conn.commit()
 
-        validate_lineup(player_id, lineup)
+        validate_lineup(player_id, league_id, lineup)
 
         cursor.close()
         conn.close()

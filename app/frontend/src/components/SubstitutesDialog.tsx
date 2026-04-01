@@ -64,6 +64,9 @@ export const SubstitutesDialog = ({
 
   const handleSubstituteClick = async (newFootballerId: number) => {
     if (swapping) return;
+    if (!playerId) {
+      return;
+    }
     
     setSwapping(true);
     try {

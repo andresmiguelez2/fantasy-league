@@ -515,24 +515,38 @@ export const fetchAvailableSubs = async (playerId: string | undefined, position:
   }));
 };
 
-export const setLineup = async (playerId: string, footballerId: number, onLineup: boolean): Promise<boolean> => {
+export const setLineup = async (playerId: string | undefined, footballerId: number, onLineup: boolean): Promise<boolean> => {
   const leagueId = getActiveLeagueId();
   if (!leagueId) {
     throw new Error('No active league selected');
   }
+  const resolvedPlayerId = playerId ?? getActivePlayerId();
+  if (!resolvedPlayerId) {
+    throw new Error('No active player selected');
+  }
+
   const response = await fetch(`${BACKEND_URL}/footballer/set_lineup/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      player_id: parseInt(playerId),
+      player_id: parseInt(resolvedPlayerId),
       footballer_id: footballerId,
       league_id: parseInt(leagueId),
       on_lineup: onLineup,
     }),
   });
+
+  if (!response.ok) {
+    throw new Error(`Failed to update lineup (${response.status})`);
+  }
+
   const data = await response.json();
+  if (data.status !== "success") {
+    throw new Error(data.message || 'Lineup change rejected');
+  }
+
   return data.status === "success";
 };
 
