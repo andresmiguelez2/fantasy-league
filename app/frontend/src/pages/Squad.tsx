@@ -8,12 +8,10 @@ import { PlayerInfoRibbon } from "@/components/PlayerInfoRibbon";
 import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
 import { fetchSquadFootballers, Footballer } from "@/lib/api";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useAuth } from "@/contexts/AuthContext";
-import { getActiveLeagueId } from "@/lib/api";
+import { getActiveLeagueId, getActivePlayerId } from "@/lib/api";
 
 const Squad = () => {
   const { playerId } = useParams();
-  const { user } = useAuth();
   const leagueId = getActiveLeagueId();
   const [footballers, setFootballers] = useState<Footballer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +22,11 @@ const Squad = () => {
     const loadFootballers = async () => {
       setLoading(true);
       try {
-        const id = playerId || user?.playerId?.toString();
+        const id = playerId || getActivePlayerId();
+        if (!id) {
+          setFootballers([]);
+          return;
+        }
         const data = await fetchSquadFootballers(id);
         setFootballers(data);
       } catch (error) {
@@ -36,7 +38,7 @@ const Squad = () => {
     };
     
     loadFootballers();
-  }, [playerId, user?.playerId]);
+  }, [playerId]);
 
   const handleFootballerClick = (footballer: Footballer) => {
     setSelectedFootballer(footballer);

@@ -16,7 +16,8 @@ import {
   fetchFootballerShortName,
   fetchFootballerFixturePoints,
   Player,
-  Footballer 
+  Footballer,
+  BACKEND_URL
 } from "@/lib/api";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -29,9 +30,9 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { setActiveLeagueId } from "@/lib/api";
+import { setActiveLeagueContext } from "@/lib/api";
 
-const API_ENDPOINT = import.meta.env.VITE_BACKEND_URL;
+const API_ENDPOINT = BACKEND_URL;
 
 const League = () => {
   const { leagueId } = useParams();
@@ -57,7 +58,9 @@ const League = () => {
 
   useEffect(() => {
     if (leagueId) {
-      setActiveLeagueId(leagueId);
+      setActiveLeagueContext(leagueId).catch((error) => {
+        console.error("Failed to set active league context:", error);
+      });
     }
   }, [leagueId]);
   

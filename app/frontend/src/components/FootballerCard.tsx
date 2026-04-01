@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { BACKEND_URL } from "@/lib/api";
 
 interface FootballerCardProps {
   id: number;
@@ -51,7 +52,7 @@ export const FootballerCard = ({
         {/* Left: avatar + name column */}
         <div className="flex items-center gap-2 sm:gap-3 cursor-pointer flex-1 min-w-0" onClick={() => onOwnerClick?.()}>
           <Avatar className="h-10 w-10 sm:h-14 sm:w-14 border-2 border-secondary/30 flex-shrink-0">
-            <AvatarImage src={`${import.meta.env.VITE_BACKEND_URL}/footballer/image/${id}`} />
+            <AvatarImage src={`${BACKEND_URL}/footballer/image/${id}`} />
             <AvatarFallback className="bg-gradient-primary text-white font-semibold text-xs sm:text-sm">
               {getInitials(name)}
             </AvatarFallback>

@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
-import { fetchPlayerInfo, PlayerInfo } from "@/lib/api";
+import { fetchPlayerInfo, getActivePlayerId, PlayerInfo } from "@/lib/api";
 import { User, Wallet } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 
 export const PlayerInfoRibbon = () => {
   const [playerInfo, setPlayerInfo] = useState<PlayerInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
-  const playerId = user?.playerId?.toString();
+  const playerId = getActivePlayerId();
 
   useEffect(() => {
     if (!playerId) {

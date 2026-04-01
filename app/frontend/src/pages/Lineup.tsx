@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
-import { fetchLineupFormation, fetchLineupFootballers, fetchFootballerShortName } from "@/lib/api";
+import { fetchLineupFormation, fetchLineupFootballers, fetchFootballerShortName, BACKEND_URL } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { SubstitutesDialog } from "@/components/SubstitutesDialog";
@@ -13,29 +13,62 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { POSSIBLE_FORMATIONS } from "@/lib/constants";
-import { useAuth } from "@/contexts/AuthContext";
-import { getActiveLeagueId } from "@/lib/api";
+import { getActiveLeagueId, getActivePlayerId, setActiveLeagueContext } from "@/lib/api";
 
-const API_ENDPOINT = import.meta.env.VITE_BACKEND_URL;
+const API_ENDPOINT = BACKEND_URL;
 
 const Lineup = () => {
   const [formation, setFormation] = useState<number[]>([]);
   const [lineupFootballers, setLineupFootballers] = useState<number[][]>([]);
   const [footballerNames, setFootballerNames] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
-const [selectedPosition, setSelectedPosition] = useState<number>(0);
+  const [selectedPosition, setSelectedPosition] = useState<number>(0);
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | undefined>();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const { user } = useAuth();
-  const playerId = user?.playerId?.toString();
+  const [activePlayerId, setActivePlayerId] = useState<string | null>(getActivePlayerId());
   const leagueId = getActiveLeagueId();
 
   useEffect(() => {
+    let mounted = true;
+
+    const syncActivePlayer = async () => {
+      if (!leagueId) {
+        if (mounted) {
+          setActivePlayerId(getActivePlayerId());
+        }
+        return;
+      }
+
+      try {
+        await setActiveLeagueContext(leagueId);
+      } catch (error) {
+        console.error("Failed to sync active player for lineup:", error);
+      } finally {
+        if (mounted) {
+          setActivePlayerId(getActivePlayerId());
+        }
+      }
+    };
+
+    syncActivePlayer();
+
+    return () => {
+      mounted = false;
+    };
+  }, [leagueId]);
+
+  useEffect(() => {
     const loadLineupData = async () => {
+      if (!activePlayerId) {
+        setFormation([4, 4, 2]);
+        setLineupFootballers([]);
+        setLoading(false);
+        return;
+      }
       try {
         const [formationData, footballersData] = await Promise.all([
-          fetchLineupFormation(playerId),
-          fetchLineupFootballers(playerId)
+          fetchLineupFormation(activePlayerId),
+          fetchLineupFootballers(activePlayerId)
         ]);
         setFormation(formationData);
         setLineupFootballers(footballersData);
@@ -62,20 +95,24 @@ const [selectedPosition, setSelectedPosition] = useState<number>(0);
     };
 
     loadLineupData();
-  }, [playerId]);
+  }, [activePlayerId]);
 
-const handleFootballerClick = (rowIndex: number, footballerId?: number) => {
+  const handleFootballerClick = (rowIndex: number, footballerId?: number) => {
     setSelectedPosition(rowIndex);
     setSelectedFootballerId(footballerId);
     setDialogOpen(true);
   };
 
   const handleSwapComplete = async () => {
+    if (!activePlayerId) {
+      return;
+    }
+
     setLoading(true);
     try {
       const [formationData, footballersData] = await Promise.all([
-        fetchLineupFormation(playerId),
-        fetchLineupFootballers(playerId)
+        fetchLineupFormation(activePlayerId),
+        fetchLineupFootballers(activePlayerId)
       ]);
       setFormation(formationData);
       setLineupFootballers(footballersData);
@@ -103,8 +140,11 @@ const handleFootballerClick = (rowIndex: number, footballerId?: number) => {
       if (!leagueId) {
         throw new Error("No active league selected");
       }
+      if (!activePlayerId) {
+        throw new Error("No active player selected");
+      }
 
-      const response = await fetch(`${API_ENDPOINT}/player/update/lineup/${playerId}?league_id=${leagueId}`, {
+      const response = await fetch(`${API_ENDPOINT}/player/update/lineup/${activePlayerId}?league_id=${leagueId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -114,6 +154,11 @@ const handleFootballerClick = (rowIndex: number, footballerId?: number) => {
 
       if (!response.ok) {
         throw new Error("Failed to update lineup");
+      }
+
+      const data = await response.json();
+      if (data?.status !== "success") {
+        throw new Error(data?.message || "Lineup update was rejected");
       }
 
       // Refresh the lineup data
@@ -247,7 +292,7 @@ const handleFootballerClick = (rowIndex: number, footballerId?: number) => {
       <SubstitutesDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        playerId={playerId}
+        playerId={activePlayerId ?? undefined}
         position={selectedPosition}
         currentFootballerId={selectedFootballerId}
         onSwapComplete={handleSwapComplete}

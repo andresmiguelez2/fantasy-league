@@ -5,7 +5,7 @@ import { NavigationTabs } from "@/components/NavigationTabs";
 import { PlayerInfoRibbon } from "@/components/PlayerInfoRibbon";
 import { BidDialog } from "@/components/BidDialog";
 import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
-import { fetchOutgoingBids, submitBid, OutgoingBid } from "@/lib/api";
+import { fetchOutgoingBids, submitBid, OutgoingBid, BACKEND_URL } from "@/lib/api";
 import {
   Table,
   TableBody,
@@ -18,21 +18,24 @@ import { Button } from "@/components/ui/button";
 import { Edit } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
-import { getActiveLeagueId } from "@/lib/api";
+import { getActiveLeagueId, getActivePlayerId } from "@/lib/api";
 
 const OutgoingBids = () => {
   const [selectedBid, setSelectedBid] = useState<OutgoingBid | null>(null);
   const [bidDialogOpen, setBidDialogOpen] = useState(false);
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const playerId = user?.playerId?.toString();
+  const playerId = getActivePlayerId();
   const leagueId = getActiveLeagueId();
 
   const { data: bids = [], isLoading } = useQuery({
     queryKey: ["outgoingBids", playerId],
-    queryFn: () => fetchOutgoingBids(playerId),
+    queryFn: () => {
+      if (!playerId) {
+        return Promise.resolve([]);
+      }
+      return fetchOutgoingBids(playerId);
+    },
   });
 
   const formatTimestamp = (timestamp: string) => {
@@ -61,6 +64,10 @@ const OutgoingBids = () => {
 
   const handleBidSubmit = async (amount: number) => {
     if (!selectedBid) return;
+    if (!playerId) {
+      toast.error("No active player selected");
+      return;
+    }
     
     try {
       await submitBid(selectedBid.footballerId, playerId, amount);
@@ -104,7 +111,7 @@ const OutgoingBids = () => {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <img
-                          src={`${import.meta.env.VITE_BACKEND_URL}/footballer/image/${bid.footballerId}`}
+                          src={`${BACKEND_URL}/footballer/image/${bid.footballerId}`}
                           alt={bid.footballerName}
                           className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover flex-shrink-0"
                         />

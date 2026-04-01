@@ -5,7 +5,7 @@ import { NavigationTabs } from "@/components/NavigationTabs";
 import { PlayerInfoRibbon } from "@/components/PlayerInfoRibbon";
 import { BidReplyDialog } from "@/components/BidReplyDialog";
 import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
-import { fetchIncomingBids, replyToBid, IncomingBid } from "@/lib/api";
+import { fetchIncomingBids, replyToBid, IncomingBid, BACKEND_URL } from "@/lib/api";
 import {
   Table,
   TableBody,
@@ -18,21 +18,24 @@ import { Button } from "@/components/ui/button";
 import { MessageSquareReply } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
-import { getActiveLeagueId } from "@/lib/api";
+import { getActiveLeagueId, getActivePlayerId } from "@/lib/api";
 
 const IncomingBids = () => {
   const [selectedBid, setSelectedBid] = useState<IncomingBid | null>(null);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const playerId = user?.playerId?.toString();
+  const playerId = getActivePlayerId();
   const leagueId = getActiveLeagueId();
 
   const { data: bids = [], isLoading } = useQuery({
     queryKey: ["incomingBids", playerId],
-    queryFn: () => fetchIncomingBids(playerId),
+    queryFn: () => {
+      if (!playerId) {
+        return Promise.resolve([]);
+      }
+      return fetchIncomingBids(playerId);
+    },
   });
 
   const formatTimestamp = (timestamp: string) => {
@@ -104,7 +107,7 @@ const IncomingBids = () => {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <img
-                          src={`${import.meta.env.VITE_BACKEND_URL}/footballer/image/${bid.footballerId}`}
+                          src={`${BACKEND_URL}/footballer/image/${bid.footballerId}`}
                           alt={bid.footballerName}
                           className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover flex-shrink-0"
                         />

@@ -1,5 +1,6 @@
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { BACKEND_URL } from "@/lib/api";
 
 interface SquadRowProps {
   id: number;
@@ -35,7 +36,7 @@ export const SquadRow = ({ id, name, value, totalPoints, averagePoints, onClick 
     <TableRow className="fade-in cursor-pointer hover:bg-accent/50" onClick={onClick}>
       <TableCell className="flex items-center gap-3">
         <Avatar className="h-14 w-14 border-2 border-secondary/30">
-          <AvatarImage src={`${import.meta.env.VITE_BACKEND_URL}/footballer/image/${id}`} />
+          <AvatarImage src={`${BACKEND_URL}/footballer/image/${id}`} />
           <AvatarFallback className="bg-gradient-primary text-white font-semibold text-sm">
             {getInitials(name)}
           </AvatarFallback>

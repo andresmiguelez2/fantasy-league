@@ -332,7 +332,7 @@ def update_player_lineup(player_id: int, league_id: int, lineup: list[int]):
         )
         conn.commit()
 
-        validate_lineup(player_id, lineup)
+        validate_lineup(player_id, league_id, lineup)
 
         cursor.close()
         conn.close()
@@ -399,3 +399,30 @@ def validate_lineup(player_id: int, league_id: int, lineup: list[int]):
             logger.info(f"Footballers removed from player's {player_id} lineup due to incompatibilities: {footballers_to_remove}")
     except Exception as e:
         logger.error(f"Error validating lineup: {e}")
+
+
+def get_player_id(user_id: int) -> int | None:
+    """Get the player ID for a given user ID. This assumes each user has only one player."""
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT DISTINCT id
+            FROM player
+            WHERE user_id = %s
+            """,
+            (user_id,)
+        )
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if result:
+            return result[0]
+        else:
+            logger.warning(f"No player found for user ID {user_id}. Generating a new player for the user.")
+            return None
+    except Exception as e:
+        logger.error(f"Error retrieving player ID for user {user_id}: {e}")
+        return None

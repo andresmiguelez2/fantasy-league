@@ -16,10 +16,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { BidDialog } from "@/components/BidDialog";
 import { ReleaseClauseDialog } from "@/components/ReleaseClauseDialog";
-import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail, placeBid, payReleaseClause, fetchMarketStatus, changeMarketStatus } from "@/lib/api";
+import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail, placeBid, payReleaseClause, fetchMarketStatus, changeMarketStatus, getActivePlayerId, BACKEND_URL } from "@/lib/api";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, Cell } from "recharts";
 import { MoreVertical } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useParams } from "react-router-dom";
 
@@ -42,7 +41,6 @@ export const FootballerInfoDialog = ({
   ownerId,
   onBid,
 }: FootballerInfoDialogProps) => {
-  const { user } = useAuth();
   const [info, setInfo] = useState<FootballerInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [imgError, setImgError] = useState(false);
@@ -125,7 +123,7 @@ export const FootballerInfoDialog = ({
   };
 
   const getCurrentPlayerId = () => {
-    return playerId || user?.playerId?.toString();
+    return playerId || getActivePlayerId();
   };
 
   const extractMessage = (resp: any) => {
@@ -246,7 +244,7 @@ export const FootballerInfoDialog = ({
             <div className="h-48 w-full max-w-md border-4 border-secondary/30 overflow-hidden flex items-center justify-center bg-background">
               {!imgError ? (
                 <img
-                  src={`${import.meta.env.VITE_BACKEND_URL}/footballer/image/${footballerId}`}
+                  src={`${BACKEND_URL}/footballer/image/${footballerId}`}
                   alt={info.name}
                   className="max-h-full max-w-full object-contain object-center"
                   onError={() => setImgError(true)}
@@ -264,7 +262,7 @@ export const FootballerInfoDialog = ({
               <div className="flex items-center gap-3">
                 {!teamBadgeError && (
                   <img
-                    src={`${import.meta.env.VITE_BACKEND_URL}/team/image/${encodeURIComponent(info.team)}`}
+                    src={`${BACKEND_URL}/team/image/${encodeURIComponent(info.team)}`}
                     alt={`${info.team} team badge`}
                     className="w-10 self-stretch object-contain flex-shrink-0"
                     onError={() => setTeamBadgeError(true)}

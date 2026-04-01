@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { getActiveLeagueId, setActiveLeagueId } from "@/lib/api";
+import { getActiveLeagueId, setActiveLeagueContext } from "@/lib/api";
 
 interface NavigationTabsProps {
   leagueId?: string;
@@ -14,7 +14,9 @@ export const NavigationTabs = ({ leagueId }: NavigationTabsProps) => {
 
   useEffect(() => {
     if (leagueId && leagueId !== getActiveLeagueId()) {
-      setActiveLeagueId(leagueId);
+      setActiveLeagueContext(leagueId).catch((error) => {
+        console.error("Failed to update active league context:", error);
+      });
     }
   }, [leagueId]);
   
