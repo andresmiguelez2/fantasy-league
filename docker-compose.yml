@@ -62,8 +62,8 @@ services:
       dockerfile: Dockerfile.frontend
     container_name: frontend_app
     volumes:
-      - ./app/frontend:/app
-      - /app/node_modules
+      - ./app/frontend:/app/frontend
+      - /app/frontend/node_modules
     ports:
       - "5173:8080"
     depends_on:
