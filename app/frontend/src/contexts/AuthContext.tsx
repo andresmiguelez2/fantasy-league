@@ -4,7 +4,6 @@ import { BACKEND_URL, clearActivePlayerId } from '@/lib/api';
 interface User {
   id: number;        // User ID from the users table
   username: string;
-  // playerId: number;  // Associated player ID in the game
 }
 
 interface AuthContextType {
@@ -54,12 +53,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           const refreshedUser: User = {
             id: data.id,
             username: data.username,
-            // playerId: data.player_id,
           };
           setToken(storedToken);
           setUser(refreshedUser);
           localStorage.setItem('user', JSON.stringify(refreshedUser));
-          // localStorage.setItem('playerId', data.player_id.toString());
         } else {
           // Token is invalid or expired – clear stored session
           setToken(null);
@@ -67,7 +64,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           clearActivePlayerId();
-          // localStorage.removeItem('playerId');
         }
       })
       .catch(() => {
@@ -77,7 +73,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         clearActivePlayerId();
-        // localStorage.removeItem('playerId');
       })
       .finally(() => setIsLoading(false));
   }, []);
@@ -101,7 +96,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const userData: User = {
         id: data.id,           // User ID from the users table
         username: data.username,
-        // playerId: data.player_id, // The player in the fantasy game
       };
 
       setToken(data.access_token);
@@ -110,7 +104,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Store in localStorage
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('user', JSON.stringify(userData));
-      // localStorage.setItem('playerId', data.player_id.toString());
 
       return true;
     } catch (error) {
@@ -127,7 +120,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     clearActivePlayerId();
-    // localStorage.removeItem('playerId');
   };
 
   const value: AuthContextType = {
