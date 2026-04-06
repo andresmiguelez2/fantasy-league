@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from server_requests.footballer import get_fixture_points
 from server_requests.leaderboard import leaderboard
 from server_requests.player import get_footballers_on_lineup, get_player_lineup
-from scraper import scrape_page
+from app.scripts.insert_footballers import scrape_page
 
 
 logger = logging.getLogger(__name__)
