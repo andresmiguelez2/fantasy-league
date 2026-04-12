@@ -3,7 +3,6 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, field_validator
 from aux.database import pg_connect
 from aux.auth import verify_token
-from .player import get_player_id
 from .logger import logger
 
 
@@ -11,35 +10,8 @@ router = APIRouter(prefix="/leagues", tags=["leagues"])
 security = HTTPBearer()
 
 
-def _get_player_leagues(player_id: int):
-    """Get all leagues for a specific player ID."""
-    try:
-        conn = pg_connect()
-        cursor = conn.cursor()
-        try:
-            cursor.execute(
-                """
-                SELECT league.id, league.name
-                FROM league RIGHT JOIN player on player.league_id = league.id
-                WHERE player.id = %s
-                ORDER BY id
-                """, (player_id,)
-            )
-            leagues = cursor.fetchall()
-        finally:
-            cursor.close()
-            conn.close()
-        return {
-            "status": "success",
-            "leagues": [{"id": row[0], "name": row[1]} for row in leagues],
-        }
-    except Exception as e:
-        logger.error(f"Error retrieving leagues: {e}")
-        return {"status": "error", "leagues": []}
-
-
 def _get_user_leagues(user_id: int):
-    """Get all leagues for a user via the user_players join table."""
+    """Get all leagues for a user."""
     try:
         conn = pg_connect()
         cursor = conn.cursor()
@@ -114,28 +86,16 @@ def create_league(
             )
             league_id = cursor.fetchone()[0]
 
-            # get player_id
-            player_id = get_player_id(user_id)
-
-            # Create a player for this user in the new league
-            if player_id is not None:
-                cursor.execute(
-                    """
-                    INSERT INTO player (name, league_id, user_id, id)
-                    VALUES (%s, %s, %s, %s)
-                    RETURNING id
-                    """,
-                    (request.player_name, league_id, user_id, player_id),
-                )
-            else:
-                cursor.execute(
-                    """
-                    INSERT INTO player (name, league_id, user_id)
-                    VALUES (%s, %s, %s)
-                    RETURNING id
-                    """,
-                    (request.player_name, league_id, user_id),
-                )
+            # Create a player for this user in the new league (always auto-generate the player ID)
+            cursor.execute(
+                """
+                INSERT INTO player (name, league_id, user_id)
+                VALUES (%s, %s, %s)
+                RETURNING id
+                """,
+                (request.player_name, league_id, user_id),
+            )
+            player_id = cursor.fetchone()[0]
 
             conn.commit()
         finally:
@@ -144,7 +104,7 @@ def create_league(
 
         logger.info(
             f"Created league '{request.league_name}' (ID: {league_id}) "
-            f"with player '{request.player_name}' (ID: {player_id})"
+            f"with player '{request.player_name}' (ID: {player_id}) "
             f"for user {user_id}"
         )
         return {
@@ -234,16 +194,6 @@ def get_active_player_for_league(
 
 
 @router.get("")
-def get_player_leagues_query(
-    player_id: int = Query(None), user_id: int = Query(None)
-):
-    if user_id is not None:
-        return _get_user_leagues(user_id)
-    if player_id is not None:
-        return _get_player_leagues(player_id)
-    return {"status": "error", "leagues": [], "detail": "Must provide player_id or user_id"}
-
-
-@router.get("/{player_id}")
-def get_player_leagues(player_id: int):
-    return _get_player_leagues(player_id)
+def get_user_leagues_query(user_id: int = Query(...)):
+    """Return all leagues for the given user ID."""
+    return _get_user_leagues(user_id)

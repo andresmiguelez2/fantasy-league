@@ -44,28 +44,14 @@ services:
       - mongodb
     command: python /app/main.py
 
-  # userapp:
-  #   build: .
-  #   container_name: user_app
-  #   environment:
-  #     - BACKEND_URL=http://backend_app:8000
-  #     - BACKEND_HOST=app
-  #     - BACKEND_PORT=8000
-  #   volumes:
-  #     - ./:/workspace
-  #     - ./app:/app
-  #     - ./secrets/users.env:/secrets/users.env
-  #   depends_on:
-  #     - app
-
   frontend:
     build:
       context: . 
       dockerfile: Dockerfile.frontend
     container_name: frontend_app
     volumes:
-      - ./app/frontend:/app
-      - /app/node_modules
+      - ./app/frontend:/app/frontend
+      - /app/frontend/node_modules
     ports:
       - "0.0.0.0:5173:8080"
     depends_on:
@@ -80,29 +66,6 @@ services:
       - "0.0.0.0:5050:80"
     depends_on:
       - db
-
-  scraper:
-    build:
-      context: .
-      dockerfile: Dockerfile.scraper
-    container_name: scraper_app
-    env_file:
-      - secrets/db.env
-      - secrets/mongo.env
-    environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - MONGO_HOST=mongodb
-      - MONGO_PORT=27017
-    volumes:
-      - ./app:/app
-      - ./:/workspace
-      - ./secrets:/workspace/secrets:ro
-    depends_on:
-      - db
-      - mongodb
-    ports:
-      - "0.0.0.0:33000:22"
 
 volumes:
   pgdata:

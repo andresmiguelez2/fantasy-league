@@ -119,7 +119,7 @@ const OutgoingBids = () => {
                       </div>
                     </TableCell>
                     <TableCell className="text-center text-muted-foreground hidden sm:table-cell">
-                      {bid.ownerId ?? "-"}
+                      {bid.ownerName ?? "-"}
                     </TableCell>
                     <TableCell className="text-center text-muted-foreground hidden sm:table-cell">
                       {formatTimestamp(bid.timestamp)}
