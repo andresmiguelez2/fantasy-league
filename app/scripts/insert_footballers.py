@@ -1,7 +1,6 @@
 import os
 import sys
 
-# Support direct execution: python app/scripts/insert_footballers.py
 if __package__ is None or __package__ == "":
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 

@@ -1,10 +1,16 @@
+import os
+import sys
 from datetime import datetime
-from app.aux.aux_functions import scrape_page
-from aux.database import pg_connect
 from bs4 import BeautifulSoup
 
+if __package__ is None or __package__ == "":
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-def get_earliest_fixture_dates(soup: BeautifulSoup) -> tuple[datetime.datetime | None, datetime.datetime | None, bool]:
+from aux.aux_functions import scrape_page
+from aux.database import pg_connect
+
+
+def get_earliest_fixture_dates(soup: BeautifulSoup) -> tuple[datetime | None, datetime | None, bool]:
     """
     Extracts the earliest fixture start and latest fixture end dates from the provided BeautifulSoup object.
 
@@ -12,7 +18,7 @@ def get_earliest_fixture_dates(soup: BeautifulSoup) -> tuple[datetime.datetime |
         soup (BeautifulSoup): The BeautifulSoup object containing the HTML content.
 
     Returns:
-        tuple[datetime.datetime | None, datetime.datetime | None, bool]: A tuple containing the earliest start date,
+        tuple[datetime | None, datetime | None, bool]: A tuple containing the earliest start date,
         latest end date, and a boolean indicating if all fixtures are closed.
     """
    # Find all time tags with itemprop="startDate"
