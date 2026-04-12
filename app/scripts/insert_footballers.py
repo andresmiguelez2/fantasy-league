@@ -1,4 +1,11 @@
-from aux.constants import FANTASY_MAIN_URL, FOOTBALLER_NAME_DICT
+import os
+import sys
+
+# Support direct execution: python app/scripts/insert_footballers.py
+if __package__ is None or __package__ == "":
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from aux.constants import FANTASY_MAIN_URL, FOOTBALLER_NAME_DICT, FOOTBALLER_POSITIONS
 from classes.footballer import Footballer
 from aux.aux_functions import scrape_page
 from aux.database import pg_connect, mongo_client
@@ -47,17 +54,6 @@ def normalise_name(name):
 
 
 if __name__ == "__main__":
-    soup = scrape_page(FANTASY_MAIN_URL, logger)
-    player_data_df = pd.DataFrame(get_all_players(soup), columns=["name", "full_name", "displayable_name"])
-
-    for _, row in player_data_df.iterrows():
-        try:
-            footballer = Footballer(obtain_data=True, name=row['name'])
-            footballer.name = row['displayable_name'] if row['displayable_name'] else row['name']
-        except Exception as e:
-            print(f"Error processing {row['name']}: {e}")
-
-
     # Crear conexión a bases de datos
     client = mongo_client()
     db = client["FantasyMDB"]
@@ -97,7 +93,7 @@ if __name__ == "__main__":
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                     """,
-                    (footballer.id, footballer.name, footballer.full_name, footballer.team, footballer.data['market_details'][-1]['value'], footballer.data['total_points'], footballer.data['average_points'], footballer.data['position'], footballer.data['availability'])
+                    (footballer.id, footballer.name, footballer.full_name, footballer.team, footballer.data['market_details'][-1]['value'], footballer.data['total_points'], footballer.data['average_points'], FOOTBALLER_POSITIONS[footballer.data['position']], footballer.data['availability'])
                 )
 
                 document = dict()
