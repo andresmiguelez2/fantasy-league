@@ -36,12 +36,14 @@ services:
     volumes:
       - ./:/workspace
       - ./app:/app
-      - ./app:/app
     ports:
       - "0.0.0.0:8000:8000"
     depends_on:
       - db
       - mongodb
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     command: python /app/main.py
 
   frontend:
