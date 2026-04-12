@@ -92,7 +92,7 @@ def create_league(league_name: str):
         return None
     
 
-def create_player(name: str, league_id: int, user_id: int):
+def create_player(name: str, league_id: int, user_id: int, player_id: int):
     """Create a new player"""
     try:
         conn = pg_connect()
@@ -100,11 +100,11 @@ def create_player(name: str, league_id: int, user_id: int):
         
         cursor.execute(
             """
-            INSERT INTO player (name, league_id, user_id)
-            VALUES (%s, %s, %s)
+            INSERT INTO player (name, id, league_id, user_id)
+            VALUES (%s, %s, %s, %s)
             RETURNING id
             """,
-            (name, league_id, user_id)
+            (name, player_id, league_id, user_id)
         )
         
         player_id = cursor.fetchone()[0]
@@ -134,11 +134,11 @@ def migrate_users_from_file():
                     continue
                 parts = line.split(':', 1)
                 if len(parts) != 2:
-                    logger.warning(f"Skipping malformed line in users.env")
+                    logger.warning("Skipping malformed line in users.env")
                     continue
                 username, password = parts[0].strip(), parts[1].strip()
                 if not username or not password:
-                    logger.warning(f"Skipping line with empty username or password")
+                    logger.warning("Skipping line with empty username or password")
                     continue
 
                 # Check if user already exists
