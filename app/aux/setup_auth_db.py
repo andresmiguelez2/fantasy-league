@@ -53,6 +53,74 @@ def create_user(username: str, password: str):
         return None
 
 
+def create_league(league_name: str):
+    """Create a new league"""
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+        
+        cursor.execute(
+            """
+            INSERT INTO league (name)
+            VALUES (%s)
+            RETURNING id
+            """,
+            (league_name,)
+        )
+        
+        league_id = cursor.fetchone()[0]
+
+        cursor.execute(
+            """
+            INSERT INTO market (closing_timestamp, league_id)
+            VALUES (now() + INTERVAL '1 day', %s)
+            """, 
+            (league_id,)
+        )
+
+
+        conn.commit()
+        
+        logger.info(f"League and market created successfully: {league_name} (ID: {league_id})")
+        
+        cursor.close()
+        conn.close()
+        
+        return league_id
+    except Exception as e:
+        logger.error(f"Error creating league: {e}")
+        return None
+    
+
+def create_player(name: str, league_id: int, user_id: int):
+    """Create a new player"""
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+        
+        cursor.execute(
+            """
+            INSERT INTO player (name, league_id, user_id)
+            VALUES (%s, %s, %s)
+            RETURNING id
+            """,
+            (name, league_id, user_id)
+        )
+        
+        player_id = cursor.fetchone()[0]
+        conn.commit()
+        
+        logger.info("Player created successfully")
+        
+        cursor.close()
+        conn.close()
+        
+        return player_id
+    except Exception as e:
+        logger.error(f"Error creating player: {e}")
+        return None
+
+
 def migrate_users_from_file():
     """
     Migrate users from the /secrets/users.env file to the database
