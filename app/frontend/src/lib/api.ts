@@ -35,7 +35,10 @@ export interface MarketFootballer {
   totalPoints: number;
 }
 
-export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || `${window.location.protocol}//${window.location.hostname}:8000`;
+const envBackendUrl = import.meta.env.VITE_BACKEND_URL?.trim();
+export const BACKEND_URL = envBackendUrl
+  ? envBackendUrl.replace(/\/$/, '')
+  : '/api';
 
 const ACTIVE_LEAGUE_KEY = 'activeLeagueId';
 const ACTIVE_PLAYER_KEY = 'activePlayerId';

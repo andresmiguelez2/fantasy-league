@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from .logger import logger
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,12 +17,27 @@ from . import team
 
 server_app = FastAPI()
 
+
+def _get_allowed_origins() -> list[str]:
+    origins_from_env = os.getenv("CORS_ALLOW_ORIGINS", "")
+    origins = [origin.strip() for origin in origins_from_env.split(",") if origin.strip()]
+
+    if origins:
+        return origins
+
+    return [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://0.0.0.0:5173",
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+        "http://0.0.0.0:8080",
+    ]
+
 server_app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://192.168.1.75:5173",
-    ],
+    allow_origins=_get_allowed_origins(),
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|0\.0\.0\.0|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
