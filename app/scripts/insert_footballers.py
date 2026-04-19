@@ -74,17 +74,26 @@ if __name__ == "__main__":
             footballer.name = row['displayable_name'] if row['displayable_name'] else row['name']
 
             if footballer.data['market_details']:
-                for league_id in league_ids:
-                    cursor.execute(
-                        """
-                        INSERT INTO footballer (url_name, league_id)
-                        VALUES (%s, %s)
-                        RETURNING id
-                        """,
-                        (footballer.url_name, league_id)
-                    )
+                for i, league_id in enumerate(league_ids):
+                    if i == 0:
+                        cursor.execute(
+                            """
+                            INSERT INTO footballer (url_name, league_id)
+                            VALUES (%s, %s)
+                            RETURNING id
+                            """,
+                            (footballer.url_name, league_id)
+                        )
+                        footballer.id = cursor.fetchone()[0]
+                    else:
+                        cursor.execute(
+                            """
+                            INSERT INTO footballer (id, url_name, league_id)
+                            VALUES (%s, %s, %s)
+                            """,
+                            (footballer.id, footballer.url_name, league_id)
+                        )
                 
-                footballer.id = cursor.fetchone()[0]
 
                 cursor.execute(
                     """
