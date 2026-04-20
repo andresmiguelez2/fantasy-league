@@ -714,5 +714,9 @@ export const joinLeague = async (inviteCode: string, playerName: string): Promis
     },
     body: JSON.stringify({ invite_code: inviteCode, player_name: playerName }),
   });
-  return response.json();
+  const data = await response.json();
+  if (!response.ok) {
+    return { status: 'error', detail: data.detail || 'Failed to join league' };
+  }
+  return data;
 };

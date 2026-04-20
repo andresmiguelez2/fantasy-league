@@ -309,24 +309,24 @@ def get_league_invite(
         # Generate and persist an invite code for leagues that pre-date this feature
         if not invite_code:
             invite_code = str(uuid.uuid4())
-            conn = pg_connect()
-            cursor = conn.cursor()
+            conn2 = pg_connect()
+            cursor2 = conn2.cursor()
             try:
-                cursor.execute(
+                cursor2.execute(
                     "UPDATE league SET invite_code = %s WHERE id = %s",
                     (invite_code, league_id),
                 )
-                conn.commit()
+                conn2.commit()
             finally:
-                cursor.close()
-                conn.close()
+                cursor2.close()
+                conn2.close()
 
         return {"status": "success", "invite_code": str(invite_code)}
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error fetching invite code for league {league_id}: {e}")
-        return {"status": "error", "detail": "Failed to fetch invite code"}
+        raise HTTPException(status_code=500, detail="Failed to fetch invite code")
 
 
 @router.post("/join")
@@ -353,7 +353,7 @@ def join_league(
             league_row = cursor.fetchone()
 
             if not league_row:
-                return {"status": "error", "detail": "Invalid invite code"}
+                raise HTTPException(status_code=404, detail="Invalid invite code")
 
             league_id, league_name = league_row
 
@@ -362,7 +362,10 @@ def join_league(
                 (league_id, user_id),
             )
             if cursor.fetchone():
-                return {"status": "error", "detail": "You are already a member of this league"}
+                raise HTTPException(
+                    status_code=409,
+                    detail="You are already a member of this league",
+                )
 
             cursor.execute(
                 """
@@ -391,4 +394,4 @@ def join_league(
         raise
     except Exception as e:
         logger.error(f"Error joining league for user {user_id}: {e}")
-        return {"status": "error", "detail": "Failed to join league"}
+        raise HTTPException(status_code=500, detail="Failed to join league")

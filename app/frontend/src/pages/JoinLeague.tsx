@@ -56,7 +56,7 @@ const JoinLeague = () => {
   // Load previous player names when authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      fetchPlayerNames().then(setPreviousNames).catch(() => {});
+      fetchPlayerNames().then(setPreviousNames).catch(() => setPreviousNames([]));
     }
   }, [isAuthenticated]);
 
