@@ -680,3 +680,39 @@ export const payReleaseClause = async (footballerId: number, playerId: string): 
     return { status: res.status.toString(), ok: res.ok, text };
   }
 };
+
+export const fetchLeagueInvite = async (leagueId: string): Promise<{ status: string; invite_code?: string; detail?: string }> => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+  const response = await fetch(`${BACKEND_URL}/leagues/${leagueId}/invite`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.json();
+};
+
+export const fetchLeagueByInviteCode = async (inviteCode: string): Promise<{ status: string; league?: { id: number; name: string }; detail?: string }> => {
+  const response = await fetch(`${BACKEND_URL}/leagues/by-invite/${inviteCode}`);
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    return { status: 'error', detail: (data as { detail?: string }).detail || 'Failed to fetch league' };
+  }
+  return response.json();
+};
+
+export const joinLeague = async (inviteCode: string, playerName: string): Promise<{ status: string; league?: { id: number; name: string }; detail?: string }> => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+  const response = await fetch(`${BACKEND_URL}/leagues/join`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ invite_code: inviteCode, player_name: playerName }),
+  });
+  return response.json();
+};

@@ -7,6 +7,7 @@ import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { PlayerInfoRibbon } from "@/components/PlayerInfoRibbon";
 import { SquadRow } from "@/components/SquadRow";
 import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
+import { LeagueInviteDialog } from "@/components/LeagueInviteDialog";
 import { 
   fetchLeaderboard, 
   fetchOpenedFixtures, 
@@ -29,7 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Link } from "lucide-react";
 import { setActiveLeagueContext } from "@/lib/api";
 
 const API_ENDPOINT = BACKEND_URL;
@@ -42,6 +43,7 @@ const League = () => {
   const [selectedFixture, setSelectedFixture] = useState<string>("total");
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
   const [selectedPlayerName, setSelectedPlayerName] = useState<string>("");
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   
   // Squad view state (for "total")
   const [footballers, setFootballers] = useState<Footballer[]>([]);
@@ -280,6 +282,17 @@ const League = () => {
           {selectedPlayerId !== null && (
             <h2 className="text-lg sm:text-xl font-semibold">{selectedPlayerName}</h2>
           )}
+          {selectedPlayerId === null && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setInviteDialogOpen(true)}
+              className="ml-auto flex items-center gap-2"
+            >
+              <Link className="h-4 w-4" />
+              Invite
+            </Button>
+          )}
         </div>
         {loading ? (
           (() => {
@@ -404,6 +417,14 @@ const League = () => {
           onOpenChange={setFixtureDialogOpen}
           footballerId={selectedFootballerId}
           defaultFixture={selectedFixture !== "total" ? parseInt(selectedFixture) : undefined}
+        />
+      )}
+
+      {leagueId && (
+        <LeagueInviteDialog
+          open={inviteDialogOpen}
+          onOpenChange={setInviteDialogOpen}
+          leagueId={leagueId}
         />
       )}
       

@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, field_validator
@@ -8,6 +10,29 @@ from .logger import logger
 
 router = APIRouter(prefix="/leagues", tags=["leagues"])
 security = HTTPBearer()
+
+
+def _ensure_invite_code_column():
+    """Add invite_code column to league table if it does not already exist."""
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                ALTER TABLE league
+                ADD COLUMN IF NOT EXISTS invite_code UUID UNIQUE DEFAULT NULL
+                """
+            )
+            conn.commit()
+        finally:
+            cursor.close()
+            conn.close()
+    except Exception as e:
+        logger.error(f"Error ensuring invite_code column: {e}")
+
+
+_ensure_invite_code_column()
 
 
 def _get_user_leagues(user_id: int):
@@ -52,6 +77,15 @@ def _get_user_id_from_token(credentials: HTTPAuthorizationCredentials) -> int:
     return int(payload.get("sub"))
 
 
+def _validate_name_field(v: str) -> str:
+    v = v.strip()
+    if not v:
+        raise ValueError("Field must not be empty")
+    if len(v) > 255:
+        raise ValueError("Field must not exceed 255 characters")
+    return v
+
+
 class CreateLeagueRequest(BaseModel):
     league_name: str
     player_name: str
@@ -59,12 +93,17 @@ class CreateLeagueRequest(BaseModel):
     @field_validator("league_name", "player_name")
     @classmethod
     def not_empty(cls, v: str) -> str:
-        v = v.strip()
-        if not v:
-            raise ValueError("Field must not be empty")
-        if len(v) > 255:
-            raise ValueError("Field must not exceed 255 characters")
-        return v
+        return _validate_name_field(v)
+
+
+class JoinLeagueRequest(BaseModel):
+    invite_code: str
+    player_name: str
+
+    @field_validator("player_name")
+    @classmethod
+    def not_empty(cls, v: str) -> str:
+        return _validate_name_field(v)
 
 
 @router.post("")
@@ -79,10 +118,12 @@ def create_league(
         conn = pg_connect()
         cursor = conn.cursor()
         try:
+            invite_code = str(uuid.uuid4())
+
             # Create the league
             cursor.execute(
-                "INSERT INTO league (name) VALUES (%s) RETURNING id",
-                (request.league_name,),
+                "INSERT INTO league (name, invite_code) VALUES (%s, %s) RETURNING id",
+                (request.league_name, invite_code),
             )
             league_id = cursor.fetchone()[0]
 
@@ -197,3 +238,157 @@ def get_active_player_for_league(
 def get_user_leagues_query(user_id: int = Query(...)):
     """Return all leagues for the given user ID."""
     return _get_user_leagues(user_id)
+
+
+@router.get("/by-invite/{invite_code}")
+def get_league_by_invite_code(invite_code: str):
+    """Return basic league info for a given invite code (no authentication required)."""
+    try:
+        uuid.UUID(invite_code)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid invite code format")
+
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "SELECT id, name FROM league WHERE invite_code = %s",
+                (invite_code,),
+            )
+            result = cursor.fetchone()
+        finally:
+            cursor.close()
+            conn.close()
+
+        if not result:
+            raise HTTPException(status_code=404, detail="League not found")
+
+        return {"status": "success", "league": {"id": result[0], "name": result[1]}}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching league by invite code: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch league")
+
+
+@router.get("/{league_id}/invite")
+def get_league_invite(
+    league_id: int,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """Return the invite code for a league. The caller must be a member of the league."""
+    user_id = _get_user_id_from_token(credentials)
+
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                SELECT l.invite_code
+                FROM league l
+                JOIN player p ON p.league_id = l.id
+                WHERE l.id = %s AND p.user_id = %s
+                """,
+                (league_id, user_id),
+            )
+            result = cursor.fetchone()
+        finally:
+            cursor.close()
+            conn.close()
+
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not a member of this league",
+            )
+
+        invite_code = result[0]
+
+        # Generate and persist an invite code for leagues that pre-date this feature
+        if not invite_code:
+            invite_code = str(uuid.uuid4())
+            conn = pg_connect()
+            cursor = conn.cursor()
+            try:
+                cursor.execute(
+                    "UPDATE league SET invite_code = %s WHERE id = %s",
+                    (invite_code, league_id),
+                )
+                conn.commit()
+            finally:
+                cursor.close()
+                conn.close()
+
+        return {"status": "success", "invite_code": str(invite_code)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching invite code for league {league_id}: {e}")
+        return {"status": "error", "detail": "Failed to fetch invite code"}
+
+
+@router.post("/join")
+def join_league(
+    request: JoinLeagueRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """Join a league using an invite code."""
+    user_id = _get_user_id_from_token(credentials)
+
+    try:
+        uuid.UUID(request.invite_code)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid invite code format")
+
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "SELECT id, name FROM league WHERE invite_code = %s",
+                (request.invite_code,),
+            )
+            league_row = cursor.fetchone()
+
+            if not league_row:
+                return {"status": "error", "detail": "Invalid invite code"}
+
+            league_id, league_name = league_row
+
+            cursor.execute(
+                "SELECT id FROM player WHERE league_id = %s AND user_id = %s",
+                (league_id, user_id),
+            )
+            if cursor.fetchone():
+                return {"status": "error", "detail": "You are already a member of this league"}
+
+            cursor.execute(
+                """
+                INSERT INTO player (name, league_id, user_id)
+                VALUES (%s, %s, %s)
+                RETURNING id
+                """,
+                (request.player_name, league_id, user_id),
+            )
+            player_id = cursor.fetchone()[0]
+
+            conn.commit()
+        finally:
+            cursor.close()
+            conn.close()
+
+        logger.info(
+            f"User {user_id} joined league '{league_name}' (ID: {league_id}) "
+            f"with player '{request.player_name}' (ID: {player_id})"
+        )
+        return {
+            "status": "success",
+            "league": {"id": league_id, "name": league_name},
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error joining league for user {user_id}: {e}")
+        return {"status": "error", "detail": "Failed to join league"}
