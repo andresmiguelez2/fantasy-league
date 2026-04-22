@@ -86,9 +86,9 @@ def player_market(player_id: int, league_id: int):
             WHERE
                 on_market = TRUE
                 AND f.league_id = %s
-            ORDER BY COALESCE((f.owner_id = %s), FALSE) ASC, (f.owner_id IS NULL) DESC, on_market_since DESC
+            ORDER BY is_own ASC, (f.owner_id IS NULL) DESC, on_market_since DESC
             """,
-            (player_id, player_id, league_id, player_id)
+            (player_id, player_id, league_id)
         )
         footballers = cursor.fetchall()
 
