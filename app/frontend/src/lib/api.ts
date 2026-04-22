@@ -38,6 +38,7 @@ export interface MarketFootballer {
 export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || `${window.location.protocol}//${window.location.hostname}:8000`;
 
 const ACTIVE_LEAGUE_KEY = 'activeLeagueId';
+const ACTIVE_LEAGUE_NAME_KEY = 'activeLeagueName';
 const ACTIVE_PLAYER_KEY = 'activePlayerId';
 
 export const setActiveLeagueId = (leagueId: string) => {
@@ -54,6 +55,22 @@ export const getActiveLeagueId = (): string | null => {
   }
 
   return localStorage.getItem(ACTIVE_LEAGUE_KEY);
+};
+
+export const setActiveLeagueName = (leagueName: string) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  localStorage.setItem(ACTIVE_LEAGUE_NAME_KEY, leagueName);
+};
+
+export const getActiveLeagueName = (): string | null => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  return localStorage.getItem(ACTIVE_LEAGUE_NAME_KEY);
 };
 
 export const setActivePlayerId = (playerId: string) => {
