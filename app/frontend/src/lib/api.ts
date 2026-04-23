@@ -705,7 +705,7 @@ export const fetchLeagueByInviteCode = async (inviteCode: string): Promise<{ sta
   return response.json();
 };
 
-export const joinLeague = async (inviteCode: string, playerName: string): Promise<{ status: string; league?: { id: number; name: string }; detail?: string }> => {
+export const joinLeague = async (inviteCode: string, playerName: string): Promise<{ status: string; league?: { id: number; name: string }; detail?: string; already_member?: boolean }> => {
   const token = getAuthToken();
   if (!token) {
     throw new Error('Not authenticated');

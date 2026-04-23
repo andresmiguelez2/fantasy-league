@@ -71,8 +71,10 @@ const JoinLeague = () => {
       if (result.status === "success" && result.league) {
         await setActiveLeagueContext(String(result.league.id)).catch(() => {});
         toast({
-          title: "Joined!",
-          description: `Welcome to ${result.league.name}!`,
+          title: result.already_member ? "Already a member" : "Joined!",
+          description: result.already_member
+            ? `You are already in ${result.league.name}. Redirecting…`
+            : `Welcome to ${result.league.name}!`,
         });
         navigate(`/league/${result.league.id}`);
       } else {

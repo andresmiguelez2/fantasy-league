@@ -375,10 +375,12 @@ def join_league(
                 (league_id, user_id),
             )
             if cursor.fetchone():
-                raise HTTPException(
-                    status_code=409,
-                    detail="You are already a member of this league",
-                )
+                # Already a member — return the league info so the caller can navigate there
+                return {
+                    "status": "success",
+                    "league": {"id": league_id, "name": league_name},
+                    "already_member": True,
+                }
 
             cursor.execute(
                 """
