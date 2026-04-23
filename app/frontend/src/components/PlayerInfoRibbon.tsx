@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
-import { fetchPlayerInfo, getActivePlayerId, PlayerInfo } from "@/lib/api";
+import { fetchPlayerInfo, getActivePlayerId, getActiveLeagueName, PlayerInfo } from "@/lib/api";
 import { User, Wallet } from "lucide-react";
 
 export const PlayerInfoRibbon = () => {
   const [playerInfo, setPlayerInfo] = useState<PlayerInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [leagueName, setLeagueName] = useState<string | null>(null);
   const playerId = getActivePlayerId();
+
+  useEffect(() => {
+    setLeagueName(getActiveLeagueName());
+  }, [playerId]);
 
   useEffect(() => {
     if (!playerId) {
@@ -36,6 +41,12 @@ export const PlayerInfoRibbon = () => {
           <div className="flex items-center gap-2">
             <User className="h-4 w-4 text-muted-foreground" />
             <span className="font-semibold text-foreground">{playerInfo.name}</span>
+            {leagueName && (
+              <>
+                <span className="text-muted-foreground">|</span>
+                <span className="text-sm text-muted-foreground">{leagueName}</span>
+              </>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Wallet className="h-4 w-4 text-muted-foreground" />

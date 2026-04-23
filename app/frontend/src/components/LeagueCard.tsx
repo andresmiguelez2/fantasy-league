@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Trophy } from "lucide-react";
-import { setActiveLeagueContext } from "@/lib/api";
+import { setActiveLeagueContext, setActiveLeagueName } from "@/lib/api";
 
 interface LeagueCardProps {
   id: string;
@@ -20,6 +20,7 @@ export const LeagueCard = ({ id, name }: LeagueCardProps) => {
 
   const handleClick = async () => {
     try {
+      setActiveLeagueName(name);
       await setActiveLeagueContext(id);
     } catch (error) {
       console.error("Failed to set active league context:", error);
