@@ -689,7 +689,11 @@ export const fetchLeagueInvite = async (leagueId: string): Promise<{ status: str
   const response = await fetch(`${BACKEND_URL}/leagues/${leagueId}/invite`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  return response.json();
+  const data = await response.json();
+  if (!response.ok) {
+    return { status: 'error', detail: data.detail || 'Failed to fetch invite' };
+  }
+  return data;
 };
 
 export const fetchLeagueByInviteCode = async (inviteCode: string): Promise<{ status: string; league?: { id: number; name: string }; detail?: string }> => {

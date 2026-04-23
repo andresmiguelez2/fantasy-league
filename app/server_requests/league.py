@@ -12,8 +12,8 @@ router = APIRouter(prefix="/leagues", tags=["leagues"])
 security = HTTPBearer()
 
 
-def _ensure_invite_code_column():
-    """Add invite_code column to league table if it does not already exist."""
+def _ensure_league_columns():
+    """Add invite_code and created_by columns to league table if they do not already exist."""
     try:
         conn = pg_connect()
         cursor = conn.cursor()
@@ -24,15 +24,21 @@ def _ensure_invite_code_column():
                 ADD COLUMN IF NOT EXISTS invite_code UUID UNIQUE DEFAULT NULL
                 """
             )
+            cursor.execute(
+                """
+                ALTER TABLE league
+                ADD COLUMN IF NOT EXISTS created_by INT REFERENCES users(id) DEFAULT NULL
+                """
+            )
             conn.commit()
         finally:
             cursor.close()
             conn.close()
     except Exception as e:
-        logger.error(f"Error ensuring invite_code column: {e}")
+        logger.error(f"Error ensuring league columns: {e}")
 
 
-_ensure_invite_code_column()
+_ensure_league_columns()
 
 
 def _get_user_leagues(user_id: int):
@@ -122,8 +128,8 @@ def create_league(
 
             # Create the league
             cursor.execute(
-                "INSERT INTO league (name, invite_code) VALUES (%s, %s) RETURNING id",
-                (request.league_name, invite_code),
+                "INSERT INTO league (name, invite_code, created_by) VALUES (%s, %s, %s) RETURNING id",
+                (request.league_name, invite_code, user_id),
             )
             league_id = cursor.fetchone()[0]
 
@@ -277,7 +283,7 @@ def get_league_invite(
     league_id: int,
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ):
-    """Return the invite code for a league. The caller must be a member of the league."""
+    """Return the invite code for a league. Only the league creator can access this."""
     user_id = _get_user_id_from_token(credentials)
 
     try:
@@ -286,7 +292,7 @@ def get_league_invite(
         try:
             cursor.execute(
                 """
-                SELECT l.invite_code
+                SELECT l.invite_code, l.created_by
                 FROM league l
                 JOIN player p ON p.league_id = l.id
                 WHERE l.id = %s AND p.user_id = %s
@@ -304,7 +310,14 @@ def get_league_invite(
                 detail="Not a member of this league",
             )
 
-        invite_code = result[0]
+        invite_code, created_by = result
+
+        # Enforce creator-only access for leagues that have a known creator
+        if created_by is not None and created_by != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only the league creator can share the invite link",
+            )
 
         # Generate and persist an invite code for leagues that pre-date this feature
         if not invite_code:

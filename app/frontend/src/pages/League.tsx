@@ -16,6 +16,7 @@ import {
   fetchFixtureLineup,
   fetchFootballerShortName,
   fetchFootballerFixturePoints,
+  fetchLeagueInvite,
   Player,
   Footballer,
   BACKEND_URL
@@ -30,7 +31,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2, Link } from "lucide-react";
+import { ArrowLeft, Link } from "lucide-react";
 import { setActiveLeagueContext } from "@/lib/api";
 
 const API_ENDPOINT = BACKEND_URL;
@@ -44,6 +45,7 @@ const League = () => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
   const [selectedPlayerName, setSelectedPlayerName] = useState<string>("");
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
   
   // Squad view state (for "total")
   const [footballers, setFootballers] = useState<Footballer[]>([]);
@@ -63,6 +65,12 @@ const League = () => {
       setActiveLeagueContext(leagueId).catch((error) => {
         console.error("Failed to set active league context:", error);
       });
+
+      // Check if the current user is the creator of this league
+      setIsCreator(false);
+      fetchLeagueInvite(leagueId)
+        .then((data) => setIsCreator(data.status === "success"))
+        .catch(() => setIsCreator(false));
     }
   }, [leagueId]);
   
@@ -282,7 +290,7 @@ const League = () => {
           {selectedPlayerId !== null && (
             <h2 className="text-lg sm:text-xl font-semibold">{selectedPlayerName}</h2>
           )}
-          {selectedPlayerId === null && (
+          {selectedPlayerId === null && isCreator && (
             <Button
               variant="outline"
               size="sm"
