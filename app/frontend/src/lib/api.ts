@@ -33,6 +33,7 @@ export interface MarketFootballer {
   bidAmount: number;
   averagePoints: number | string;
   totalPoints: number;
+  isOwn: boolean;
 }
 
 export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || `${window.location.protocol}//${window.location.hostname}:8000`;
@@ -246,6 +247,7 @@ export const fetchMarketFootballers = async (playerId?: string): Promise<MarketF
     bidAmount: footballer[5],
     averagePoints: footballer[6],
     totalPoints: footballer[7],
+    isOwn: footballer[8] === true,
   }));
 };
 
