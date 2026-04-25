@@ -3,6 +3,7 @@ import logging
 from aux.database import pg_connect
 from aux.constants import DANGLING_FIXTURE_THRESHOLD, FANTASY_FIXTURE_URL, CLOSING_TIME_FIXTURE, COINS_PER_POINT
 from bs4 import BeautifulSoup
+from classes.league import get_leagues
 from server_requests.footballer import get_fixture_points
 from server_requests.leaderboard import leaderboard
 from server_requests.player import get_footballers_on_lineup, get_player_lineup
@@ -73,23 +74,28 @@ class Fixture:
         self._dangling = value
 
     def _fix_lineups(self):
-        """Fix lineups for all players in the fixture
+        """Fix lineups for all players across all leagues in the fixture
         """
-        players = [row_[0] for row_ in leaderboard()["leaderboard"]]
+        leagues = get_leagues()
 
-        for player_id in players:
-            footballers_on_lineup = [element for sublist in get_footballers_on_lineup(player_id)['lineup_footballers'] for element in sublist]
-            lineup = get_player_lineup(player_id)['lineup']
+        for league_id in leagues:
+            players = [row_[0] for row_ in leaderboard('total', league_id)["leaderboard"]]
 
             conn = pg_connect()
             cursor = conn.cursor()
-            cursor.execute(
-                """
-                INSERT INTO fixture_details (fixture_n, player_id, footballers_on_lineup, lineup)
-                VALUES (%s, %s, %s, %s)
-                """,
-                (self.n, player_id, footballers_on_lineup, lineup),
-            )
+
+            for player_id in players:
+                footballers_on_lineup = [element for sublist in get_footballers_on_lineup(player_id, league_id)['lineup_footballers'] for element in sublist]
+                lineup = get_player_lineup(player_id, league_id)['lineup']
+
+                cursor.execute(
+                    """
+                    INSERT INTO fixture_details (fixture_n, player_id, footballers_on_lineup, lineup, league_id, valid)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    """,
+                    (self.n, player_id, footballers_on_lineup, lineup, league_id, True),
+                )
+
             conn.commit()
             cursor.close()
             conn.close()
