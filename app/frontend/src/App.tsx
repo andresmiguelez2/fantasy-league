@@ -9,6 +9,7 @@ import { LeagueGuard } from "@/components/LeagueGuard";
 import Login from "./pages/Login";
 import Landing from "./pages/Landing";
 import League from "./pages/League";
+import JoinLeague from "./pages/JoinLeague";
 import Squad from "./pages/Squad";
 import Lineup from "./pages/Lineup";
 import Fixtures from "./pages/Fixtures";
@@ -29,6 +30,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/join/:inviteCode" element={<JoinLeague />} />
             <Route path="/" element={<ProtectedRoute><Landing /></ProtectedRoute>} />
             <Route path="/league/:leagueId" element={<ProtectedRoute><League /></ProtectedRoute>} />
             <Route path="/squad" element={<ProtectedRoute><LeagueGuard><Squad /></LeagueGuard></ProtectedRoute>} />
