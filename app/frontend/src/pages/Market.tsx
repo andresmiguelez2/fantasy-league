@@ -112,7 +112,7 @@ const Market = () => {
                 currentBid={footballer.bidAmount}
                 totalPoints={footballer.totalPoints}
                 averagePoints={footballer.averagePoints}
-                showBidButton
+                showBidButton={!footballer.isOwn}
                 onBid={() => handleBidClick(footballer)}
                 onOwnerClick={() => handleFootballerClick(footballer)}
               />

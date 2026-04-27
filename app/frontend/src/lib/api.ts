@@ -33,6 +33,7 @@ export interface MarketFootballer {
   bidAmount: number;
   averagePoints: number | string;
   totalPoints: number;
+  isOwn: boolean;
 }
 
 const envBackendUrl = import.meta.env.VITE_BACKEND_URL?.trim();
@@ -41,6 +42,7 @@ export const BACKEND_URL = envBackendUrl
   : '/api';
 
 const ACTIVE_LEAGUE_KEY = 'activeLeagueId';
+const ACTIVE_LEAGUE_NAME_KEY = 'activeLeagueName';
 const ACTIVE_PLAYER_KEY = 'activePlayerId';
 
 export const setActiveLeagueId = (leagueId: string) => {
@@ -57,6 +59,22 @@ export const getActiveLeagueId = (): string | null => {
   }
 
   return localStorage.getItem(ACTIVE_LEAGUE_KEY);
+};
+
+export const setActiveLeagueName = (leagueName: string) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  localStorage.setItem(ACTIVE_LEAGUE_NAME_KEY, leagueName);
+};
+
+export const getActiveLeagueName = (): string | null => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  return localStorage.getItem(ACTIVE_LEAGUE_NAME_KEY);
 };
 
 export const setActivePlayerId = (playerId: string) => {
@@ -249,6 +267,7 @@ export const fetchMarketFootballers = async (playerId?: string): Promise<MarketF
     bidAmount: footballer[5],
     averagePoints: footballer[6],
     totalPoints: footballer[7],
+    isOwn: footballer[8] === true,
   }));
 };
 
@@ -682,4 +701,48 @@ export const payReleaseClause = async (footballerId: number, playerId: string): 
   } catch {
     return { status: res.status.toString(), ok: res.ok, text };
   }
+};
+
+export const fetchLeagueInvite = async (leagueId: string): Promise<{ status: string; invite_code?: string; detail?: string }> => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+  const response = await fetch(`${BACKEND_URL}/leagues/${leagueId}/invite`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    return { status: 'error', detail: data.detail || 'Failed to fetch invite' };
+  }
+  return data;
+};
+
+export const fetchLeagueByInviteCode = async (inviteCode: string): Promise<{ status: string; league?: { id: number; name: string }; detail?: string }> => {
+  const response = await fetch(`${BACKEND_URL}/leagues/by-invite/${inviteCode}`);
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    return { status: 'error', detail: (data as { detail?: string }).detail || 'Failed to fetch league' };
+  }
+  return response.json();
+};
+
+export const joinLeague = async (inviteCode: string, playerName: string): Promise<{ status: string; league?: { id: number; name: string }; detail?: string; already_member?: boolean }> => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+  const response = await fetch(`${BACKEND_URL}/leagues/join`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ invite_code: inviteCode, player_name: playerName }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    return { status: 'error', detail: data.detail || 'Failed to join league' };
+  }
+  return data;
 };
