@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { fetchLeagueInvite } from "@/lib/api";
 import { Copy, Check } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 
 interface LeagueInviteDialogProps {
   open: boolean;
@@ -74,27 +75,32 @@ export const LeagueInviteDialog = ({
           )}
           {error && <p className="text-sm text-destructive">{error}</p>}
           {!loading && !error && inviteLink && (
-            <div className="space-y-2">
-              <Label>Invite Link</Label>
-              <div className="flex gap-2">
-                <Input value={inviteLink} readOnly className="flex-1 text-sm" />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={handleCopy}
-                  title="Copy to clipboard"
-                >
-                  {copied ? (
-                    <Check className="w-4 h-4 text-green-500" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
-                </Button>
+            <div className="space-y-4">
+              <div className="flex justify-center">
+                <QRCodeSVG value={inviteLink} size={192} title="QR code for league invite link" />
               </div>
-              {copied && (
-                <p className="text-xs text-green-600">Copied to clipboard!</p>
-              )}
+              <div className="space-y-2">
+                <Label>Invite Link</Label>
+                <div className="flex gap-2">
+                  <Input value={inviteLink} readOnly className="flex-1 text-sm" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={handleCopy}
+                    title="Copy to clipboard"
+                  >
+                    {copied ? (
+                      <Check className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <Copy className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+                {copied && (
+                  <p className="text-xs text-green-600">Copied to clipboard!</p>
+                )}
+              </div>
             </div>
           )}
         </div>
