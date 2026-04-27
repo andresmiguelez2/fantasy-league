@@ -133,6 +133,27 @@ def create_league(
             )
             league_id = cursor.fetchone()[0]
 
+            cursor.execute(
+            '''
+                INSERT INTO footballer (url_name, on_market, on_lineup, league_id)
+                SELECT DISTINCT
+                    url_name
+                    , false
+                    , false
+                    , %s
+                FROM footballer
+                ''',
+                (league_id,)
+            )
+                
+            cursor.execute(
+                """
+                INSERT INTO market (closing_timestamp, league_id)
+                VALUES (now() + INTERVAL '1 day', %s)
+                """, 
+                (league_id,)
+            )
+
             # Create a player for this user in the new league (always auto-generate the player ID)
             cursor.execute(
                 """
