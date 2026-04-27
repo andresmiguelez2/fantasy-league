@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
 import { PlayerRow } from "@/components/PlayerRow";
@@ -8,6 +8,16 @@ import { PlayerInfoRibbon } from "@/components/PlayerInfoRibbon";
 import { SquadRow } from "@/components/SquadRow";
 import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
 import { LeagueInviteDialog } from "@/components/LeagueInviteDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   fetchLeaderboard, 
   fetchOpenedFixtures, 
@@ -17,6 +27,7 @@ import {
   fetchFootballerShortName,
   fetchFootballerFixturePoints,
   fetchLeagueInvite,
+  deleteLeague,
   Player,
   Footballer,
   BACKEND_URL
@@ -31,13 +42,14 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Link } from "lucide-react";
+import { ArrowLeft, Link, Trash2 } from "lucide-react";
 import { setActiveLeagueContext } from "@/lib/api";
 
 const API_ENDPOINT = BACKEND_URL;
 
 const League = () => {
   const { leagueId } = useParams();
+  const navigate = useNavigate();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [fixtures, setFixtures] = useState<number[]>([]);
@@ -45,6 +57,7 @@ const League = () => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
   const [selectedPlayerName, setSelectedPlayerName] = useState<string>("");
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
   
   // Squad view state (for "total")
@@ -198,6 +211,16 @@ const League = () => {
       setSquadDialogOpen(true);
     }
   };
+
+  const handleDeleteLeague = async () => {
+    if (!leagueId) return;
+    const result = await deleteLeague(leagueId);
+    if (result.status === "success") {
+      navigate("/");
+    } else {
+      alert(result.detail || "Failed to delete league. Please try again.");
+    }
+  };
   
   const renderRow = (count: number, rowIndex: number) => {
     const footballersInRow = lineupFootballers[rowIndex] || [];
@@ -291,15 +314,26 @@ const League = () => {
             <h2 className="text-lg sm:text-xl font-semibold">{selectedPlayerName}</h2>
           )}
           {selectedPlayerId === null && isCreator && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setInviteDialogOpen(true)}
-              className="ml-auto flex items-center gap-2"
-            >
-              <Link className="h-4 w-4" />
-              Invite
-            </Button>
+            <div className="ml-auto flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setInviteDialogOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Link className="h-4 w-4" />
+                Invite
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setDeleteDialogOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete League
+              </Button>
+            </div>
           )}
         </div>
         {loading ? (
@@ -435,6 +469,26 @@ const League = () => {
           leagueId={leagueId}
         />
       )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete League</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this league? This will permanently remove the league, all its players, and all footballers. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteLeague}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
       <PlayerInfoRibbon />
     </div>

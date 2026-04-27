@@ -743,3 +743,19 @@ export const joinLeague = async (inviteCode: string, playerName: string): Promis
   }
   return data;
 };
+
+export const deleteLeague = async (leagueId: string): Promise<{ status: string; detail?: string }> => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+  const response = await fetch(`${BACKEND_URL}/leagues/${leagueId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    return { status: 'error', detail: data.detail || 'Failed to delete league' };
+  }
+  return data;
+};
