@@ -342,6 +342,57 @@ def get_league_invite(
         raise HTTPException(status_code=500, detail="Failed to fetch invite code")
 
 
+@router.delete("/{league_id}")
+def delete_league(
+    league_id: int,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """Delete a league and all associated data. Only the league creator can do this."""
+    user_id = _get_user_id_from_token(credentials)
+
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+        try:
+            # Verify the league exists and the requester is the creator
+            cursor.execute(
+                "SELECT created_by FROM league WHERE id = %s",
+                (league_id,),
+            )
+            result = cursor.fetchone()
+
+            if not result:
+                raise HTTPException(status_code=404, detail="League not found")
+
+            created_by = result[0]
+            if created_by != user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only the league creator can delete this league",
+                )
+
+            # Delete in dependency order to avoid FK constraint violations
+            cursor.execute("DELETE FROM bid WHERE league_id = %s", (league_id,))
+            cursor.execute("DELETE FROM fixture_details WHERE league_id = %s", (league_id,))
+            cursor.execute("DELETE FROM footballer WHERE league_id = %s", (league_id,))
+            cursor.execute("DELETE FROM player WHERE league_id = %s", (league_id,))
+            cursor.execute("DELETE FROM market WHERE league_id = %s", (league_id,))
+            cursor.execute("DELETE FROM league WHERE id = %s", (league_id,))
+
+            conn.commit()
+        finally:
+            cursor.close()
+            conn.close()
+
+        logger.info(f"League {league_id} deleted by user {user_id}")
+        return {"status": "success"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting league {league_id} for user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete league")
+
+
 @router.post("/join")
 def join_league(
     request: JoinLeagueRequest,
