@@ -55,6 +55,11 @@ FOOTBALLER_NAME_DICT = {
     'hugo alvarez ': 'hugo lvarez ',
     'carlos alvarez': 'carlos lvarez',
     'karl etta eyong': 'etta-eyong',
+    'alvaro fidalgo': 'lvaro fidalgo',
+    'justin kalumba': 'jastin-kalumba',
+    'zito luvumbo': 'zito-luvumbo-1',
+    "etienne eto'o": "etienne-etoo",
+    'fran gonzalez': 'fran-gonzalez-2',
 }
 COMPETITION_NAME = 'LaLiga 2025/26'
 FOOTBALLER_POSITIONS = {
