@@ -135,9 +135,10 @@ def create_league(
 
             cursor.execute(
             '''
-                INSERT INTO footballer (url_name, on_market, on_lineup, league_id)
+                INSERT INTO footballer (id, url_name, on_market, on_lineup, league_id)
                 SELECT DISTINCT
-                    url_name
+                    id
+                    , url_name
                     , false
                     , false
                     , %s
@@ -149,7 +150,7 @@ def create_league(
             cursor.execute(
                 """
                 INSERT INTO market (closing_timestamp, league_id)
-                VALUES (now() + INTERVAL '1 day', %s)
+                VALUES (now() + INTERVAL '-1 second', %s)
                 """, 
                 (league_id,)
             )
