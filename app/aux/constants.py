@@ -77,7 +77,7 @@ CLOSING_TIME_FIXTURE = 60*4 # minutes to close fixture after it finishes
 COINS_PER_POINT = 100_000 # money awarded per point scored
 
 # League entry items
-INITIAL_PLAYER_BUDGET = 50_000_000          # starting budget for new players (50 M)
+INITIAL_PLAYER_BUDGET = 100_000_000          # starting budget for new players
 INITIAL_SQUAD_GK = 2                        # number of GK assigned on league entry
 INITIAL_SQUAD_DF = 6                        # number of DF assigned on league entry
 INITIAL_SQUAD_MD = 6                        # number of MD assigned on league entry
