@@ -5,11 +5,99 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, field_validator
 from aux.database import pg_connect
 from aux.auth import verify_token
+from aux.constants import (
+    INITIAL_PLAYER_BUDGET,
+    INITIAL_SQUAD_GK,
+    INITIAL_SQUAD_DF,
+    INITIAL_SQUAD_MD,
+    INITIAL_SQUAD_FW,
+    INITIAL_SQUAD_TOTAL_VALUE_LIMIT,
+    INITIAL_SQUAD_PLAYER_VALUE_LIMIT,
+)
 from .logger import logger
 
 
 router = APIRouter(prefix="/leagues", tags=["leagues"])
 security = HTTPBearer()
+
+
+def _assign_initial_squad(cursor, player_id: int, league_id: int) -> list[int]:
+    """Assign initial footballers to a new player in a league.
+
+    Selects footballers randomly by position (GK, DF, MD, FW) subject to:
+    - Individual value ≤ INITIAL_SQUAD_PLAYER_VALUE_LIMIT
+    - Combined total value ≤ INITIAL_SQUAD_TOTAL_VALUE_LIMIT
+
+    Falls back to cheapest available players when the random pick would exceed
+    the total budget.  Returns the list of footballer IDs assigned.
+    """
+    position_counts = [
+        ('GK', INITIAL_SQUAD_GK),
+        ('DF', INITIAL_SQUAD_DF),
+        ('MD', INITIAL_SQUAD_MD),
+        ('FW', INITIAL_SQUAD_FW),
+    ]
+
+    selected_ids: list[int] = []
+    remaining_budget = INITIAL_SQUAD_TOTAL_VALUE_LIMIT
+
+    for position, count in position_counts:
+        cursor.execute(
+            """
+            SELECT f.id, fd.value
+            FROM footballer f
+            JOIN footballer_data fd ON f.id = fd.id
+            WHERE f.league_id = %s
+              AND f.owner_id IS NULL
+              AND fd.position = %s
+              AND fd.value <= %s
+            ORDER BY RANDOM()
+            """,
+            (league_id, position, INITIAL_SQUAD_PLAYER_VALUE_LIMIT),
+        )
+        candidates = cursor.fetchall()
+
+        # Try the random ordering first
+        chosen = candidates[:count]
+        chosen_total = sum(v for _, v in chosen)
+
+        if chosen_total > remaining_budget:
+            # Fall back to the cheapest available players for this position
+            sorted_candidates = sorted(candidates, key=lambda x: x[1])
+            chosen = []
+            temp_budget = remaining_budget
+            for f_id, val in sorted_candidates:
+                if len(chosen) >= count:
+                    break
+                if val <= temp_budget:
+                    chosen.append((f_id, val))
+                    temp_budget -= val
+            chosen_total = sum(v for _, v in chosen)
+
+        if len(chosen) < count:
+            logger.warning(
+                f"Could only assign {len(chosen)}/{count} {position} footballers "
+                f"to player {player_id} in league {league_id}"
+            )
+
+        remaining_budget -= chosen_total
+        selected_ids.extend(f_id for f_id, _ in chosen)
+
+    if selected_ids:
+        cursor.execute(
+            """
+            UPDATE footballer
+            SET owner_id = %s
+            WHERE id = ANY(%s) AND league_id = %s
+            """,
+            (player_id, selected_ids, league_id),
+        )
+        logger.info(
+            f"Assigned {len(selected_ids)} initial footballers to player {player_id} "
+            f"in league {league_id}"
+        )
+
+    return selected_ids
 
 
 def _ensure_league_columns():
@@ -158,13 +246,15 @@ def create_league(
             # Create a player for this user in the new league (always auto-generate the player ID)
             cursor.execute(
                 """
-                INSERT INTO player (name, league_id, user_id)
-                VALUES (%s, %s, %s)
+                INSERT INTO player (name, league_id, user_id, budget)
+                VALUES (%s, %s, %s, %s)
                 RETURNING id
                 """,
-                (request.player_name, league_id, user_id),
+                (request.player_name, league_id, user_id, INITIAL_PLAYER_BUDGET),
             )
             player_id = cursor.fetchone()[0]
+
+            _assign_initial_squad(cursor, player_id, league_id)
 
             conn.commit()
         finally:
@@ -457,13 +547,15 @@ def join_league(
 
             cursor.execute(
                 """
-                INSERT INTO player (name, league_id, user_id)
-                VALUES (%s, %s, %s)
+                INSERT INTO player (name, league_id, user_id, budget)
+                VALUES (%s, %s, %s, %s)
                 RETURNING id
                 """,
-                (request.player_name, league_id, user_id),
+                (request.player_name, league_id, user_id, INITIAL_PLAYER_BUDGET),
             )
             player_id = cursor.fetchone()[0]
+
+            _assign_initial_squad(cursor, player_id, league_id)
 
             conn.commit()
         finally:
