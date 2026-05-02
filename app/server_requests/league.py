@@ -1,3 +1,4 @@
+import random
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -13,6 +14,7 @@ from aux.constants import (
     INITIAL_SQUAD_FW,
     INITIAL_SQUAD_TOTAL_VALUE_LIMIT,
     INITIAL_SQUAD_PLAYER_VALUE_LIMIT,
+    INITIAL_SQUAD_TOTAL_VALUE_TOLERANCE,
 )
 from .logger import logger
 
@@ -26,11 +28,21 @@ def _assign_initial_squad(cursor, player_id: int, league_id: int) -> list[int]:
 
     Selects footballers randomly by position (GK, DF, MD, FW) subject to:
     - Individual value ≤ INITIAL_SQUAD_PLAYER_VALUE_LIMIT
-    - Combined total value ≤ INITIAL_SQUAD_TOTAL_VALUE_LIMIT
+    - Combined total value within ±INITIAL_SQUAD_TOTAL_VALUE_TOLERANCE of
+      INITIAL_SQUAD_TOTAL_VALUE_LIMIT (i.e. [90 M, 100 M] with default settings)
 
-    Falls back to cheapest available players when the random pick would exceed
-    the total budget.  Returns the list of footballer IDs assigned.
+    The algorithm:
+    1. Fetches all eligible candidates per position (sorted by value DESC).
+    2. Randomly draws the required number per position.
+    3. If total > upper limit: replaces picks with cheapest alternatives.
+    4. If total < lower bound: greedily upgrades the cheapest current picks with
+       the most expensive available alternatives that still respect the upper limit.
+
+    Returns the list of footballer IDs assigned.
     """
+    upper_limit = INITIAL_SQUAD_TOTAL_VALUE_LIMIT
+    lower_bound = round(upper_limit * (1 - INITIAL_SQUAD_TOTAL_VALUE_TOLERANCE))
+
     position_counts = [
         ('GK', INITIAL_SQUAD_GK),
         ('DF', INITIAL_SQUAD_DF),
@@ -38,9 +50,8 @@ def _assign_initial_squad(cursor, player_id: int, league_id: int) -> list[int]:
         ('FW', INITIAL_SQUAD_FW),
     ]
 
-    selected_ids: list[int] = []
-    remaining_budget = INITIAL_SQUAD_TOTAL_VALUE_LIMIT
-
+    # Step 1: Fetch all eligible candidates per position (value DESC for upgrade step)
+    all_candidates: list[tuple[str, int, list]] = []
     for position, count in position_counts:
         cursor.execute(
             """
@@ -51,36 +62,82 @@ def _assign_initial_squad(cursor, player_id: int, league_id: int) -> list[int]:
               AND f.owner_id IS NULL
               AND fd.position = %s
               AND fd.value <= %s
-            ORDER BY RANDOM()
+            ORDER BY fd.value DESC
             """,
             (league_id, position, INITIAL_SQUAD_PLAYER_VALUE_LIMIT),
         )
-        candidates = cursor.fetchall()
+        all_candidates.append((position, count, cursor.fetchall()))
 
-        # Try the random ordering first
-        chosen = candidates[:count]
-        chosen_total = sum(v for _, v in chosen)
+    # Step 2: Random initial selection (shuffle the fetched list per position)
+    selected_per_position: list[list[tuple]] = []
+    for _position, count, candidates in all_candidates:
+        shuffled = list(candidates)
+        random.shuffle(shuffled)
+        selected_per_position.append(shuffled[:count])
 
-        if chosen_total > remaining_budget:
-            # Fall back to the cheapest available players for this position
-            sorted_candidates = sorted(candidates, key=lambda x: x[1])
-            chosen = []
-            temp_budget = remaining_budget
-            for f_id, val in sorted_candidates:
+    total_value = sum(v for pos in selected_per_position for _, v in pos)
+
+    # Step 3: If total exceeds upper limit, downgrade to cheapest available players
+    if total_value > upper_limit:
+        selected_per_position = []
+        remaining = upper_limit
+        for _position, count, candidates in all_candidates:
+            cheapest = sorted(candidates, key=lambda x: x[1])
+            chosen: list[tuple] = []
+            for f_id, val in cheapest:
                 if len(chosen) >= count:
                     break
-                if val <= temp_budget:
+                if val <= remaining:
                     chosen.append((f_id, val))
-                    temp_budget -= val
-            chosen_total = sum(v for _, v in chosen)
+                    remaining -= val
+            selected_per_position.append(chosen)
+        total_value = sum(v for pos in selected_per_position for _, v in pos)
 
+    # Step 4: If total is below lower bound, greedily upgrade cheapest picks
+    if total_value < lower_bound:
+        for pos_idx, (_position, _count, candidates) in enumerate(all_candidates):
+            if total_value >= lower_bound:
+                break
+            current = selected_per_position[pos_idx]
+            current_ids = {f_id for f_id, _ in current}
+            # Upgrade pool: unselected candidates for this position, most expensive first
+            upgrades = sorted(
+                [(f_id, val) for f_id, val in candidates if f_id not in current_ids],
+                key=lambda x: x[1],
+                reverse=True,
+            )
+            used_upgrade_ids: set[int] = set()
+            # Replace cheapest current players with the priciest affordable upgrades
+            current_by_val = sorted(enumerate(current), key=lambda x: x[1][1])
+            for orig_idx, (old_id, old_val) in current_by_val:
+                if total_value >= lower_bound:
+                    break
+                for new_id, new_val in upgrades:
+                    if new_id in used_upgrade_ids:
+                        continue
+                    new_total = total_value - old_val + new_val
+                    if new_total <= upper_limit:
+                        current[orig_idx] = (new_id, new_val)
+                        used_upgrade_ids.add(new_id)
+                        total_value = new_total
+                        break
+            selected_per_position[pos_idx] = current
+
+        if total_value < lower_bound:
+            logger.warning(
+                f"Could only reach squad value {total_value:,} for player {player_id} "
+                f"in league {league_id} (target lower bound: {lower_bound:,})"
+            )
+
+    # Collect all selected IDs and warn about missing slots
+    selected_ids: list[int] = []
+    for pos_idx, (position, count, _) in enumerate(all_candidates):
+        chosen = selected_per_position[pos_idx]
         if len(chosen) < count:
             logger.warning(
                 f"Could only assign {len(chosen)}/{count} {position} footballers "
                 f"to player {player_id} in league {league_id}"
             )
-
-        remaining_budget -= chosen_total
         selected_ids.extend(f_id for f_id, _ in chosen)
 
     if selected_ids:
@@ -93,8 +150,8 @@ def _assign_initial_squad(cursor, player_id: int, league_id: int) -> list[int]:
             (player_id, selected_ids, league_id),
         )
         logger.info(
-            f"Assigned {len(selected_ids)} initial footballers to player {player_id} "
-            f"in league {league_id}"
+            f"Assigned {len(selected_ids)} initial footballers "
+            f"(total value: {total_value:,}) to player {player_id} in league {league_id}"
         )
 
     return selected_ids

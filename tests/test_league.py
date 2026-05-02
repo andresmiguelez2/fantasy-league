@@ -20,7 +20,10 @@ from aux.constants import (
     INITIAL_SQUAD_FW,
     INITIAL_SQUAD_TOTAL_VALUE_LIMIT,
     INITIAL_SQUAD_PLAYER_VALUE_LIMIT,
+    INITIAL_SQUAD_TOTAL_VALUE_TOLERANCE,
 )
+
+LOWER_BOUND = round(INITIAL_SQUAD_TOTAL_VALUE_LIMIT * (1 - INITIAL_SQUAD_TOTAL_VALUE_TOLERANCE))
 
 
 def _make_cursor(candidates_by_position):
@@ -50,7 +53,7 @@ class AssignInitialSquadTests(unittest.TestCase):
             ('MD', INITIAL_SQUAD_MD),
             ('FW', INITIAL_SQUAD_FW),
         ]
-        candidates = self._candidates(position_counts)
+        candidates = self._candidates(position_counts, value_per_player=5_500_000)
         cursor = _make_cursor(candidates)
 
         result = _assign_initial_squad(cursor, player_id=1, league_id=10)
@@ -66,7 +69,7 @@ class AssignInitialSquadTests(unittest.TestCase):
             ('MD', INITIAL_SQUAD_MD),
             ('FW', INITIAL_SQUAD_FW),
         ]
-        candidates = self._candidates(position_counts)
+        candidates = self._candidates(position_counts, value_per_player=5_500_000)
         cursor = _make_cursor(candidates)
         player_id = 42
         league_id = 7
@@ -93,41 +96,11 @@ class AssignInitialSquadTests(unittest.TestCase):
         update_calls = [c for c in execute_calls if 'UPDATE footballer' in str(c)]
         self.assertEqual(len(update_calls), 0)
 
-    def test_falls_back_to_cheapest_when_random_exceeds_budget(self):
-        """When random picks would exceed the total budget, falls back to cheapest players."""
-        # Use values that are valid individually but exceed the total when summed.
-        # We put 2 expensive GK candidates (each at the per-player limit) plus
-        # many cheaper alternatives so the total would otherwise blow the limit.
-        expensive_value = INITIAL_SQUAD_PLAYER_VALUE_LIMIT  # 30 M each
-        cheap_value = 1_000_000  # 1 M each
-
-        # GK: 2 expensive players — their combined cost is 60 M which is more
-        # than the total limit (100 M) minus the remaining positions' cheapest picks.
-        # The fallback should still pick up to what fits.
-        gk_candidates = [(101, expensive_value), (102, expensive_value)]
-        # DF, MD, FW: provide cheap players
-        df_candidates = [(200 + i, cheap_value) for i in range(INITIAL_SQUAD_DF)]
-        md_candidates = [(300 + i, cheap_value) for i in range(INITIAL_SQUAD_MD)]
-        fw_candidates = [(400 + i, cheap_value) for i in range(INITIAL_SQUAD_FW)]
-
-        cursor = _make_cursor([gk_candidates, df_candidates, md_candidates, fw_candidates])
-
-        result = _assign_initial_squad(cursor, player_id=1, league_id=10)
-
-        # Compute max total value of the returned IDs
-        all_candidates = dict(
-            gk_candidates + df_candidates + md_candidates + fw_candidates
-        )
-        total_value = sum(all_candidates[f_id] for f_id in result)
-        self.assertLessEqual(
-            total_value,
-            INITIAL_SQUAD_TOTAL_VALUE_LIMIT,
-            "Total squad value must not exceed the configured limit",
-        )
-
-    def test_each_selected_player_within_individual_limit(self):
-        """Every assigned footballer has a value ≤ INITIAL_SQUAD_PLAYER_VALUE_LIMIT."""
-        value_per_player = INITIAL_SQUAD_PLAYER_VALUE_LIMIT  # exactly at the limit
+    def test_squad_value_within_tolerance_of_limit(self):
+        """Total squad value is within ±INITIAL_SQUAD_TOTAL_VALUE_TOLERANCE of the limit
+        when sufficient high-value candidates are available."""
+        # Each player at 5.5 M → 18 × 5.5 M = 99 M ∈ [90 M, 100 M]
+        value_per_player = 5_500_000
         position_counts = [
             ('GK', INITIAL_SQUAD_GK),
             ('DF', INITIAL_SQUAD_DF),
@@ -137,10 +110,83 @@ class AssignInitialSquadTests(unittest.TestCase):
         candidates = self._candidates(position_counts, value_per_player=value_per_player)
         cursor = _make_cursor(candidates)
 
+        result = _assign_initial_squad(cursor, player_id=1, league_id=10)
+
+        total_value = len(result) * value_per_player
+        self.assertGreaterEqual(total_value, LOWER_BOUND,
+                                "Total squad value must be at least 10% below the limit")
+        self.assertLessEqual(total_value, INITIAL_SQUAD_TOTAL_VALUE_LIMIT,
+                             "Total squad value must not exceed the limit")
+
+    def test_upgrade_raises_value_towards_lower_bound(self):
+        """When cheap players are initially selected, the upgrade step swaps them for
+        more expensive alternatives so the total reaches the lower bound."""
+        # GK: 2 cheap (1 M each) + 2 expensive upgrades (28 M each)
+        # DF: 6 cheap (1 M each) + 6 expensive upgrades (10 M each)
+        # MD/FW: exact-count cheap players only (no upgrades available)
+        # Without upgrades: 18 × 1 M = 18 M  (well below 90 M)
+        # After GK upgrades: 2×28 M + 16×1 M = 72 M  (still below 90 M)
+        # After DF upgrades (partial): greedily adds expensive DF until ≥ 90 M
+        cheap = 1_000_000
+        gk_candidates = [(1, cheap), (2, cheap), (3, 28_000_000), (4, 28_000_000)]
+        df_candidates = [(10 + i, cheap) for i in range(INITIAL_SQUAD_DF)] + \
+                        [(20 + i, 10_000_000) for i in range(INITIAL_SQUAD_DF)]
+        md_candidates = [(30 + i, cheap) for i in range(INITIAL_SQUAD_MD)]
+        fw_candidates = [(40 + i, cheap) for i in range(INITIAL_SQUAD_FW)]
+
+        all_cands = dict(gk_candidates + df_candidates + md_candidates + fw_candidates)
+
+        cursor = _make_cursor([gk_candidates, df_candidates, md_candidates, fw_candidates])
+
+        result = _assign_initial_squad(cursor, player_id=1, league_id=10)
+
+        total_value = sum(all_cands[f_id] for f_id in result)
+        self.assertLessEqual(total_value, INITIAL_SQUAD_TOTAL_VALUE_LIMIT,
+                             "Total squad value must not exceed the upper limit")
+        self.assertGreaterEqual(total_value, LOWER_BOUND,
+                                "Upgrade step must raise total to at least the lower bound")
+
+    def test_downgrade_when_random_exceeds_limit(self):
+        """When the random draw exceeds the total limit, cheaper players are chosen instead."""
+        # 18 players each at the per-player cap (30 M) → 540 M if all selected.
+        # The downgrade step must ensure the total stays ≤ 100 M.
+        value_per_player = INITIAL_SQUAD_PLAYER_VALUE_LIMIT  # 30 M
+        position_counts = [
+            ('GK', INITIAL_SQUAD_GK),
+            ('DF', INITIAL_SQUAD_DF),
+            ('MD', INITIAL_SQUAD_MD),
+            ('FW', INITIAL_SQUAD_FW),
+        ]
+        # Provide exactly `count` candidates per position so there are no alternatives
+        candidates = self._candidates(position_counts, value_per_player=value_per_player)
+        cursor = _make_cursor(candidates)
+
+        result = _assign_initial_squad(cursor, player_id=1, league_id=10)
+
+        all_cands = {}
+        start_id = 1
+        for _, count in position_counts:
+            for i in range(count):
+                all_cands[start_id + i] = value_per_player
+            start_id += count
+
+        total_value = sum(all_cands[f_id] for f_id in result)
+        self.assertLessEqual(total_value, INITIAL_SQUAD_TOTAL_VALUE_LIMIT,
+                             "Total squad value must not exceed the configured limit")
+
+    def test_each_selected_player_within_individual_limit(self):
+        """Every assigned footballer has a value ≤ INITIAL_SQUAD_PLAYER_VALUE_LIMIT."""
+        position_counts = [
+            ('GK', INITIAL_SQUAD_GK),
+            ('DF', INITIAL_SQUAD_DF),
+            ('MD', INITIAL_SQUAD_MD),
+            ('FW', INITIAL_SQUAD_FW),
+        ]
+        candidates = self._candidates(position_counts, value_per_player=5_500_000)
+        cursor = _make_cursor(candidates)
+
         _assign_initial_squad(cursor, player_id=1, league_id=10)
-        # The function only considers players already filtered by the DB query
-        # (value <= INITIAL_SQUAD_PLAYER_VALUE_LIMIT), so if the mock respects that
-        # invariant, the result is guaranteed.  We verify the DB query contains the limit.
+        # Verify the DB query filters by the per-player value limit
         execute_calls = cursor.execute.call_args_list
         select_calls = [c for c in execute_calls if 'SELECT' in str(c)]
         for c in select_calls:
@@ -154,3 +200,4 @@ class AssignInitialSquadTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

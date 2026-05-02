@@ -84,6 +84,7 @@ INITIAL_SQUAD_MD = 6                        # number of MD assigned on league en
 INITIAL_SQUAD_FW = 4                        # number of FW assigned on league entry
 INITIAL_SQUAD_TOTAL_VALUE_LIMIT = 100_000_000  # max combined squad value on entry (100 M)
 INITIAL_SQUAD_PLAYER_VALUE_LIMIT = 30_000_000  # max value per individual footballer (30 M)
+INITIAL_SQUAD_TOTAL_VALUE_TOLERANCE = 0.10  # squad value must be within ±10% of the total limit
 
 
 ### Market ####
