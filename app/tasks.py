@@ -2,7 +2,7 @@ import asyncio
 import logging
 import time
 
-from classes.market import load_market, load_last_market
+from classes.market import Market, load_market, load_last_market
 from aux.constants import (
     LOOP_TIME_SECONDS,
     LOOP_TIME_BUFFER,
@@ -38,7 +38,7 @@ def _update_data(n_iteration: int) -> None:
         update_fixture_times()
 
 
-def _run_iteration(active_markets: list, leagues: list, n_iteration: int, start_time: float) -> None:
+def _run_iteration(active_markets: list[Market | None], leagues: list, n_iteration: int, start_time: float) -> None:
     """Run a single iteration of the background loop (blocking)."""
     for i, league_id in enumerate(leagues):
         if active_markets[i]:
@@ -71,7 +71,7 @@ async def background_loop() -> None:
     logger.info("Background task started.")
 
     leagues = get_leagues()
-    active_markets = [None] * len(leagues)
+    active_markets: list[Market | None] = [None] * len(leagues)
     n_iteration = 0
 
     while True:
