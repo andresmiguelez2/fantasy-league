@@ -32,6 +32,8 @@ services:
       - DB_PORT=5432
       - MONGO_HOST=mongodb
       - MONGO_PORT=27017
+      # Uncomment to disable the background loop during development
+      # - ENABLE_BACKGROUND_TASKS=false
     volumes:
       - ./:/workspace
       - ./app:/app

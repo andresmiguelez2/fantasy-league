@@ -1,4 +1,5 @@
 import asyncio
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -22,14 +23,25 @@ async def lifespan(app: FastAPI):
     # Deferred import avoids a circular dependency: tasks.py imports from
     # server_requests modules, so importing it at module level here would
     # create a cycle.
-    from tasks import background_loop
-    task = asyncio.create_task(background_loop())
+    task = None
+    background_tasks_enabled = os.getenv("ENABLE_BACKGROUND_TASKS", "true").lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+    if background_tasks_enabled:
+        from tasks import background_loop
+
+        task = asyncio.create_task(background_loop())
     yield
-    task.cancel()
-    try:
-        await task
-    except asyncio.CancelledError:
-        pass
+    if task:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
 
 server_app = FastAPI(lifespan=lifespan)
