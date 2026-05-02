@@ -1,6 +1,7 @@
 import datetime
 import logging
 import re
+import time
 import requests
 from bson import Binary
 from aux.aux_functions import scrape_page
@@ -312,10 +313,31 @@ class Footballer():
         return None
     
     def _get_image_binary(self, image_url):
-        response = requests.get(image_url)
-        if response.status_code == 200:
-            img_binary = Binary(response.content)
-            return img_binary
+        for attempt in range(4):
+            response = requests.get(
+                image_url,
+                headers={
+                    "User-Agent": (
+                        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+                    ),
+                    "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+                },
+                timeout=30,
+            )
+            if response.status_code == 429 or 500 <= response.status_code < 600:
+                logger.warning(
+                    f"Rate limited while fetching image {image_url}; retrying in {2 ** attempt}s (attempt {attempt + 1}/4)"
+                )
+                time.sleep(2 ** attempt)
+                continue
+
+            if response.status_code == 200:
+                img_binary = Binary(response.content)
+                return img_binary
+
+            break
+
         logger.warning("Image binary not found.")
         return None
 

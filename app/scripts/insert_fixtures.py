@@ -1,4 +1,5 @@
 from datetime import datetime
+import time
 from aux.aux_functions import scrape_page
 from aux.database import pg_connect
 from bs4 import BeautifulSoup
@@ -79,6 +80,7 @@ if __name__ == "__main__":
         )
 
         conn.commit()
+        time.sleep(1)
 
     cursor.close()
     conn.close()
