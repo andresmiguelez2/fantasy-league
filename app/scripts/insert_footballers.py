@@ -1,3 +1,6 @@
+import sys
+sys.path.insert(0, '/workspace/app')
+
 from aux.constants import FANTASY_MAIN_URL, FOOTBALLER_NAME_DICT, FOOTBALLER_POSITIONS
 from classes.footballer import Footballer
 from aux.aux_functions import scrape_page
@@ -20,16 +23,25 @@ def get_all_players(soup):
     elements = soup.find_all(attrs={"data-nombre": True})
     for el in elements:
         nombre = FOOTBALLER_NAME_DICT.get(el["data-nombre"], el["data-nombre"])
-        a_tag = el.find_next("a", class_="jugador mt-auto mb-1")
+        
+        # Get full_name and displayable_name from anchor tag with class "player-name"
+        a_tag = el.find_next("a", class_="player-name")
+        full_name = None
+        displayable_name = None
+        
         if a_tag:
-            spans = a_tag.find_all("span")
-            span_texts = [span.get_text(strip=True) for span in spans]
-            if len(span_texts) == 2:
-                results.append((nombre, span_texts[0], span_texts[1]))
-            else:
-                results.append((nombre, None, None))
-        else:
-            results.append((nombre, None, None))
+            # Full name from span with class "d-none d-md-inline"
+            full_name_span = a_tag.find("span", class_="d-none d-md-inline")
+            if full_name_span:
+                full_name = full_name_span.get_text(strip=True)
+            
+            # Displayable name from span with class "d-inline d-md-none"
+            displayable_name_span = a_tag.find("span", class_="d-inline d-md-none")
+            if displayable_name_span:
+                displayable_name = displayable_name_span.get_text(strip=True)
+        
+        results.append((nombre, full_name, displayable_name))
+    
     logger.info(f"Found {len(results)} player entries.")
     return results
 
