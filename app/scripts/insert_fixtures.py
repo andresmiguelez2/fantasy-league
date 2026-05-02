@@ -1,10 +1,10 @@
 from datetime import datetime
-from app.aux.aux_functions import scrape_page
+from aux.aux_functions import scrape_page
 from aux.database import pg_connect
 from bs4 import BeautifulSoup
 
 
-def get_earliest_fixture_dates(soup: BeautifulSoup) -> tuple[datetime.datetime | None, datetime.datetime | None, bool]:
+def get_earliest_fixture_dates(soup: BeautifulSoup) -> tuple[datetime | None, datetime | None, bool]:
     """
     Extracts the earliest fixture start and latest fixture end dates from the provided BeautifulSoup object.
 
