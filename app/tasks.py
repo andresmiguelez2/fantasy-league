@@ -54,8 +54,10 @@ def _run_iteration(active_markets: dict[int, Market | None], n_iteration: int, s
         active_markets[league_id] = load_market(league_id)
 
         if not active_markets[league_id]:
-            active_markets[league_id] = load_last_market(league_id)
-            active_markets[league_id].fulfill_market()
+            last_market = load_last_market(league_id)
+            if last_market:
+                last_market.fulfill_market()
+            active_markets[league_id] = last_market
 
     active_fixture = get_current_fixture(
         handle_dangling=n_iteration % HANDLE_DANGLING_FIXTURES_INTERVAL == 0
