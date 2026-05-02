@@ -38,17 +38,24 @@ def _update_data(n_iteration: int) -> None:
         update_fixture_times()
 
 
-def _run_iteration(active_markets: list[Market | None], leagues: list, n_iteration: int, start_time: float) -> None:
-    """Run a single iteration of the background loop (blocking)."""
-    for i, league_id in enumerate(leagues):
-        if active_markets[i]:
-            active_markets[i].fulfill_market()
+def _run_iteration(active_markets: dict[int, Market | None], n_iteration: int, start_time: float) -> None:
+    """Run a single iteration of the background loop (blocking).
 
-        active_markets[i] = load_market(league_id)
+    ``active_markets`` is a dict keyed by league_id so that leagues added
+    after startup are automatically included on the next iteration.
+    """
+    leagues = get_leagues()
 
-        if not active_markets[i]:
-            active_markets[i] = load_last_market(league_id)
-            active_markets[i].fulfill_market()
+    for league_id in leagues:
+        market = active_markets.get(league_id)
+        if market:
+            market.fulfill_market()
+
+        active_markets[league_id] = load_market(league_id)
+
+        if not active_markets[league_id]:
+            active_markets[league_id] = load_last_market(league_id)
+            active_markets[league_id].fulfill_market()
 
     active_fixture = get_current_fixture(
         handle_dangling=n_iteration % HANDLE_DANGLING_FIXTURES_INTERVAL == 0
@@ -70,15 +77,14 @@ async def background_loop() -> None:
     """
     logger.info("Background task started.")
 
-    leagues = get_leagues()
-    active_markets: list[Market | None] = [None] * len(leagues)
+    active_markets: dict[int, Market | None] = {}
     n_iteration = 0
 
     while True:
         try:
             start_time = time.time()
             await asyncio.to_thread(
-                _run_iteration, active_markets, leagues, n_iteration, start_time
+                _run_iteration, active_markets, n_iteration, start_time
             )
             elapsed = time.time() - start_time
             await asyncio.sleep(max(0.0, LOOP_TIME_SECONDS - elapsed))

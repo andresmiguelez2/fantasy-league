@@ -47,7 +47,7 @@ class BackgroundLoopTests(unittest.IsolatedAsyncioTestCase):
     @patch("tasks.get_current_fixture", return_value=None)
     @patch("tasks.footballers_to_update", return_value={"footballer_ids": []})
     @patch("tasks.update_fixture_times")
-    async def test_active_markets_list_is_updated_per_league(
+    async def test_active_markets_dict_is_updated_per_league(
         self,
         mock_update_fixture_times,
         mock_footballers_to_update,
@@ -56,7 +56,7 @@ class BackgroundLoopTests(unittest.IsolatedAsyncioTestCase):
         mock_load_market,
         mock_get_leagues,
     ):
-        """active_markets list should be updated in-place for each league."""
+        """active_markets dict should be updated for each league on every iteration."""
         from tasks import background_loop
 
         market_a = MagicMock()
