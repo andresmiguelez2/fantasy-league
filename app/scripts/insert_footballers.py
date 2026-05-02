@@ -58,12 +58,19 @@ if __name__ == "__main__":
     cursor.execute("SELECT DISTINCT id FROM league")
     league_ids = [row[0] for row in cursor.fetchall()]
 
-    # Insertar jugadores
+    # futbolistas ya incluidos
+    cursor.execute("SELECT DISTINCT full_name FROM footballer_data")
+    existing_footballers = {row[0] for row in cursor.fetchall()}
+
+    # Insertar futbolistas
     soup = scrape_page(FANTASY_MAIN_URL, None)
     player_data_df = pd.DataFrame(get_all_players(soup), columns=["name", "full_name", "displayable_name"])
 
     for _, row in tqdm(player_data_df.iterrows()):
         try:
+            if row['full_name'] in existing_footballers:
+                continue
+
             footballer = Footballer(obtain_data=True, name=row['name'], full_name=row['full_name'])
             footballer.name = row['displayable_name'] if row['displayable_name'] else row['name']
 
