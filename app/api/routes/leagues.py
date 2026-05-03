@@ -4,9 +4,9 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, field_validator
-from aux.database import pg_connect
-from aux.auth import verify_token
-from aux.constants import (
+from db.session import pg_connect
+from core.security import verify_token
+from core.config import (
     INITIAL_PLAYER_BUDGET,
     INITIAL_SQUAD_GK,
     INITIAL_SQUAD_DF,
@@ -16,7 +16,7 @@ from aux.constants import (
     INITIAL_SQUAD_PLAYER_VALUE_LIMIT,
     INITIAL_SQUAD_TOTAL_VALUE_TOLERANCE,
 )
-from .logger import logger
+from core.logging import logger
 
 
 router = APIRouter(prefix="/leagues", tags=["leagues"])

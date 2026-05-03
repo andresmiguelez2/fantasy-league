@@ -1,5 +1,5 @@
 import logging
-from aux.database import pg_connect
+from db.session import pg_connect
 
 
 logger = logging.getLogger(__name__)

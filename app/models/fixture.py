@@ -1,13 +1,13 @@
 from datetime import datetime, timezone
 import logging
-from aux.database import pg_connect
-from aux.constants import DANGLING_FIXTURE_THRESHOLD, FANTASY_FIXTURE_URL, CLOSING_TIME_FIXTURE, COINS_PER_POINT
+from db.session import pg_connect
+from core.config import DANGLING_FIXTURE_THRESHOLD, FANTASY_FIXTURE_URL, CLOSING_TIME_FIXTURE, COINS_PER_POINT
 from bs4 import BeautifulSoup
-from classes.league import get_leagues
-from server_requests.footballer import get_fixture_points
-from server_requests.leaderboard import leaderboard
-from server_requests.player import get_footballers_on_lineup, get_player_lineup
-from aux.aux_functions import scrape_page
+from models.league import get_leagues
+from api.routes.footballers import get_fixture_points
+from api.routes.leaderboard import leaderboard
+from api.routes.players import get_footballers_on_lineup, get_player_lineup
+from utils.scraper import scrape_page
 
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ class Fixture:
         self._start_dt: datetime = None
         self._end_dt: datetime = None
         self._finished: bool = None
-        self._dangling: bool = None # incicates if fixture is somewhat abnormal
+        self._dangling: bool = None # indicates if fixture is somewhat abnormal
 
         for key, value in kwargs.items():
             setattr(self, key, value)
@@ -428,7 +428,7 @@ def get_earliest_fixture_dates(soup: BeautifulSoup) -> tuple[datetime | None, da
 
 
 def update_fixture_times():
-    """Updates fixture starting time in databsae
+    """Updates fixture starting time in database
     """
     conn = pg_connect()
     cursor = conn.cursor()

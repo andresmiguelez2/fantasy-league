@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, call, patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'app'))
 
-from classes.market import Market
+from models.market import Market
 
 
 class AssignBidsTests(unittest.TestCase):

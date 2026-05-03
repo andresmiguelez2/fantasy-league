@@ -1,5 +1,5 @@
 import logging
-from server_requests.server_requests import server_app  # noqa: F401
+from api.app import server_app  # noqa: F401
 
 
 logging.basicConfig(

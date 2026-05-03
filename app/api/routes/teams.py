@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from aux.database import pg_connect, mongo_client
-from .logger import logger
+from db.session import pg_connect, mongo_client
+from core.logging import logger
 import imghdr
 from fastapi.responses import Response
 
@@ -36,4 +36,4 @@ def get_team_image(team_name: str):
 
     except Exception as e:
         logger.error(f"Error retrieving team image: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "An internal error occurred."}

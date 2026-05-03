@@ -1,4 +1,4 @@
-from aux.database import pg_connect
+from db.session import pg_connect
 
 
 def get_leagues() -> list[int]:

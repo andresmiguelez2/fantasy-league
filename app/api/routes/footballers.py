@@ -1,14 +1,14 @@
 from fastapi import APIRouter
-from aux.database import pg_connect, mongo_client
-from .logger import logger
+from db.session import pg_connect, mongo_client
+from core.logging import logger
 from pydantic import BaseModel
-from aux.aux_functions import extract_fixture_points, scrape_page
+from utils.scraper import extract_fixture_points, scrape_page
 import imghdr
 from fastapi.responses import Response
-from classes.footballer import Footballer
+from models.footballer import Footballer
 import time
 import datetime
-from aux.constants import FANTASY_PLAYER_URL, FOOTBALLER_POSITIONS, UPDATE_DB_INTERVAL, LINEUP_POSITIONS, RELEASE_CLAUSE_DAYS
+from core.config import FANTASY_PLAYER_URL, FOOTBALLER_POSITIONS, UPDATE_DB_INTERVAL, LINEUP_POSITIONS, RELEASE_CLAUSE_DAYS
 
 
 router = APIRouter(prefix="/footballer", tags=["footballer"])
@@ -100,7 +100,7 @@ def get_footballer_info(footballer_id: int, league_id: int):
         }
     except Exception as e:
         logger.error(f"Error retrieving footballer info: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "An internal error occurred."}
     
 
 @router.get("/short_name/{footballer_id}")
@@ -149,7 +149,7 @@ def get_fixture_detail(footballer_id: int, fixture: int):
         }
     except Exception as e:
         logger.error(f"Error: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "An internal error occurred."}
 
 
 @router.get("/fixture_points/{footballer_id}")
@@ -177,7 +177,7 @@ def get_fixture_points(footballer_id: int, fixture: int):
         }
     except Exception as e:
         logger.error(f"Error: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "An internal error occurred."}
 
 
 @router.get("s")
@@ -275,7 +275,7 @@ def get_all_footballers(league_id: int, limit: int = 20, offset: int = 0, page: 
         }
     except Exception as e:
         logger.error(f"Error retrieving footballer info: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "An internal error occurred."}
 
 
 @router.get("/image/{footballer_id}")
@@ -307,7 +307,7 @@ def get_footballer_image(footballer_id: int):
 
     except Exception as e:
         logger.error(f"Error retrieving footballer image: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "An internal error occurred."}
 
 
 @router.post("/update/{footballer_id}")
@@ -382,7 +382,7 @@ def update_footballer_info(footballer_id: int):
         return {"status": "success", "elapsed_time": round(elapsed_time, 4)}
     except Exception as e:
         logger.error(f"Error updating footballer data: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "An internal error occurred."}
 
 
 @router.post("/update_field/{footballer_id}")
@@ -447,7 +447,7 @@ def update_footballer_field(footballer_id: int, league_id: int, field: str | Non
         return {"status": "success", "field": field, "elapsed_time": round(elapsed_time, 4)}
     except Exception as e:
         logger.error(f"Error updating footballer data: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "An internal error occurred."}
 
 
 def count_footballers_per_position(player_id: int, league_id: int):
@@ -482,13 +482,13 @@ def count_footballers_per_position(player_id: int, league_id: int):
         return {}
     
 
-class LineUpFotballer(BaseModel):
+class LineUpFootballer(BaseModel):
     player_id: int
     footballer_id: int
     league_id: int
     on_lineup: bool
 @router.post("/set_lineup/")
-def set_footballer_on_lineup(data: LineUpFotballer):
+def set_footballer_on_lineup(data: LineUpFootballer):
     """Set or unset a footballer in a player's lineup."""
     try:
         update_footballer_field(data.footballer_id, data.league_id, 'position')
@@ -545,7 +545,7 @@ def set_footballer_on_lineup(data: LineUpFotballer):
         return {"status": "success", "message": f"Footballer {'added to' if data.on_lineup else 'removed from'} lineup."}
     except Exception as e:
         logger.error(f"Error setting footballer lineup: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "An internal error occurred."}
 
     
 @router.get("/market_status/{footballer_id}")
@@ -574,7 +574,7 @@ def get_market_status(footballer_id: int, league_id: int):
         return {"status": "success", "on_market": row[0]}
     except Exception as e:
         logger.error(f"Error getting footballer market status: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "An internal error occurred."}
 
 
 @router.post("/change_market_status/{footballer_id}")
@@ -603,7 +603,7 @@ def change_market_status(footballer_id: int, league_id: int, on_market: bool):
         return {"status": "success", "footballer_id": footballer_id, "on_market": on_market}
     except Exception as e:
         logger.error(f"Error changing footballer market status: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "An internal error occurred."}
 
 
 @router.get("/release_clause_data/{footballer_id}")
@@ -636,4 +636,4 @@ def get_release_clause_data(footballer_id: int, league_id: int):
         return {"status": "success", "rc_available": data[0], "release_clause": data[1], "time_until_rc": data[2]}
     except Exception as e:
         logger.error(f"Error getting footballer release clause data: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "An internal error occurred."}

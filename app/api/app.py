@@ -3,26 +3,25 @@ import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from .logger import logger
+from core.logging import logger
 from fastapi.middleware.cors import CORSMiddleware
 
 # import sub-routers
-from . import auth
-from . import league
-from . import market
-from . import leaderboard
-from . import footballer
-from . import squad
-from . import player
-from . import general
-from . import team
+from .routes import auth
+from .routes import leagues
+from .routes import market
+from .routes import leaderboard
+from .routes import footballers
+from .routes import squads
+from .routes import players
+from .routes import general
+from .routes import teams
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Deferred import avoids a circular dependency: tasks.py imports from
-    # server_requests modules, so importing it at module level here would
-    # create a cycle.
+    # Deferred import avoids a circular dependency: workers/background.py imports from
+    # api/routes modules, so importing it at module level here would create a cycle.
     task = None
     background_tasks_enabled = os.getenv("ENABLE_BACKGROUND_TASKS", "true").lower() in {
         "1",
@@ -32,7 +31,7 @@ async def lifespan(app: FastAPI):
     }
 
     if background_tasks_enabled:
-        from tasks import background_loop
+        from workers.background import background_loop
 
         task = asyncio.create_task(background_loop())
     yield
@@ -64,11 +63,11 @@ def ping():
 
 
 server_app.include_router(auth.router)
-server_app.include_router(league.router)
+server_app.include_router(leagues.router)
 server_app.include_router(market.router)
 server_app.include_router(leaderboard.router)
-server_app.include_router(footballer.router)
-server_app.include_router(squad.router)
-server_app.include_router(player.router)
+server_app.include_router(footballers.router)
+server_app.include_router(squads.router)
+server_app.include_router(players.router)
 server_app.include_router(general.router)
-server_app.include_router(team.router)
+server_app.include_router(teams.router)

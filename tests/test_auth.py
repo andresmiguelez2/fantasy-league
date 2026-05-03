@@ -6,7 +6,7 @@ import os
 # Add parent directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'app'))
 
-from aux.auth import (
+from core.security import (
     verify_password,
     get_password_hash,
     create_access_token,
@@ -68,10 +68,10 @@ class TestJWTTokens(unittest.TestCase):
 
 
 class TestAuthentication(unittest.TestCase):
-    @patch("aux.auth.pg_connect")
+    @patch("core.security.pg_connect")
     def test_authenticate_user_success(self, mock_pg_connect):
         """Test successful user authentication"""
-        from aux.auth import authenticate_user
+        from core.security import authenticate_user
         
         # Create a mock password hash
         password = "test_password"
@@ -94,10 +94,10 @@ class TestAuthentication(unittest.TestCase):
         self.assertEqual(user["username"], "testuser")
         self.assertEqual(user["player_id"], 10)
     
-    @patch("aux.auth.pg_connect")
+    @patch("core.security.pg_connect")
     def test_authenticate_user_wrong_password(self, mock_pg_connect):
         """Test authentication with wrong password"""
-        from aux.auth import authenticate_user
+        from core.security import authenticate_user
         
         password_hash = get_password_hash("correct_password")
         
@@ -114,10 +114,10 @@ class TestAuthentication(unittest.TestCase):
         
         self.assertIsNone(user)
     
-    @patch("aux.auth.pg_connect")
+    @patch("core.security.pg_connect")
     def test_authenticate_user_not_found(self, mock_pg_connect):
         """Test authentication when user doesn't exist"""
-        from aux.auth import authenticate_user
+        from core.security import authenticate_user
         
         mock_cursor = MagicMock()
         mock_cursor.fetchone.return_value = None

@@ -1,8 +1,8 @@
 from fastapi import APIRouter
-from aux.database import pg_connect, mongo_client
-from aux.constants import POSITION_ORDER, LINEUP_POSITIONS
-from .footballer import get_footballer_image, set_footballer_on_lineup
-from .logger import logger
+from db.session import pg_connect, mongo_client
+from core.config import POSITION_ORDER, LINEUP_POSITIONS
+from .footballers import get_footballer_image, set_footballer_on_lineup
+from core.logging import logger
 
 
 router = APIRouter(prefix="/player", tags=["player"])

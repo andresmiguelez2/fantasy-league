@@ -4,10 +4,10 @@ import re
 import time
 import requests
 from bson import Binary
-from aux.aux_functions import scrape_page
+from utils.scraper import scrape_page
 from pymongo import MongoClient
 
-from aux.constants import FANTASY_PLAYER_URL, FANTASY_PLAYER_MARKET_URL, COMPETITION_NAME
+from core.config import FANTASY_PLAYER_URL, FANTASY_PLAYER_MARKET_URL, COMPETITION_NAME
 
 
 logger = logging.getLogger(__name__)

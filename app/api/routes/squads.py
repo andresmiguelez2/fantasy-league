@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from aux.database import pg_connect
-from .logger import logger
+from db.session import pg_connect
+from core.logging import logger
 
 
 router = APIRouter(prefix="/squad", tags=["squad"])

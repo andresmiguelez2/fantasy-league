@@ -5,14 +5,10 @@ This script creates the users table and league tables if they don't exist.
 Run this script before using the authentication system.
 """
 import logging
-import sys
 import os
 
-# Add parent directory to path to import modules
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from aux.database import pg_connect
-from aux.auth import get_password_hash
+from db.session import pg_connect
+from core.security import get_password_hash
 
 logging.basicConfig(
     level=logging.INFO,

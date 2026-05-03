@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 import jwt
 from passlib.context import CryptContext
-from aux.database import pg_connect
+from db.session import pg_connect
 
 logger = logging.getLogger(__name__)
 

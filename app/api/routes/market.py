@@ -1,10 +1,10 @@
 from fastapi import APIRouter
-from aux.database import pg_connect, mongo_client
-from aux.constants import BANK_NAME
-from .logger import logger
+from db.session import pg_connect, mongo_client
+from core.config import BANK_NAME
+from core.logging import logger
 from pydantic import BaseModel
-from classes.footballer import Footballer
-from classes.player import debit_player_value
+from models.footballer import Footballer
+from models.player import debit_player_value
 
 
 router = APIRouter(prefix="/market", tags=["market"])
@@ -182,7 +182,7 @@ def place_bid(bid: BidRequest):
             return {"status": "success", "message": "Bid placed successfully."}
     except Exception as e:
         logger.error(f"Error: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "An internal error occurred."}
  
 
 @router.post("/reply_to_bid/{bid_id}")
@@ -251,7 +251,7 @@ def reply_to_bid(bid_id: int, accept: bool):
         return {"status": "success", "message": "Bid reply processed successfully."}
     except Exception as e:
         logger.error(f"Error: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "An internal error occurred."}
 
 
 @router.get("/incoming_bids/{player_id}")
@@ -409,7 +409,7 @@ def pay_release_clause(request: ReleaseClauseRequest):
         logger.error(f"Error paying release clause: {e}")
         if conn:
             conn.rollback()
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "An internal error occurred."}
     finally:
         if cursor:
             cursor.close()

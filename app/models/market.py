@@ -4,9 +4,9 @@ import logging
 import psycopg2
 import random
 
-from aux.constants import N_NEW_FOOTBALLERS_INTO_MARKET
+from core.config import N_NEW_FOOTBALLERS_INTO_MARKET
 from pymongo import MongoClient
-from aux.database import pg_connect, mongo_client
+from db.session import pg_connect, mongo_client
 
 
 # Create logger for this module
@@ -231,7 +231,7 @@ class Market:
                 
             except psycopg2.Error as e:
                 logger.error(f"Database error while fulfilling market {self._id}: {e}")
-                self._has_been_closed = False# Rollback the local state change if database update failed
+                self._has_been_closed = False  # Rollback the local state change if database update failed
 
     def _place_bid_on_footballers(self, cursor):
         """Place bids on all footballers owned by someone on the market, by the league."""

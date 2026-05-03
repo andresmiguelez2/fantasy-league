@@ -1,6 +1,6 @@
 import logging
 
-logger = logging.getLogger("server_requests")
+logger = logging.getLogger("app")
 if not logger.handlers:
     handler = logging.StreamHandler()
     formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")

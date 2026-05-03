@@ -1,7 +1,7 @@
 from datetime import datetime
 import time
-from aux.aux_functions import scrape_page
-from aux.database import pg_connect
+from utils.scraper import scrape_page
+from db.session import pg_connect
 from bs4 import BeautifulSoup
 
 

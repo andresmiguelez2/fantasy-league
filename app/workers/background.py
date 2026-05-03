@@ -2,8 +2,8 @@ import asyncio
 import logging
 import time
 
-from classes.market import Market, load_market, load_last_market
-from aux.constants import (
+from models.market import Market, load_market, load_last_market
+from core.config import (
     LOOP_TIME_SECONDS,
     LOOP_TIME_BUFFER,
     N_REQUEST_BUFFER,
@@ -11,10 +11,10 @@ from aux.constants import (
     HANDLE_DANGLING_FIXTURES_INTERVAL,
     UPDATE_FIXTURES_INTERVAL,
 )
-from server_requests.footballer import update_footballer_info
-from server_requests.general import footballers_to_update
-from classes.fixture import get_current_fixture, update_fixture_times
-from classes.league import get_leagues
+from api.routes.footballers import update_footballer_info
+from api.routes.general import footballers_to_update
+from models.fixture import get_current_fixture, update_fixture_times
+from models.league import get_leagues
 
 
 logger = logging.getLogger(__name__)

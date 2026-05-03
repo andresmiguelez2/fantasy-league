@@ -1,10 +1,10 @@
 import sys
 sys.path.insert(0, '/workspace/app')
 
-from aux.constants import FANTASY_MAIN_URL, FOOTBALLER_NAME_DICT, FOOTBALLER_POSITIONS
-from classes.footballer import Footballer
-from aux.aux_functions import scrape_page
-from aux.database import pg_connect, mongo_client
+from core.config import FANTASY_MAIN_URL, FOOTBALLER_NAME_DICT, FOOTBALLER_POSITIONS
+from models.footballer import Footballer
+from utils.scraper import scrape_page
+from db.session import pg_connect, mongo_client
 import logging
 import pandas as pd
 from tqdm import tqdm

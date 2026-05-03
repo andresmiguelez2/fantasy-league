@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from aux.database import pg_connect, mongo_client
-from .logger import logger
+from db.session import pg_connect, mongo_client
+from core.logging import logger
 
 
 router = APIRouter(prefix="/general", tags=["general"])
