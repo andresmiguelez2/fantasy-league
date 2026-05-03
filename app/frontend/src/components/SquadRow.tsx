@@ -8,10 +8,18 @@ interface SquadRowProps {
   value: number;
   totalPoints: number;
   averagePoints: number | string;
+  position?: string | null;
   onClick?: () => void;
 }
 
-export const SquadRow = ({ id, name, value, totalPoints, averagePoints, onClick }: SquadRowProps) => {
+const POSITION_STYLES: Record<string, { label: string; className: string }> = {
+  gk:  { label: "GK",  className: "bg-yellow-400 text-yellow-900" },
+  def: { label: "DEF", className: "bg-blue-500 text-white" },
+  mid: { label: "MID", className: "bg-green-500 text-white" },
+  fwd: { label: "FWD", className: "bg-red-500 text-white" },
+};
+
+export const SquadRow = ({ id, name, value, totalPoints, averagePoints, position, onClick }: SquadRowProps) => {
   const formatValue = (val: number) => {
     return new Intl.NumberFormat('en-ES', {
       style: 'currency',
@@ -31,6 +39,9 @@ export const SquadRow = ({ id, name, value, totalPoints, averagePoints, onClick 
       .toUpperCase()
       .slice(0, 2);
   };
+
+  const positionKey = position?.toLowerCase() ?? "";
+  const positionStyle = POSITION_STYLES[positionKey];
   
   return (
     <TableRow className="fade-in cursor-pointer hover:bg-accent/50" onClick={onClick}>
@@ -42,6 +53,15 @@ export const SquadRow = ({ id, name, value, totalPoints, averagePoints, onClick 
           </AvatarFallback>
         </Avatar>
         <span className="font-semibold">{name}</span>
+      </TableCell>
+      <TableCell className="text-center">
+        {positionStyle ? (
+          <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold uppercase ${positionStyle.className}`}>
+            {positionStyle.label}
+          </span>
+        ) : (
+          <span className="text-muted-foreground text-xs">{position ?? "—"}</span>
+        )}
       </TableCell>
       <TableCell className="text-center">
         <span className="font-semibold text-green-600">{totalPoints}</span>

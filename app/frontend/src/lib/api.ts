@@ -22,6 +22,7 @@ export interface Footballer {
   averagePoints: number | string;
   onMarket: boolean;
   onMarketSince: string | null;
+  position: string | null;
 }
 
 export interface MarketFootballer {
@@ -242,6 +243,7 @@ export const fetchSquadFootballers = async (playerId?: string): Promise<Football
     averagePoints: footballer[5],
     onMarket: footballer[6],
     onMarketSince: footballer[7],
+    position: footballer[8] ?? null,
   }));
 };
 
