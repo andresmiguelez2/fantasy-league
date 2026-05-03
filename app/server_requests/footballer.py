@@ -11,7 +11,7 @@ import datetime
 from aux.constants import FANTASY_PLAYER_URL, FOOTBALLER_POSITIONS, UPDATE_DB_INTERVAL, LINEUP_POSITIONS, RELEASE_CLAUSE_DAYS
 
 
-router = APIRouter(prefix="/footballer", tags=["footballer"])
+router = APIRouter(prefix="/footballers", tags=["footballers"])
 
 
 def get_last_updated_time(footballer_id: int):
@@ -103,7 +103,7 @@ def get_footballer_info(footballer_id: int, league_id: int):
         return {"status": "error", "message": str(e)}
     
 
-@router.get("/short_name/{footballer_id}")
+@router.get("/{footballer_id}/short-name")
 def get_short_name(footballer_id: int):
     """Get the footballer's short name."""
     try:
@@ -128,8 +128,8 @@ def get_short_name(footballer_id: int):
         return {"status": "error", "footballers": []}
 
 
-@router.get("/fixture_detail/{footballer_id}")
-def get_fixture_detail(footballer_id: int, fixture: int):
+@router.get("/{footballer_id}/fixtures/{fixture_n}")
+def get_fixture_detail(footballer_id: int, fixture_n: int):
     try:
         client = mongo_client()
         db = client["FantasyMDB"]
@@ -143,7 +143,7 @@ def get_fixture_detail(footballer_id: int, fixture: int):
         return {
             "status": "success",
             "fixture_detail": next(
-                (item for item in document['fixture_breakdown'] if item['fixture'] == fixture),
+                (item for item in document['fixture_breakdown'] if item['fixture'] == fixture_n),
                 {}
             )
         }
@@ -152,8 +152,8 @@ def get_fixture_detail(footballer_id: int, fixture: int):
         return {"status": "error", "message": str(e)}
 
 
-@router.get("/fixture_points/{footballer_id}")
-def get_fixture_points(footballer_id: int, fixture: int):
+@router.get("/{footballer_id}/fixtures/{fixture_n}/points")
+def get_fixture_points(footballer_id: int, fixture_n: int):
     try:
         client = mongo_client()
         db = client["FantasyMDB"]
@@ -165,7 +165,7 @@ def get_fixture_points(footballer_id: int, fixture: int):
             return {"status": "error", "message": "Footballer not found."}
 
         for fixture_dict in extract_fixture_points(document.get('fixture_breakdown', {})):
-            if fixture_dict['fixture'] == fixture:
+            if fixture_dict['fixture'] == fixture_n:
                 points = fixture_dict.get('points', 0)
                 break
         else:
@@ -180,7 +180,7 @@ def get_fixture_points(footballer_id: int, fixture: int):
         return {"status": "error", "message": str(e)}
 
 
-@router.get("s")
+@router.get("")
 def get_all_footballers(league_id: int, limit: int = 20, offset: int = 0, page: int | None = None, sort: str = 'name', invert: str = "false", search: str = ""):
     """Get all footballers with pagination and total count.
 
@@ -278,7 +278,7 @@ def get_all_footballers(league_id: int, limit: int = 20, offset: int = 0, page: 
         return {"status": "error", "message": str(e)}
 
 
-@router.get("/image/{footballer_id}")
+@router.get("/{footballer_id}/image")
 def get_footballer_image(footballer_id: int):
     """Return the footballer's image as raw bytes (with proper Content-Type)."""
     try:
@@ -310,7 +310,7 @@ def get_footballer_image(footballer_id: int):
         return {"status": "error", "message": str(e)}
 
 
-@router.post("/update/{footballer_id}")
+@router.post("/{footballer_id}")
 def update_footballer_info(footballer_id: int):
     """Update footballer information in the database.
     The method will fetch the source for the footballer and update relevant fields in both PostgreSQL and MongoDB."""
@@ -385,7 +385,7 @@ def update_footballer_info(footballer_id: int):
         return {"status": "error", "message": str(e)}
 
 
-@router.post("/update_field/{footballer_id}")
+@router.post("/{footballer_id}/field")
 def update_footballer_field(footballer_id: int, league_id: int, field: str | None = None):
     """Update a specific field of footballer data in the database."""
     init_time = time.time()
@@ -487,7 +487,7 @@ class LineUpFotballer(BaseModel):
     footballer_id: int
     league_id: int
     on_lineup: bool
-@router.post("/set_lineup/")
+@router.post("/lineup")
 def set_footballer_on_lineup(data: LineUpFotballer):
     """Set or unset a footballer in a player's lineup."""
     try:
@@ -548,7 +548,7 @@ def set_footballer_on_lineup(data: LineUpFotballer):
         return {"status": "error", "message": str(e)}
 
     
-@router.get("/market_status/{footballer_id}")
+@router.get("/{footballer_id}/market-status")
 def get_market_status(footballer_id: int, league_id: int):
     """Get the market status of a footballer."""
     try:
@@ -577,7 +577,7 @@ def get_market_status(footballer_id: int, league_id: int):
         return {"status": "error", "message": str(e)}
 
 
-@router.post("/change_market_status/{footballer_id}")
+@router.post("/{footballer_id}/market-status")
 def change_market_status(footballer_id: int, league_id: int, on_market: bool):
     """Change the market status of a footballer."""
     try:
@@ -606,7 +606,7 @@ def change_market_status(footballer_id: int, league_id: int, on_market: bool):
         return {"status": "error", "message": str(e)}
 
 
-@router.get("/release_clause_data/{footballer_id}")
+@router.get("/{footballer_id}/release-clause")
 def get_release_clause_data(footballer_id: int, league_id: int):
     """Get the release clause data for a footballer."""
     try:

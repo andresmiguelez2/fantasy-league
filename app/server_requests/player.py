@@ -1,11 +1,10 @@
 from fastapi import APIRouter
 from aux.database import pg_connect, mongo_client
-from aux.constants import POSITION_ORDER, LINEUP_POSITIONS
-from .footballer import get_footballer_image, set_footballer_on_lineup
+from aux.constants import POSITION_ORDER, LINEUP_POSITIONS, BANK_NAME
 from .logger import logger
 
 
-router = APIRouter(prefix="/player", tags=["player"])
+router = APIRouter(prefix="/players", tags=["players"])
 
 
 @router.get('/{player_id}')
@@ -42,7 +41,7 @@ def get_player_info(player_id: int, league_id: int):
         return {"status": "error", "player": None}
 
 
-@router.get('/lineup/{player_id}')
+@router.get('/{player_id}/lineup')
 def get_player_lineup(player_id: int, league_id: int):
     """Get the player lineup
     """
@@ -72,7 +71,7 @@ def get_player_lineup(player_id: int, league_id: int):
         return {"status": "error", "lineup": None}
 
 
-@router.get('/lineup_footballers/{player_id}')
+@router.get('/{player_id}/lineup/footballers')
 def get_footballers_on_lineup(player_id: int, league_id: int):
     """
     Get the footballers on the player's lineup
@@ -119,7 +118,7 @@ def get_footballers_on_lineup(player_id: int, league_id: int):
         return {"status": "error", "lineup": None}
     
 
-@router.get('/fixture_lineup/{player_id}')
+@router.get('/{player_id}/fixtures/{fixture_n}/lineup')
 def get_fixture_lineup(player_id: int, fixture_n: int, league_id: int):
     """
     Get the footballers on the player's lineup for a specific fixture
@@ -187,7 +186,7 @@ def get_fixture_lineup(player_id: int, fixture_n: int, league_id: int):
         return {"status": "error", "lineup": [], "lineup_footballers": []}
 
 
-@router.get('/fixtures/{player_id}')
+@router.get('/{player_id}/fixtures')
 def get_player_fixtures(player_id: int, league_id: int):
     """
     Get the fixtures where the player took part.
@@ -216,7 +215,7 @@ def get_player_fixtures(player_id: int, league_id: int):
         return {"status": "error", "fixtures": None}
 
 
-@router.get('/benched_footballers/{player_id}')
+@router.get('/{player_id}/bench')
 def get_footballers_not_on_lineup(player_id: int, league_id: int, target_position: str = None):
     """
     """
@@ -263,7 +262,7 @@ def get_footballers_not_on_lineup(player_id: int, league_id: int, target_positio
         return {"status": "error", "lineup": None}
     
 
-@router.get('/available_subs/{player_id}')
+@router.get('/{player_id}/substitutes')
 def get_available_substitutes(player_id: int, league_id: int, position: str):
     """Get the available substitutes for a given position
     """
@@ -309,7 +308,7 @@ def get_available_substitutes(player_id: int, league_id: int, position: str):
         return {"status": "error", "substitutes": []}
     
 
-@router.post('/update/lineup/{player_id}')
+@router.post('/{player_id}/lineup')
 def update_player_lineup(player_id: int, league_id: int, lineup: list[int]):
     """Update the player lineup. This should be a list of three integers representing the number of defenders, midfielders, and forwards.
     """
@@ -399,3 +398,134 @@ def validate_lineup(player_id: int, league_id: int, lineup: list[int]):
             logger.info(f"Footballers removed from player's {player_id} lineup due to incompatibilities: {footballers_to_remove}")
     except Exception as e:
         logger.error(f"Error validating lineup: {e}")
+
+@router.get('/{player_id}/squad')
+def get_squad(player_id: int, league_id: int):
+    """Get the squad of a player.
+
+    Args:
+        player_id (int): The player ID.
+        league_id (int): The league ID to filter by.
+    """
+    try:
+        conn = pg_connect()
+
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT
+                f.id
+                , fd.name
+                , fd.team
+                , fd.value
+                , fd.total_points
+                , fd.average_points
+                , f.on_market
+                , f.on_market_since
+            FROM footballer f LEFT JOIN footballer_data fd ON f.id = fd.id
+            WHERE f.owner_id = %s AND f.league_id = %s
+            ORDER BY id
+            """,
+            (player_id, league_id),
+        )
+        footballers = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        return {
+            "status": "success",
+            "footballers": footballers,
+            "columns": [
+                "id",
+                "name",
+                "team",
+                "value",
+                "total_points",
+                "average_points",
+                "on_market",
+                "on_market_since"
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return {"status": "error", "footballers": []}
+
+
+@router.get('/{player_id}/bids/incoming')
+def get_player_incoming_bids(player_id: int, league_id: int):
+    """Get all incoming bids for a player's footballers.
+
+    Args:
+        player_id (int): The ID of the player to get incoming bids for.
+        league_id (int): The league ID to filter by.
+    """
+    try:
+        conn = pg_connect()
+
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT
+                b.id AS bid_id
+                , b.timestamp
+                , f.id AS footballer_id
+                , COALESCE(p.name, %s) AS bidder_name
+                , fd.name AS footballer_name
+                , b.amount
+            FROM bid AS b
+                LEFT JOIN footballer AS f ON b.footballer_id = f.id AND b.league_id = f.league_id
+                LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
+                LEFT JOIN player AS p on b.bidder_id = p.id
+            WHERE f.owner_id = %s AND b.league_id = %s
+            ORDER BY footballer_id, b.timestamp DESC
+            """,
+            (BANK_NAME, player_id, league_id)
+        )
+        bids = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+        return {"status": "success", "bids": bids, "columns": ["bid_id", "timestamp", "footballer_id", "bidder_name", "footballer_name", "amount"]}
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return {"status": "error", "bids": []}
+
+
+@router.get('/{player_id}/bids/outgoing')
+def get_player_outgoing_bids(player_id: int, league_id: int):
+    """Get all outgoing bids made by a player.
+
+    Args:
+        player_id (int): The ID of the player to get outgoing bids for.
+        league_id (int): The league ID to filter by.
+    """
+    try:
+        conn = pg_connect()
+
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT
+                b.id AS bid_id
+                , b.timestamp
+                , f.id AS footballer_id
+                , COALESCE(p.name, %s) AS owner_name
+                , fd.name AS footballer_name
+                , b.amount
+            FROM bid AS b
+                LEFT JOIN footballer AS f ON b.footballer_id = f.id AND b.league_id = f.league_id
+                LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
+                LEFT JOIN player AS p on f.owner_id = p.id
+            WHERE b.bidder_id = %s AND b.league_id = %s
+            ORDER BY footballer_id, b.timestamp DESC
+            """,
+            (BANK_NAME, player_id, league_id)
+        )
+        bids = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+        return {"status": "success", "bids": bids, "columns": ["bid_id", "timestamp", "footballer_id", "owner_name", "footballer_name", "amount"]}
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return {"status": "error", "bids": []}

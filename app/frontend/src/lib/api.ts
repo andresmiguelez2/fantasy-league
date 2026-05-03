@@ -229,7 +229,7 @@ export const fetchSquadFootballers = async (playerId?: string): Promise<Football
     throw new Error('No active player selected');
   }
 
-  const response = await fetch(`${BACKEND_URL}/squad/${resolvedPlayerId}?${withLeagueId({})}`);
+  const response = await fetch(`${BACKEND_URL}/players/${resolvedPlayerId}/squad?${withLeagueId({})}`);
   const data = await response.json();
   
   // Transform the array format to objects
@@ -251,7 +251,7 @@ export const fetchMarketFootballers = async (playerId?: string): Promise<MarketF
     throw new Error('No active player selected');
   }
 
-  const response = await fetch(`${BACKEND_URL}/market/${resolvedPlayerId}?${withLeagueId({})}`);
+  const response = await fetch(`${BACKEND_URL}/market?${withLeagueId({ player_id: resolvedPlayerId })}`);
   const data = await response.json();
   
   // Transform the array format to objects
@@ -282,7 +282,7 @@ export const fetchPlayerInfo = async (playerId?: string): Promise<Player> => {
     throw new Error('No active player selected');
   }
 
-  const response = await fetch(`${BACKEND_URL}/player/${resolvedPlayerId}?${withLeagueId({})}`);
+  const response = await fetch(`${BACKEND_URL}/players/${resolvedPlayerId}?${withLeagueId({})}`);
   const data = await response.json();
 
   // The API returns [id, name, budget, points]
@@ -317,7 +317,7 @@ export const placeBid = async (
   if (!leagueId) {
     throw new Error('No active league selected');
   }
-  const res = await fetch(`${BACKEND_URL}/market/bid`, {
+  const res = await fetch(`${BACKEND_URL}/market/bids`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -363,14 +363,14 @@ export interface FixtureDetail {
 
 export const fetchFootballerInfo = async (footballerId: number): Promise<FootballerInfo> => {
   const response = await fetch(
-    `${BACKEND_URL}/footballer/${footballerId}?${withLeagueId({})}`
+    `${BACKEND_URL}/footballers/${footballerId}?${withLeagueId({})}`
   );
   const data = await response.json();
   return data.footballer_info;
 };
 
 export const fetchFixtureDetail = async (footballerId: number, fixture: number): Promise<FixtureDetail> => {
-  const response = await fetch(`${BACKEND_URL}/footballer/fixture_detail/${footballerId}?fixture=${fixture}`);
+  const response = await fetch(`${BACKEND_URL}/footballers/${footballerId}/fixtures/${fixture}`);
   const data = await response.json();
   return data.fixture_detail;
 };
@@ -387,7 +387,7 @@ export const fetchPlayerFixtures = async (playerId?: string): Promise<number[]> 
     throw new Error('No active player selected');
   }
 
-  const response = await fetch(`${BACKEND_URL}/player/fixtures/${resolvedPlayerId}?${withLeagueId({})}`);
+  const response = await fetch(`${BACKEND_URL}/players/${resolvedPlayerId}/fixtures?${withLeagueId({})}`);
   const data = await response.json();
   return data.fixtures || [];
 };

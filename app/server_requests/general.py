@@ -6,7 +6,7 @@ from .logger import logger
 router = APIRouter(prefix="/general", tags=["general"])
 
 
-@router.get('/footballers_to_update')
+@router.get('/footballers-to-update')
 def footballers_to_update(limit: int = 20, time_threshold: int = 30*60):
     """
     Get footballers that are either owned or on the market and haven't been updated recently.
@@ -37,7 +37,7 @@ def footballers_to_update(limit: int = 20, time_threshold: int = 30*60):
     return {"status": "success", "footballer_ids": [fid[0] for fid in footballer_ids], "columns": ["id"]}
 
 
-@router.get('/opened_fixtures')
+@router.get('/opened-fixtures')
 def get_opened_fixtures(league_id: int):
     """Get all the IDs of the fixtures that have been played in the league.
 
