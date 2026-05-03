@@ -63,6 +63,10 @@ docker compose -f 'docker-compose.yml' up -d --build
   docker cp resources/database_schema pgadmin:/var/lib/pgadmin/storage/admin_admin.com/
   ```
   4. Restore the database. Right click on the databse in PGAdmin ➡️ restore. Choose the file you just copied to the container. Check `pre-data` and `post-data` in Data Options and `Clean before restore` in Query Options.
+  5. Install `unaccent` extension:
+  ```
+  docker exec -it postgres_db psql -U postgres -d main_db -c 'CREATE EXTENSION IF NOT EXISTS unaccent;'
+  ```
 
 ## 4. Create a default user and league
 
