@@ -1,3 +1,6 @@
+import sys
+sys.path.insert(0, '/workspace/app')
+
 from datetime import datetime
 import time
 from aux.aux_functions import scrape_page
