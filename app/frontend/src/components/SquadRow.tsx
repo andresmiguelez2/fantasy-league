@@ -14,9 +14,9 @@ interface SquadRowProps {
 
 const POSITION_STYLES: Record<string, { label: string; className: string }> = {
   gk:  { label: "GK",  className: "bg-yellow-400 text-yellow-900" },
-  def: { label: "DEF", className: "bg-blue-500 text-white" },
-  mid: { label: "MID", className: "bg-green-500 text-white" },
-  fwd: { label: "FWD", className: "bg-red-500 text-white" },
+  df: { label: "DF", className: "bg-blue-500 text-white" },
+  md: { label: "MD", className: "bg-green-500 text-white" },
+  fw: { label: "FW", className: "bg-red-500 text-white" },
 };
 
 export const SquadRow = ({ id, name, value, totalPoints, averagePoints, position, onClick }: SquadRowProps) => {
