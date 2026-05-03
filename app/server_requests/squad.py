@@ -32,15 +32,7 @@ def squad(player_id: int, league_id: int):
                 , fd.position
             FROM footballer f LEFT JOIN footballer_data fd ON f.id = fd.id
             WHERE f.owner_id = %s AND f.league_id = %s
-            ORDER BY
-                CASE LOWER(fd.position)
-                    WHEN 'gk' THEN 1
-                    WHEN 'def' THEN 2
-                    WHEN 'mid' THEN 3
-                    WHEN 'fwd' THEN 4
-                    ELSE 5
-                END,
-                fd.name
+            ORDER BY fd.position, fd.name
             """,
             (player_id, league_id),
         )
