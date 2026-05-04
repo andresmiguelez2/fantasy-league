@@ -7,15 +7,15 @@ from .logger import logger
 from fastapi.middleware.cors import CORSMiddleware
 
 # import sub-routers
-from ...server_requests import auth
-from ...server_requests import league
-from ...server_requests import market
-from ...server_requests import leaderboard
-from ...server_requests import footballer
-from ...server_requests import squad
-from ...server_requests import player
-from ...server_requests import general
-from ...server_requests import team
+from . import auth
+from . import league
+from . import market
+from . import leaderboard
+from . import footballer
+from . import squad
+from . import player
+from . import general
+from . import team
 
 
 @asynccontextmanager
