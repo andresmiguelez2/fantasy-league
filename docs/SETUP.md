@@ -77,5 +77,6 @@ Go to http://localhost:5173 and create a user and a league, following the on-scr
 When the containers are created for the first time we need to populate the database with both footballer and games data. Run the following commands:
 ```
 docker exec backend_app python scripts/insert_fixtures.py
+docker exec backend_app python scripts/insert_team_crests.py
 docker exec backend_app python scripts/insert_footballers.py
 ```
