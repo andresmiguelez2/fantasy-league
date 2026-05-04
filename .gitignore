@@ -1,6 +1,9 @@
 # Secrets
 secrets/
 
+# Devcontainer
+.devcontainer/devcontainer-lock.json
+
 # environment variables
 .env
 
