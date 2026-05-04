@@ -3,6 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BACKEND_URL } from "@/lib/api";
 
+const POSITION_STYLES: Record<string, { label: string; className: string }> = {
+  gk:  { label: "GK",  className: "bg-yellow-400 text-yellow-900" },
+  df: { label: "DF", className: "bg-blue-500 text-white" },
+  md: { label: "MD", className: "bg-green-500 text-white" },
+  fw: { label: "FW", className: "bg-red-500 text-white" },
+};
+
 interface FootballerCardProps {
   id: number;
   name: string;
@@ -13,6 +20,7 @@ interface FootballerCardProps {
   onOwnerClick?: () => void;
   totalPoints?: number;
   averagePoints?: number | string;
+  position?: string | null;
 }
 
 export const FootballerCard = ({
@@ -25,6 +33,7 @@ export const FootballerCard = ({
   onOwnerClick,
   totalPoints,
   averagePoints,
+  position,
 }: FootballerCardProps) => {
    const formatBid = (amount: number) => {
      return new Intl.NumberFormat('en-ES', {
