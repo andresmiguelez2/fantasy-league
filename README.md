@@ -1,19 +1,18 @@
 # fantasy-league
 
-A fantasy football league application with user authentication.
+A fantasy football league application based on Docker containers.
 
 ## Features
 
-- JWT-based user authentication (login/logout)
-- Protected routes for authenticated users only
+- Multi-league environment
 - Player management and squad selection
 - Market bidding system
-- Real-time leaderboard
-
-## Documentation
-
-- [Authentication Setup Guide](docs/AUTHENTICATION.md) - Complete guide for setting up and using JWT authentication
+- Real-time points
 
 ## Quick Start
 
-See the [Authentication Setup Guide](docs/AUTHENTICATION.md) for detailed setup instructions.
+See the [Quick start Guide](docs/SETUP.md) for detailed setup instructions on how to run the app.
+
+## Documentation
+
+[Authentication Setup Guide](docs/AUTHENTICATION.md) - Complete guide for setting up and using JWT authentication.

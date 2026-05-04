@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:18
+    image: postgres:17
     container_name: postgres_db
     env_file:
       - secrets/db.env
@@ -23,7 +23,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile.backend
+      dockerfile: backend/Dockerfile
     container_name: backend_app
     env_file:
       - secrets/db.env
@@ -33,27 +33,26 @@ services:
       - DB_PORT=5432
       - MONGO_HOST=mongodb
       - MONGO_PORT=27017
+      - PYTHONPATH=/workspace
     volumes:
       - ./:/workspace
-      - ./app:/app
+    working_dir: /workspace/backend
     ports:
       - "0.0.0.0:8000:8000"
     depends_on:
       - db
       - mongodb
-    dns:
-      - 1.1.1.1
-      - 8.8.8.8
-    command: python /app/main.py
+    command: uvicorn main:server_app --host 0.0.0.0 --port 8000 --reload
 
   frontend:
     build:
       context: . 
-      dockerfile: Dockerfile.frontend
+      dockerfile: frontend/Dockerfile
     container_name: frontend_app
+    working_dir: /workspace/frontend
     volumes:
-      - ./app/frontend:/app/frontend
-      - /app/frontend/node_modules
+      - ./frontend:/workspace/frontend
+      - frontend_node_modules:/workspace/frontend/node_modules
     ports:
       - "0.0.0.0:5173:8080"
     depends_on:
@@ -72,3 +71,4 @@ services:
 volumes:
   pgdata:
   mongo_data:
+  frontend_node_modules:
