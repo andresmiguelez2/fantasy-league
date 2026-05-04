@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0, '/workspace')
+sys.path.insert(0, '/workspace/app')
 
 from datetime import datetime
 import time
