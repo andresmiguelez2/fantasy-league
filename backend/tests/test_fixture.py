@@ -15,7 +15,7 @@ class GetCurrentFixtureTests(unittest.TestCase):
 
         return mock_conn, mock_cursor
 
-    @patch("app.classes.fixture.pg_connect")
+    @patch("backend.app.models.fixture.pg_connect")
     def test_returns_first_non_dangling_fixture(self, mock_pg_connect):
         start_ts = datetime(2025, 1, 1, 12, 0, 0)
         time_open = timedelta(days=2)
@@ -35,8 +35,8 @@ class GetCurrentFixtureTests(unittest.TestCase):
         mock_cursor.close.assert_called_once()
         mock_conn.close.assert_called_once()
 
-    @patch("app.classes.fixture.ckeck_all_matches_finished", return_value=False)
-    @patch("app.classes.fixture.pg_connect")
+    @patch("backend.app.models.fixture.ckeck_all_matches_finished", return_value=False)
+    @patch("backend.app.models.fixture.pg_connect")
     def test_returns_none_when_only_dangling(self, mock_pg_connect, mock_check):
         start_ts = datetime(2025, 1, 1, 12, 0, 0)
         time_open = timedelta(days=6)
@@ -48,8 +48,8 @@ class GetCurrentFixtureTests(unittest.TestCase):
 
         self.assertIsNone(fixture)
 
-    @patch("app.classes.fixture.ckeck_all_matches_finished", return_value=False)
-    @patch("app.classes.fixture.pg_connect")
+    @patch("backend.app.models.fixture.ckeck_all_matches_finished", return_value=False)
+    @patch("backend.app.models.fixture.pg_connect")
     def test_skips_dangling_then_returns_next(self, mock_pg_connect, mock_check):
         start_ts_a = datetime(2025, 1, 1, 12, 0, 0)
         start_ts_b = datetime(2025, 1, 2, 12, 0, 0)

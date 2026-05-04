@@ -3,17 +3,14 @@ import os
 import unittest
 from unittest.mock import MagicMock, patch
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'app'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-import aux.database  # noqa: F401 – ensure submodule is loaded before patching
+import backend.app.db.database  # noqa: F401 – ensure submodule is loaded before patching
 
-# Patch pg_connect as referenced in server_requests.league before importing the module
-# so that _ensure_league_columns() (called at module level) does not attempt a real
-# database connection.
-with patch('aux.database.pg_connect', MagicMock(return_value=MagicMock())):
-    from server_requests.league import _assign_initial_squad
+with patch("backend.app.db.database.pg_connect", MagicMock(return_value=MagicMock())):
+    from backend.app.api.routers.league import _assign_initial_squad
 
-from aux.constants import (
+from backend.app.core.constants import (
     INITIAL_SQUAD_GK,
     INITIAL_SQUAD_DF,
     INITIAL_SQUAD_MD,

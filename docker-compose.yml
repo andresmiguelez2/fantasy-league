@@ -22,7 +22,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile.backend
+      dockerfile: backend/Dockerfile
     container_name: backend_app
     env_file:
       - secrets/db.env
@@ -32,26 +32,28 @@ services:
       - DB_PORT=5432
       - MONGO_HOST=mongodb
       - MONGO_PORT=27017
+      - PYTHONPATH=/workspace
       # Uncomment to disable the background loop during development
       # - ENABLE_BACKGROUND_TASKS=false
     volumes:
       - ./:/workspace
-      - ./app:/app
+    working_dir: /workspace/backend
     ports:
       - "8000:8000"
     depends_on:
       - db
       - mongodb
-    command: bash -c "uvicorn main:server_app --host 0.0.0.0 --port 8000 --reload"
+    command: uvicorn main:server_app --host 0.0.0.0 --port 8000 --reload
 
   frontend:
     build:
       context: . 
-      dockerfile: Dockerfile.frontend
+      dockerfile: frontend/Dockerfile
     container_name: frontend_app
+    working_dir: /workspace/frontend
     volumes:
-      - ./app/frontend:/app/frontend
-      - /app/frontend/node_modules
+      - ./frontend:/workspace/frontend
+      - frontend_node_modules:/workspace/frontend/node_modules
     ports:
       - "5173:8080"
     depends_on:
@@ -70,3 +72,4 @@ services:
 volumes:
   pgdata:
   mongo_data:
+  frontend_node_modules:

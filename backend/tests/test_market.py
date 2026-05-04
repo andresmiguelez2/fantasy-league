@@ -3,9 +3,9 @@ import os
 import unittest
 from unittest.mock import MagicMock, call, patch
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'app'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from classes.market import Market
+from backend.app.models.market import Market
 
 
 class AssignBidsTests(unittest.TestCase):
@@ -18,10 +18,10 @@ class AssignBidsTests(unittest.TestCase):
         """When a bid is won, the footballer's owner_id is updated and the bidder's budget is debited."""
         bid_data = [(10, 42, 1000)]  # footballer_id=10, bidder_id=42, amount=1000
         cursor = self._make_cursor(bid_data)
-        mongoclient = MagicMock()
 
         market = Market()
-        market._assign_bids(cursor, mongoclient)
+        market.league_id = 7
+        market._assign_bids(cursor)
 
         execute_calls = cursor.execute.call_args_list
         # First call: SELECT bids query
@@ -39,16 +39,16 @@ class AssignBidsTests(unittest.TestCase):
             c for c in execute_calls if "UPDATE player" in str(c) and "budget" in str(c)
         )
         args = budget_call.args[1]  # second positional arg to execute() is the params tuple
-        self.assertEqual(args, (1000, 42))
+        self.assertEqual(args, (1000, 42, 7))
 
     def test_no_budget_update_when_bidder_is_none(self):
         """When the bidder_id is NULL (league bid), no budget update should happen."""
         bid_data = [(10, None, 500)]  # bidder_id is None
         cursor = self._make_cursor(bid_data)
-        mongoclient = MagicMock()
 
         market = Market()
-        market._assign_bids(cursor, mongoclient)
+        market.league_id = 7
+        market._assign_bids(cursor)
 
         execute_calls = cursor.execute.call_args_list
         budget_calls = [c for c in execute_calls if "UPDATE player" in str(c) and "budget" in str(c)]
@@ -61,10 +61,10 @@ class AssignBidsTests(unittest.TestCase):
             (10, 99, 1000),  # lower bid
         ]
         cursor = self._make_cursor(bid_data)
-        mongoclient = MagicMock()
 
         market = Market()
-        market._assign_bids(cursor, mongoclient)
+        market.league_id = 7
+        market._assign_bids(cursor)
 
         execute_calls = cursor.execute.call_args_list
         budget_call = next(
@@ -73,7 +73,7 @@ class AssignBidsTests(unittest.TestCase):
         )
         self.assertIsNotNone(budget_call, "Should update budget for winner")
         args = budget_call.args[1]  # second positional arg to execute() is the params tuple
-        self.assertEqual(args, (1500, 42), "Should debit the winning bidder (42) with the winning amount (1500)")
+        self.assertEqual(args, (1500, 42, 7), "Should debit the winning bidder (42) with the winning amount (1500)")
 
 
 if __name__ == "__main__":
