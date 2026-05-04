@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0, '/workspace/app')
+sys.path.insert(0, '/workspace')
 
 from backend.app.core.constants import FANTASY_MAIN_URL, FOOTBALLER_NAME_DICT, FOOTBALLER_POSITIONS
 from backend.app.models.footballer import Footballer
