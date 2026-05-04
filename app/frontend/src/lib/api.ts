@@ -35,6 +35,7 @@ export interface MarketFootballer {
   averagePoints: number | string;
   totalPoints: number;
   isOwn: boolean;
+  position: string | null;
 }
 
 export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || `${window.location.protocol}//${window.location.hostname}:8000`;
@@ -267,6 +268,7 @@ export const fetchMarketFootballers = async (playerId?: string): Promise<MarketF
     averagePoints: footballer[6],
     totalPoints: footballer[7],
     isOwn: footballer[8] === true,
+    position: footballer[9] ?? null,
   }));
 };
 
@@ -356,6 +358,7 @@ export interface FootballerInfo {
   fixture_breakdown: { fixture: number; points: number }[];
   owner_id: number | null;
   owner_name: string | null;
+  position: string | null;
 }
 
 export interface FixtureDetail {
