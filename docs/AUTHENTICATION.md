@@ -80,9 +80,9 @@ The setup script will automatically migrate these users to the database.
 #### Option B: Create Users Programmatically
 
 ```python
-from aux.setup_auth_db import create_user
+from backend.app.utils.setup_auth_db import create_user
 
-create_user("john_doe", "secure_password", player_id=1)
+create_user("john_doe", "secure_password")
 ```
 
 ## Frontend Setup
@@ -111,7 +111,7 @@ Response:
 {
   "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
   "token_type": "bearer",
-  "player_id": 1,
+  "id": 1,
   "username": "john_doe"
 }
 ```
@@ -124,8 +124,7 @@ Authorization: Bearer <token>
 Response:
 {
   "id": 1,
-  "username": "john_doe",
-  "player_id": 1
+  "username": "john_doe"
 }
 ```
 
@@ -172,7 +171,7 @@ Routes are automatically protected when wrapped with `<ProtectedRoute>`:
 Use the `get_current_user_from_token` dependency to protect endpoints:
 
 ```python
-from server_requests.auth import get_current_user_from_token
+from backend.app.api.routers.auth import get_current_user_from_token
 from fastapi import Depends
 
 @router.get("/protected-endpoint")
