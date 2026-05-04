@@ -38,22 +38,22 @@ dist-ssr
 *.sw?
 
 # Frontend
-app/frontend/node_modules/
-app/frontend/.vite/
-app/frontend/dist/
-app/frontend/build/
-app/frontend/.cache/
-app/frontend/.parcel-cache/
-app/frontend/.turbo/
-app/frontend/.next/            # in case Next.js is used later
-app/frontend/.pnp.*            # pnpm
-app/frontend/.env.local
-app/frontend/.env.*.local
-app/frontend/coverage/
-app/frontend/coverage-final.json
-app/frontend/npm-debug.log*
-app/frontend/yarn-debug.log*
-app/frontend/yarn-error.log*
-app/frontend/.DS_Store
-app/frontend/.idea/
-app/frontend/.vscode/
+frontend/node_modules/
+frontend/.vite/
+frontend/dist/
+frontend/build/
+frontend/.cache/
+frontend/.parcel-cache/
+frontend/.turbo/
+frontend/.next/            # in case Next.js is used later
+frontend/.pnp.*            # pnpm
+frontend/.env.local
+frontend/.env.*.local
+frontend/coverage/
+frontend/coverage-final.json
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.DS_Store
+frontend/.idea/
+frontend/.vscode/
