@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { BACKEND_URL } from '@/lib/api';
 import {
   Dialog,
   DialogContent,
