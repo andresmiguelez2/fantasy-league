@@ -60,19 +60,30 @@ docker compose -f 'docker-compose.yml' up -d --build
   - password: 123!
   3. Load the database schema provided in the `resources/database_schema` via the following command (change the variables accordingly):
   ```
+  chmod 777 resources/database_schema
+  docker exec pgadmin mkdir /var/lib/pgadmin/storage/admin_admin.com/
   docker cp resources/database_schema pgadmin:/var/lib/pgadmin/storage/admin_admin.com/
   ```
-  4. Restore the database. Right click on the databse in PGAdmin ➡️ restore. Choose the file you just copied to the container. Check `pre-data` and `post-data` in Data Options and `Clean before restore` in Query Options.
+  4. Restore the database. Right click on the databse in PGAdmin ➡️ restore. Choose the file you just copied to the container. Check `pre-data` and `post-data` in Data Options, and `Clean before restore` and `Include IF EXISTS clause` in Query Options.
   5. Install `unaccent` extension:
   ```
   docker exec -it postgres_db psql -U postgres -d main_db -c 'CREATE EXTENSION IF NOT EXISTS unaccent;'
   ```
 
-## 4. Create a default user and league
+## 4. Set up JWT security token
+
+Set up a strong JWT secret key. You do not need to remeber it.
+```
+docker exec -it backend_app bash
+export JWT_SECRET_KEY=any_string
+exit
+```
+
+## 5. Create a default user and league
 
 Go to http://localhost:5173 and create a user and a league, following the on-screen instructions.
 
-## 5. Download footballer and fixture data
+## 6. Download footballer and fixture data
 
 When the containers are created for the first time we need to populate the database with both footballer and games data. Run the following commands:
 ```
