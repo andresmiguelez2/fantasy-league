@@ -91,3 +91,4 @@ docker exec backend_app python scripts/insert_fixtures.py
 docker exec backend_app python scripts/insert_team_crests.py
 docker exec backend_app python scripts/insert_footballers.py
 ```
+From this point onwards, any new league you create will contain the footballers by default.
