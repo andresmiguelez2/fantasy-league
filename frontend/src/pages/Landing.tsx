@@ -41,14 +41,19 @@ const Landing = () => {
       <Header />
       
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-xl font-semibold">Leagues</h2>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => { setPendingInviteCode(""); setJoinDialogOpen(true); }} size="sm">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <Button
+              variant="outline"
+              onClick={() => { setPendingInviteCode(""); setJoinDialogOpen(true); }}
+              size="sm"
+              className="w-full sm:w-auto"
+            >
               <UserPlus className="w-4 h-4 mr-2" />
               Join League
             </Button>
-            <Button onClick={() => setCreateDialogOpen(true)} size="sm">
+            <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               New League
             </Button>
