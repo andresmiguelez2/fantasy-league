@@ -135,10 +135,10 @@ const Fixtures = () => {
                     {points !== null && (
                       <div className="absolute top-0 right-0 w-8 h-8 sm:w-12 sm:h-12 overflow-hidden">
                         <div
-                          className={`absolute top-0 right-0 w-12 h-12 sm:w-16 sm:h-16 transform rotate-45 translate-x-4 sm:translate-x-6 -translate-y-4 sm:-translate-y-6 ${points < 0 ? 'bg-red-600' : 'bg-green-600/60'}`}
+                          className={`absolute top-0 right-0 w-12 h-12 sm:w-16 sm:h-16 transform rotate-45 translate-x-4 sm:translate-x-6 -translate-y-4 sm:-translate-y-6 ${points < 0 ? 'bg-red-600' : points === 0 ? 'bg-gray-500/70' : 'bg-green-600/60'}`}
                         />
                         <span
-                          className={`absolute top-0.5 sm:top-1.5 right-0.5 sm:right-1.5 font-extrabold text-sm sm:text-xl leading-none ${points < 0 ? 'text-red-50' : 'text-green-50'}`}
+                          className={`absolute top-0.5 sm:top-1.5 right-0.5 sm:right-1.5 font-extrabold text-sm sm:text-xl leading-none ${points < 0 ? 'text-red-50' : points === 0 ? 'text-gray-50' : 'text-green-50'}`}
                         >
                           {points}
                         </span>
