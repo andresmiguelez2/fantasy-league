@@ -4,6 +4,7 @@ from backend.app.core.constants import BANK_NAME
 from .logger import logger
 from pydantic import BaseModel
 from backend.app.models.footballer import Footballer
+from backend.app.models.market import load_market
 from backend.app.models.player import debit_player_value
 
 
@@ -92,12 +93,15 @@ def player_market(player_id: int, league_id: int):
             (player_id, player_id, league_id)
         )
         footballers = cursor.fetchall()
+        market = load_market(league_id)
+        market_closing_timestamp = market.closing_ts.isoformat() if market and getattr(market, "closing_ts", None) else None
 
         cursor.close()
         conn.close()
         return {
             "status": "success",
             "footballers": footballers,
+            "market_closing_timestamp": market_closing_timestamp,
             "columns": [
                 "id",
                 "name",
@@ -113,7 +117,7 @@ def player_market(player_id: int, league_id: int):
         }
     except Exception as e:
         logger.error(f"Error: {e}")
-        return {"status": "error", "footballers": []}
+        return {"status": "error", "footballers": [], "market_closing_timestamp": None}
 
 
 class BidRequest(BaseModel):
