@@ -154,7 +154,8 @@ class Market:
             FROM bid JOIN footballer ON footballer.id = bid.footballer_id
             WHERE
                 bid.league_id = %s
-                AND footballer.on_market = TRUE -- para mayor robustez
+                -- Include both free agents (owner_id IS NULL) and player-owned footballers on sale.
+                AND footballer.on_market = TRUE -- extra safety check
             ORDER BY 
                 amount DESC
                 , timestamp ASC
