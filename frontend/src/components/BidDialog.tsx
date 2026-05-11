@@ -26,7 +26,7 @@ export const BidDialog = ({
   currentBid,
   onSubmit,
 }: BidDialogProps) => {
-  const [bidAmount, setBidAmount] = useState(currentBid ? currentBid + 1000 : 50000);
+  const [bidAmount, setBidAmount] = useState(currentBid ? currentBid : 50000);
   
   const handleSubmit = () => {
     onSubmit(bidAmount);

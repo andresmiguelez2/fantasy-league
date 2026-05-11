@@ -19,6 +19,8 @@ const Market = () => {
   const [bidDialogOpen, setBidDialogOpen] = useState(false);
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
   const [selectedFootballer, setSelectedFootballer] = useState<MarketFootballer | null>(null);
+  const [marketClosingTimestamp, setMarketClosingTimestamp] = useState<string | null>(null);
+  const [remainingMarketTime, setRemainingMarketTime] = useState<string>('—');
   const { toast } = useToast();
   
   useEffect(() => {
@@ -31,10 +33,12 @@ const Market = () => {
           return;
         }
         const data = await fetchMarketFootballers(id);
-        setFootballers(data);
+        setFootballers(data.footballers);
+        setMarketClosingTimestamp(data.marketClosingTimestamp);
       } catch (error) {
         console.error('Failed to fetch market data:', error);
         setFootballers([]);
+        setMarketClosingTimestamp(null);
       } finally {
         setLoading(false);
       }
@@ -42,6 +46,36 @@ const Market = () => {
     
     loadFootballers();
   }, [playerId]);
+
+  useEffect(() => {
+    const updateRemainingTime = () => {
+      if (!marketClosingTimestamp) {
+        setRemainingMarketTime('Unavailable');
+        return;
+      }
+
+      const diff = new Date(marketClosingTimestamp).getTime() - Date.now();
+      if (diff <= 0) {
+        setRemainingMarketTime('Closed');
+        return;
+      }
+
+      const totalSeconds = Math.floor(diff / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+
+      setRemainingMarketTime(
+        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds
+          .toString()
+          .padStart(2, '0')}`
+      );
+    };
+
+    updateRemainingTime();
+    const interval = setInterval(updateRemainingTime, 1000);
+    return () => clearInterval(interval);
+  }, [marketClosingTimestamp]);
   
   const handleBidClick = (footballer: MarketFootballer) => {
     setSelectedFootballer(footballer);
@@ -103,6 +137,9 @@ const Market = () => {
           <LoadingSkeleton type="footballers" />
         ) : (
           <div className="space-y-2 sm:space-y-3 max-w-2xl">
+            <p className="text-sm text-muted-foreground pb-2">
+              Market time remaining: <span className="font-medium text-foreground">{remainingMarketTime}</span>
+            </p>
             {footballers.map((footballer) => (
               <FootballerCard
                 key={footballer.id}
@@ -127,7 +164,7 @@ const Market = () => {
             open={bidDialogOpen}
             onOpenChange={setBidDialogOpen}
             footballerName={selectedFootballer.name}
-            currentBid={selectedFootballer.value}
+            currentBid={selectedFootballer.bidAmount || undefined}
             onSubmit={handleBidSubmit}
           />
           <FootballerInfoDialog

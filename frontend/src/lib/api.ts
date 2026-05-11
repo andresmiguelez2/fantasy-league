@@ -38,6 +38,11 @@ export interface MarketFootballer {
   position: string | null;
 }
 
+export interface MarketData {
+  footballers: MarketFootballer[];
+  marketClosingTimestamp: string | null;
+}
+
 const envBackendUrl = import.meta.env.VITE_BACKEND_URL?.trim();
 export const BACKEND_URL = envBackendUrl
   ? envBackendUrl.replace(/\/$/, '')
@@ -251,7 +256,7 @@ export const fetchSquadFootballers = async (playerId?: string): Promise<Football
   }));
 };
 
-export const fetchMarketFootballers = async (playerId?: string): Promise<MarketFootballer[]> => {
+export const fetchMarketFootballers = async (playerId?: string): Promise<MarketData> => {
   const resolvedPlayerId = playerId ?? getActivePlayerId();
   if (!resolvedPlayerId) {
     throw new Error('No active player selected');
@@ -261,18 +266,21 @@ export const fetchMarketFootballers = async (playerId?: string): Promise<MarketF
   const data = await response.json();
   
   // Transform the array format to objects
-  return data.footballers.map((footballer: any[]) => ({
-    id: footballer[0],
-    name: footballer[1],
-    value: footballer[2],
-    ownerId: footballer[3],
-    onMarketSince: footballer[4],
-    bidAmount: footballer[5],
-    averagePoints: footballer[6],
-    totalPoints: footballer[7],
-    isOwn: footballer[8] === true,
-    position: footballer[9] ?? null,
-  }));
+  return {
+    footballers: data.footballers.map((footballer: any[]) => ({
+      id: footballer[0],
+      name: footballer[1],
+      value: footballer[2],
+      ownerId: footballer[3],
+      onMarketSince: footballer[4],
+      bidAmount: footballer[5],
+      averagePoints: footballer[6],
+      totalPoints: footballer[7],
+      isOwn: footballer[8] === true,
+      position: footballer[9] ?? null,
+    })),
+    marketClosingTimestamp: data.market_closing_timestamp ?? null,
+  };
 };
 
 export interface PlayerInfo {
