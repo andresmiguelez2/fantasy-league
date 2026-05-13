@@ -135,7 +135,6 @@ class TestRegisterRequestValidation(unittest.TestCase):
     """Test Pydantic validation on RegisterRequest username field."""
 
     def _make_request(self, username: str, password: str = "validpassword"):
-        from pydantic import ValidationError
         from backend.app.api.routers.auth import RegisterRequest
         return RegisterRequest(username=username, password=password)
 
@@ -259,6 +258,28 @@ class TestRegisterEndpoint(unittest.TestCase):
 
         with self.assertRaises(ValidationError):
             RegisterRequest(username="bad user", password="validpass123")
+
+    @patch("backend.app.api.routers.auth.pg_connect")
+    def test_register_concurrent_duplicate_raises_409(self, mock_pg_connect):
+        """DB UniqueViolation from a concurrent registration returns 409."""
+        import psycopg2.errors
+        from fastapi import HTTPException
+        from backend.app.api.routers.auth import register, RegisterRequest
+
+        mock_cursor = MagicMock()
+        # No duplicate found at app-level check (race window), but INSERT raises UniqueViolation
+        mock_cursor.fetchone.return_value = None
+        mock_cursor.execute.side_effect = [None, psycopg2.errors.UniqueViolation()]
+
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value = mock_cursor
+        mock_pg_connect.return_value = mock_conn
+
+        req = RegisterRequest(username="race_user", password="validpass123")
+        with self.assertRaises(HTTPException) as ctx:
+            register(req)
+        self.assertEqual(ctx.exception.status_code, 409)
+        self.assertIn("already taken", ctx.exception.detail.lower())
 
 
 if __name__ == "__main__":

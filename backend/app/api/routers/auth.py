@@ -1,5 +1,6 @@
 import re
 
+import psycopg2.errors
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, field_validator
@@ -145,13 +146,13 @@ def register(request: RegisterRequest):
         return {"id": user_id, "username": request.username}
     except HTTPException:
         raise
+    except psycopg2.errors.UniqueViolation:
+        # DB-level unique index caught a concurrent duplicate registration
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Username already taken",
+        )
     except Exception as e:
-        # Catch DB-level unique constraint violation (e.g., concurrent registrations)
-        if "unique" in str(e).lower() and "username" in str(e).lower():
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Username already taken",
-            )
         logger.error(f"Error registering user: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
