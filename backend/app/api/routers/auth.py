@@ -1,6 +1,8 @@
+import re
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional
 from backend.app.core.auth import authenticate_user, create_access_token, verify_token, get_user_by_id, get_password_hash
 from backend.app.db.database import pg_connect
@@ -8,6 +10,33 @@ from .logger import logger
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 security = HTTPBearer()
+
+_USERNAME_RE = re.compile(r"^[a-zA-Z0-9_]+$")
+_USERNAME_MIN_LEN = 3
+_USERNAME_MAX_LEN = 30
+
+
+def _ensure_username_unique_index():
+    """Create a case-insensitive unique index on users.username if it does not exist."""
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS users_username_lower_idx
+                ON users (LOWER(username))
+                """
+            )
+            conn.commit()
+        finally:
+            cursor.close()
+            conn.close()
+    except Exception as e:
+        logger.error(f"Error ensuring username unique index: {e}")
+
+
+_ensure_username_unique_index()
 
 
 class LoginRequest(BaseModel):
@@ -18,6 +47,18 @@ class LoginRequest(BaseModel):
 class RegisterRequest(BaseModel):
     username: str
     password: str
+
+    @field_validator("username")
+    @classmethod
+    def validate_username(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) < _USERNAME_MIN_LEN:
+            raise ValueError(f"Username must be at least {_USERNAME_MIN_LEN} characters long")
+        if len(v) > _USERNAME_MAX_LEN:
+            raise ValueError(f"Username must be at most {_USERNAME_MAX_LEN} characters long")
+        if not _USERNAME_RE.match(v):
+            raise ValueError("Username may only contain letters, digits, and underscores")
+        return v
 
 
 class LoginResponse(BaseModel):
@@ -78,8 +119,8 @@ def register(request: RegisterRequest):
         conn = pg_connect()
         cursor = conn.cursor()
 
-        # Check if username already exists
-        cursor.execute("SELECT id FROM users WHERE username = %s", (request.username,))
+        # Check if username already exists (case-insensitive)
+        cursor.execute("SELECT id FROM users WHERE LOWER(username) = LOWER(%s)", (request.username,))
         if cursor.fetchone():
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -105,6 +146,12 @@ def register(request: RegisterRequest):
     except HTTPException:
         raise
     except Exception as e:
+        # Catch DB-level unique constraint violation (e.g., concurrent registrations)
+        if "unique" in str(e).lower() and "username" in str(e).lower():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Username already taken",
+            )
         logger.error(f"Error registering user: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

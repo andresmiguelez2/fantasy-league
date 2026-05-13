@@ -131,5 +131,135 @@ class TestAuthentication(unittest.TestCase):
         self.assertIsNone(user)
 
 
+class TestRegisterRequestValidation(unittest.TestCase):
+    """Test Pydantic validation on RegisterRequest username field."""
+
+    def _make_request(self, username: str, password: str = "validpassword"):
+        from pydantic import ValidationError
+        from backend.app.api.routers.auth import RegisterRequest
+        return RegisterRequest(username=username, password=password)
+
+    def _assert_invalid(self, username: str, fragment: str = ""):
+        from pydantic import ValidationError
+        from backend.app.api.routers.auth import RegisterRequest
+        with self.assertRaises(ValidationError) as ctx:
+            RegisterRequest(username=username, password="validpassword")
+        if fragment:
+            self.assertIn(fragment, str(ctx.exception).lower())
+
+    def test_valid_username(self):
+        req = self._make_request("valid_user1")
+        self.assertEqual(req.username, "valid_user1")
+
+    def test_username_strips_whitespace(self):
+        req = self._make_request("  user1  ")
+        self.assertEqual(req.username, "user1")
+
+    def test_username_too_short(self):
+        self._assert_invalid("ab", "least")
+
+    def test_username_too_long(self):
+        self._assert_invalid("a" * 31, "most")
+
+    def test_username_with_spaces(self):
+        self._assert_invalid("bad user", "letters")
+
+    def test_username_with_special_chars(self):
+        self._assert_invalid("bad!user", "letters")
+
+    def test_username_minimum_length(self):
+        req = self._make_request("abc")
+        self.assertEqual(req.username, "abc")
+
+    def test_username_maximum_length(self):
+        req = self._make_request("a" * 30)
+        self.assertEqual(len(req.username), 30)
+
+
+class TestRegisterEndpoint(unittest.TestCase):
+    """Test the register() handler for duplicate username handling."""
+
+    def _call_register(self, mock_pg_connect, username="testuser", password="validpass123"):
+        """Helper to invoke the register endpoint function directly."""
+        from backend.app.api.routers.auth import register, RegisterRequest
+        req = RegisterRequest(username=username, password=password)
+        return register(req)
+
+    @patch("backend.app.api.routers.auth.pg_connect")
+    def test_register_duplicate_username_conflict(self, mock_pg_connect):
+        """Registering with an already-taken username raises 409."""
+        from fastapi import HTTPException
+        from backend.app.api.routers.auth import register, RegisterRequest
+
+        mock_cursor = MagicMock()
+        mock_cursor.fetchone.return_value = (1,)  # duplicate found
+
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value = mock_cursor
+        mock_pg_connect.return_value = mock_conn
+
+        req = RegisterRequest(username="existing_user", password="validpass123")
+        with self.assertRaises(HTTPException) as ctx:
+            register(req)
+        self.assertEqual(ctx.exception.status_code, 409)
+        self.assertIn("already taken", ctx.exception.detail.lower())
+
+    @patch("backend.app.api.routers.auth.pg_connect")
+    def test_register_case_insensitive_duplicate(self, mock_pg_connect):
+        """Duplicate check uses LOWER() for case-insensitive comparison."""
+        from fastapi import HTTPException
+        from backend.app.api.routers.auth import register, RegisterRequest
+
+        mock_cursor = MagicMock()
+        mock_cursor.fetchone.return_value = (1,)  # duplicate found
+
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value = mock_cursor
+        mock_pg_connect.return_value = mock_conn
+
+        req = RegisterRequest(username="ExistingUser", password="validpass123")
+        with self.assertRaises(HTTPException) as ctx:
+            register(req)
+        self.assertEqual(ctx.exception.status_code, 409)
+
+        # Verify the SQL query uses LOWER() for the uniqueness check
+        executed_sql = mock_cursor.execute.call_args_list[0][0][0]
+        self.assertIn("LOWER", executed_sql)
+
+    @patch("backend.app.api.routers.auth.pg_connect")
+    def test_register_success(self, mock_pg_connect):
+        """Successful registration returns user id and username."""
+        from backend.app.api.routers.auth import register, RegisterRequest
+
+        mock_cursor = MagicMock()
+        # First fetchone: no duplicate; second fetchone: new user id
+        mock_cursor.fetchone.side_effect = [None, (42,)]
+
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value = mock_cursor
+        mock_pg_connect.return_value = mock_conn
+
+        req = RegisterRequest(username="new_user", password="validpass123")
+        result = register(req)
+        self.assertEqual(result["id"], 42)
+        self.assertEqual(result["username"], "new_user")
+
+    def test_register_invalid_username_raises_validation_error(self):
+        """Username too short raises Pydantic ValidationError before hitting the DB."""
+        from pydantic import ValidationError
+        from backend.app.api.routers.auth import RegisterRequest
+
+        with self.assertRaises(ValidationError):
+            RegisterRequest(username="ab", password="validpass123")
+
+    def test_register_username_with_spaces_raises_validation_error(self):
+        """Username with spaces raises Pydantic ValidationError."""
+        from pydantic import ValidationError
+        from backend.app.api.routers.auth import RegisterRequest
+
+        with self.assertRaises(ValidationError):
+            RegisterRequest(username="bad user", password="validpass123")
+
+
 if __name__ == "__main__":
     unittest.main()
