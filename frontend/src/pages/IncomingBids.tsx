@@ -64,9 +64,13 @@ const IncomingBids = () => {
 
   const handleBidReply = async (accept: boolean) => {
     if (!selectedBid) return;
-    
+    if (!leagueId) {
+      toast.error('No active league selected');
+      return;
+    }
+
     try {
-      await replyToBid(selectedBid.bidId, accept);
+      await replyToBid(selectedBid.bidId, accept, leagueId);
       toast.success(accept ? "Bid accepted" : "Bid declined");
       queryClient.invalidateQueries({ queryKey: ["incomingBids"] });
       setReplyDialogOpen(false);

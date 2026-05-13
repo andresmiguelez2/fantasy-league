@@ -192,11 +192,12 @@ def place_bid(bid: BidRequest):
  
 
 @router.post("/reply_to_bid/{bid_id}")
-def reply_to_bid(bid_id: int, accept: bool):
+def reply_to_bid(bid_id: int, league_id: int, accept: bool):
     """Accept or reject a bid on a footballer.
     
     Args:
         bid_id (int): The ID of the bid to reply to.
+        league_id (int): The ID of the league to filter by.
         accept (bool): True to accept the bid, False to reject it.
     """
     try:
@@ -211,9 +212,9 @@ def reply_to_bid(bid_id: int, accept: bool):
                     , b.amount
                     , f.owner_id
                 FROM bid AS b LEFT JOIN footballer AS f ON b.footballer_id = f.id
-                WHERE b.id = %s
+                WHERE b.id = %s AND f.league_id = %s
             """,
-            (bid_id,)
+            (bid_id, league_id)
         )
         bid = cursor.fetchone()
         if not bid:
@@ -228,11 +229,11 @@ def reply_to_bid(bid_id: int, accept: bool):
                 """
                 UPDATE footballer
                 SET owner_id = %s, on_market = FALSE, on_market_since = NULL
-                WHERE id = %s;
+                WHERE id = %s AND league_id = %s;
                 DELETE FROM bid
-                WHERE footballer_id = %s
+                WHERE footballer_id = %s AND league_id = %s
                 """,
-                (bidder_id, footballer_id, footballer_id)
+                (bidder_id, footballer_id, league_id, footballer_id, league_id)
             )
             if bidder_id is not None:
                 debit_player_value(bidder_id, amount)

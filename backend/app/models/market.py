@@ -150,11 +150,12 @@ class Market:
                 bid.footballer_id
                 , bid.bidder_id
                 , bid.amount
+                , footballer.owner_id
             FROM bid JOIN footballer ON footballer.id = bid.footballer_id
             WHERE
                 bid.league_id = %s
-                AND footballer.owner_id IS NULL
-                AND footballer.on_market = TRUE -- para mayor robustez
+                -- Include both free agents (owner_id IS NULL) and player-owned footballers on sale.
+                AND footballer.on_market = TRUE -- extra safety check
             ORDER BY 
                 amount DESC
                 , timestamp ASC
@@ -164,15 +165,15 @@ class Market:
 
         bid_players = dict()
         for bid in bid_data:
-            footballer_id, bidder_id, amount = bid
+            footballer_id, bidder_id, amount, seller_id = bid
             if footballer_id not in bid_players:
-                bid_players[footballer_id] = (bidder_id, amount)
+                bid_players[footballer_id] = (bidder_id, amount, seller_id)
             elif amount > bid_players[footballer_id][1]:
-                bid_players[footballer_id] = (bidder_id, amount)
+                bid_players[footballer_id] = (bidder_id, amount, seller_id)
             elif amount == bid_players[footballer_id][1]:
                 logger.warning(f"Bid for footballer {footballer_id} by {bidder_id} with amount {amount} is equal to an existing bid. Skipping.")
 
-        for footballer_id, (bidder_id, amount) in bid_players.items():
+        for footballer_id, (bidder_id, amount, seller_id) in bid_players.items():
             cursor.execute(
                 """
                 UPDATE footballer
@@ -195,6 +196,16 @@ class Market:
                     WHERE id = %s AND league_id = %s
                     """,
                     (amount, bidder_id, self.league_id)
+                )
+
+            if seller_id is not None:
+                cursor.execute(
+                    """
+                    UPDATE player
+                    SET budget = budget + %s
+                    WHERE id = %s AND league_id = %s
+                    """,
+                    (amount, seller_id, self.league_id)
                 )
 
             logger.info(f"Footballer {footballer_id} assigned to bidder {bidder_id} with amount {amount}. League {self.league_id}.")

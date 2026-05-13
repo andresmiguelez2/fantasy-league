@@ -594,9 +594,17 @@ export const fetchIncomingBids = async (playerId?: string): Promise<IncomingBid[
   }));
 };
 
-export const replyToBid = async (bidId: number, accept: boolean): Promise<boolean> => {
+export const replyToBid = async (
+  bidId: number,
+  accept: boolean,
+  leagueId: string
+): Promise<boolean> => {
+  if (!leagueId) {
+    throw new Error('No active league selected');
+  }
+
   const response = await fetch(
-    `${BACKEND_URL}/market/reply_to_bid/${bidId}?accept=${accept}`,
+    `${BACKEND_URL}/market/reply_to_bid/${bidId}?accept=${accept}&league_id=${leagueId}`,
     { method: 'POST' }
   );
   const data = await response.json();
