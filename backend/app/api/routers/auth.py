@@ -49,7 +49,6 @@ class RegisterRequest(BaseModel):
     username: str
     password: str
 
-    @field_validator("username")
     @classmethod
     def validate_username(cls, v: str) -> str:
         v = v.strip()
@@ -113,6 +112,15 @@ def register(request: RegisterRequest):
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Password must be at least 6 characters long",
         )
+    # Validate username using the same validator so we return a clear HTTP error
+    # and use the normalized (stripped) username for DB operations.
+    try:
+        username = RegisterRequest.validate_username(request.username)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e),
+        )
 
     conn = None
     cursor = None
@@ -121,7 +129,7 @@ def register(request: RegisterRequest):
         cursor = conn.cursor()
 
         # Check if username already exists (case-insensitive)
-        cursor.execute("SELECT id FROM users WHERE LOWER(username) = LOWER(%s)", (request.username,))
+        cursor.execute("SELECT id FROM users WHERE LOWER(username) = LOWER(%s)", (username,))
         if cursor.fetchone():
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -136,14 +144,14 @@ def register(request: RegisterRequest):
             VALUES (%s, %s)
             RETURNING id
             """,
-            (request.username, password_hash),
+            (username, password_hash),
         )
         user_id = cursor.fetchone()[0]
         conn.commit()
 
-        logger.info(f"New user registered: {request.username} (ID: {user_id})")
+        logger.info(f"New user registered: {username} (ID: {user_id})")
 
-        return {"id": user_id, "username": request.username}
+        return {"id": user_id, "username": username}
     except HTTPException:
         raise
     except psycopg2.errors.UniqueViolation:
