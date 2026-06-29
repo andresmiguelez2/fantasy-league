@@ -16,3 +16,5 @@ See the [Quick start Guide](docs/SETUP.md) for detailed setup instructions on ho
 ## Documentation
 
 [Authentication Setup Guide](docs/AUTHENTICATION.md) - Complete guide for setting up and using JWT authentication.
+
+prueba 1
