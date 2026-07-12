@@ -422,6 +422,7 @@ export const FootballerInfoDialog = ({
         open={bidDialogOpen}
         onOpenChange={setBidDialogOpen}
         footballerName={info.name}
+        footballerValue={info.value}
         onSubmit={handleBidSubmit}
       />
       

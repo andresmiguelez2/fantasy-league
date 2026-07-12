@@ -164,6 +164,7 @@ const Market = () => {
             open={bidDialogOpen}
             onOpenChange={setBidDialogOpen}
             footballerName={selectedFootballer.name}
+            footballerValue={selectedFootballer.value}
             currentBid={selectedFootballer.bidAmount || undefined}
             onSubmit={handleBidSubmit}
           />
