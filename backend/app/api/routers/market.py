@@ -82,7 +82,7 @@ def player_market(player_id: int, league_id: int):
             LEFT JOIN (
                 SELECT *
                 FROM bid
-                WHERE bidder_id = %s
+                WHERE bidder_id = %s AND active = TRUE AND league_id = %s
             ) AS b ON f.id = b.footballer_id AND f.league_id = b.league_id
             LEFT JOIN player ON player.id = f.owner_id AND player.league_id = f.league_id
             WHERE
@@ -90,7 +90,7 @@ def player_market(player_id: int, league_id: int):
                 AND f.league_id = %s
             ORDER BY is_own ASC, (f.owner_id IS NULL) DESC, on_market_since DESC
             """,
-            (player_id, player_id, league_id)
+            (player_id, player_id, league_id, league_id)
         )
         footballers = cursor.fetchall()
         market = load_market(league_id)
