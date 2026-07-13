@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
 import { ArrowRight } from "lucide-react";
-import { getActiveLeagueId, fetchMarketHistory, MarketHistoryBid, BACKEND_URL } from "@/lib/api";
+import { getActiveLeagueId, getActivePlayerId, fetchMarketHistory, fetchPlayerInfo, MarketHistoryBid, BACKEND_URL } from "@/lib/api";
 
 const MarketHistory = () => {
   const leagueId = getActiveLeagueId();
@@ -16,6 +16,7 @@ const MarketHistory = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
+  const [activePlayerName, setActivePlayerName] = useState<string | null>(null);
   const observerTarget = useRef<HTMLDivElement>(null);
 
   const loadBids = useCallback(async (pageNum: number, reset = false) => {
@@ -49,6 +50,21 @@ const MarketHistory = () => {
     setHasMore(true);
     loadBids(1, true);
   }, [loadBids]);
+
+  useEffect(() => {
+    const playerId = getActivePlayerId();
+    if (!playerId) {
+      setActivePlayerName(null);
+      return;
+    }
+
+    fetchPlayerInfo(playerId)
+      .then((player) => setActivePlayerName(player.name))
+      .catch((error) => {
+        console.error('Error loading active player name:', error);
+        setActivePlayerName(null);
+      });
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -96,6 +112,16 @@ const MarketHistory = () => {
       .slice(0, 2);
   };
 
+  const renderPlayerName = (name: string) => {
+    const isOwnPlayer = activePlayerName?.trim().toLowerCase() === name.trim().toLowerCase();
+
+    return (
+      <span className={isOwnPlayer ? "rounded bg-primary/15 px-1.5 py-0.5 font-semibold text-primary" : "truncate"}>
+        {name}
+      </span>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-20">
       <Header showBackButton />
@@ -136,9 +162,9 @@ const MarketHistory = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="truncate">{bid.fromPlayerName}</span>
+                          {renderPlayerName(bid.fromPlayerName)}
                           <ArrowRight className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                          <span className="truncate">{bid.toPlayerName}</span>
+                          {renderPlayerName(bid.toPlayerName)}
                         </div>
                       </TableCell>
                       <TableCell className="text-center text-secondary font-semibold">
