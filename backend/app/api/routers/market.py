@@ -120,10 +120,22 @@ def player_market(player_id: int, league_id: int):
         return {"status": "error", "footballers": [], "market_closing_timestamp": None}
 
 
-@router.get("/past_bids/{league_id}")
-def get_past_bids(league_id: int):
+@router.get("/past_bids/")
+def get_past_bids(league_id: int, limit: int = 20, offset: int = 0):
     conn = pg_connect()
     cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT COUNT(*)
+        FROM bid
+        WHERE 
+            league_id = %s
+            AND active = false
+            acquired_from IS NOT NULL
+        """, (league_id)
+    )
+    total = cursor.fetchone()[0]
 
     cursor.execute("""
         SELECT
@@ -142,7 +154,9 @@ def get_past_bids(league_id: int):
             AND bid.active = false
             AND bid.league_id = %s
         ORDER BY bid.timestamp DESC
-        """, (league_id,)
+        LIMIT %s
+        OFFSET %s
+        """, (league_id, limit, offset)
     )
 
     bid_history = cursor.fetchall()
@@ -153,7 +167,12 @@ def get_past_bids(league_id: int):
     return {
         "status": "success",
         "bid_history": bid_history,
-        "columns": ["from_player", "to_player", "amount", "footballer_name", "footballer_id", "timestamp"]
+        "columns": ["from_player", "to_player", "amount", "footballer_name", "footballer_id", "timestamp"],
+        "meta": {
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+            },
     }
 
 class BidRequest(BaseModel):
