@@ -146,9 +146,11 @@ const Market = () => {
                 id={footballer.id}
                 name={footballer.name}
                 owner={footballer.ownerId}
+                value={footballer.value}
                 currentBid={footballer.bidAmount}
                 totalPoints={footballer.totalPoints}
                 averagePoints={footballer.averagePoints}
+                position={footballer.position}
                 showBidButton={!footballer.isOwn}
                 onBid={() => handleBidClick(footballer)}
                 onOwnerClick={() => handleFootballerClick(footballer)}
@@ -164,6 +166,7 @@ const Market = () => {
             open={bidDialogOpen}
             onOpenChange={setBidDialogOpen}
             footballerName={selectedFootballer.name}
+            footballerValue={selectedFootballer.value}
             currentBid={selectedFootballer.bidAmount || undefined}
             onSubmit={handleBidSubmit}
           />

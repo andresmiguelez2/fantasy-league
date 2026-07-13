@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowUpDown } from "lucide-react";
 import { getActiveLeagueId } from "@/lib/api";
+import { PlayerInfoRibbon } from "@/components/PlayerInfoRibbon";
 
 const FootballerInfo = () => {
   const leagueId = getActiveLeagueId();
@@ -90,7 +91,7 @@ const FootballerInfo = () => {
   }, [page, sortBy, sortOrder, search, loadFootballers]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-20">
       <Header />
       <NavigationTabs leagueId={leagueId} />
       
@@ -177,6 +178,8 @@ const FootballerInfo = () => {
           onOpenChange={(open) => !open && setSelectedFootballerId(null)}
         />
       )}
+
+      <PlayerInfoRibbon />
     </div>
   );
 };

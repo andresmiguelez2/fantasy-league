@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
 import { getActiveLeagueId, getActivePlayerId } from "@/lib/api";
+import { PlayerInfoRibbon } from "@/components/PlayerInfoRibbon";
 
 const API_ENDPOINT = BACKEND_URL;
 
@@ -238,6 +239,8 @@ const Fixtures = () => {
         footballerId={selectedFootballerId}
         defaultFixture={selectedFixture}
       />
+
+      <PlayerInfoRibbon />
     </div>
   );
 };

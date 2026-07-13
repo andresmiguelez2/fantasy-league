@@ -37,6 +37,7 @@ export const NavigationTabs = ({ leagueId }: NavigationTabsProps) => {
     { id: "current-market", label: "Current Market", path: "/market" },
     { id: "incoming-bids", label: "Incoming Bids", path: "/market/incoming" },
     { id: "outgoing-bids", label: "Outgoing Bids", path: "/market/outgoing" },
+    { id: "market-history", label: "Market History", path: "/market/history" },
   ];
   
   const isMainTabActive = (tab: typeof mainTabs[0]) => {

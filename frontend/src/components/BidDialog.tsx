@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,7 @@ interface BidDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   footballerName: string;
+  footballerValue?: number;
   currentBid?: number;
   onSubmit: (amount: number) => void;
 }
@@ -23,13 +24,27 @@ export const BidDialog = ({
   open,
   onOpenChange,
   footballerName,
+  footballerValue,
   currentBid,
   onSubmit,
 }: BidDialogProps) => {
-  const [bidAmount, setBidAmount] = useState(currentBid ? currentBid : 50000);
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
+
+  const [bidAmount, setBidAmount] = useState(currentBid ? currentBid.toString() : "");
+
+  useEffect(() => {
+    setBidAmount(currentBid ? currentBid.toString() : "");
+  }, [currentBid, open, footballerValue]);
   
   const handleSubmit = () => {
-    onSubmit(bidAmount);
+    onSubmit(Number(bidAmount));
     onOpenChange(false);
   };
   
@@ -49,9 +64,15 @@ export const BidDialog = ({
         </DialogHeader>
         
         <div className="space-y-4 py-4">
+          {footballerValue !== undefined && (
+            <div className="text-sm text-muted-foreground">
+              Footballer value: <span className="font-medium text-foreground">{formatCurrency(footballerValue)}</span>
+            </div>
+          )}
+
           {currentBid && (
             <div className="text-sm text-muted-foreground">
-              Current bid: €{currentBid.toLocaleString()}
+              Current bid: {formatCurrency(currentBid)}
             </div>
           )}
           
@@ -61,7 +82,8 @@ export const BidDialog = ({
               id="amount"
               type="number"
               value={bidAmount}
-              onChange={(e) => setBidAmount(Number(e.target.value))}
+              onChange={(e) => setBidAmount(e.target.value)}
+              placeholder={currentBid === undefined && footballerValue !== undefined ? formatCurrency(footballerValue) : undefined}
               min={currentBid ? currentBid + 1 : 1}
             />
           </div>

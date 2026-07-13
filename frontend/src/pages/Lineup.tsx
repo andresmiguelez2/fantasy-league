@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { POSSIBLE_FORMATIONS } from "@/lib/constants";
 import { getActiveLeagueId, getActivePlayerId, setActiveLeagueContext } from "@/lib/api";
+import { PlayerInfoRibbon } from "@/components/PlayerInfoRibbon";
 
 const API_ENDPOINT = BACKEND_URL;
 
@@ -297,6 +298,8 @@ const Lineup = () => {
         currentFootballerId={selectedFootballerId}
         onSwapComplete={handleSwapComplete}
       />
+
+      <PlayerInfoRibbon />
     </div>
   );
 };
