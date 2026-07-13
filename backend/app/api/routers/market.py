@@ -120,6 +120,42 @@ def player_market(player_id: int, league_id: int):
         return {"status": "error", "footballers": [], "market_closing_timestamp": None}
 
 
+@router.get("/past_bids/{league_id}")
+def get_past_bids(league_id: int):
+    conn = pg_connect()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT
+	        p_from.name AS "from"
+            , p_to.name AS "to"
+            , fd.name
+            , fd.id AS footballer_id
+            , bid.amount
+            , to_char(bid.timestamp, 'DD-MM-YYYY HH24:MI')
+        FROM bid
+            LEFT JOIN player AS p_to ON bid.bidder_id = p_to.id
+            LEFT JOIN player AS p_from ON bid.acquired_from = p_from.id
+            LEFT JOIN footballer_data AS fd ON bid.footballer_id = fd.id
+        WHERE
+            bid.acquired_from IS NOT NULL
+            AND bid.active = false
+            AND bid.league_id = %s
+        ORDER BY bid.timestamp DESC
+        """, (league_id,)
+    )
+
+    bid_history = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return {
+        "status": "success",
+        "bid_history": bid_history,
+        "columns": ["from_player", "to_player", "amount", "footballer_name", "footballer_id", "timestamp"]
+    }
+
 class BidRequest(BaseModel):
     player_id: int
     footballer_id: int
