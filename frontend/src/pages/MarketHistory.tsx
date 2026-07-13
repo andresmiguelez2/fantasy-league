@@ -7,6 +7,7 @@ import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
 import { ArrowRight } from "lucide-react";
 import { getActiveLeagueId, getActivePlayerId, fetchMarketHistory, fetchPlayerInfo, MarketHistoryBid, BACKEND_URL } from "@/lib/api";
+import { PlayerInfoRibbon } from "@/components/PlayerInfoRibbon";
 
 const MarketHistory = () => {
   const leagueId = getActiveLeagueId();
@@ -201,6 +202,8 @@ const MarketHistory = () => {
           onOpenChange={(open) => !open && setSelectedFootballerId(null)}
         />
       )}
+
+      <PlayerInfoRibbon />
     </div>
   );
 };
