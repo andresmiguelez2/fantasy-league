@@ -146,8 +146,9 @@ class Market:
         """Assign bids placed on league players."""
         cursor.execute(
             """
-            SELECT 
-                bid.footballer_id
+            SELECT
+                bid.id
+                , bid.footballer_id
                 , bid.bidder_id
                 , bid.amount
                 , footballer.owner_id
@@ -165,15 +166,15 @@ class Market:
 
         bid_players = dict()
         for bid in bid_data:
-            footballer_id, bidder_id, amount, seller_id = bid
+            bid_id, footballer_id, bidder_id, amount, seller_id = bid
             if footballer_id not in bid_players:
-                bid_players[footballer_id] = (bidder_id, amount, seller_id)
+                bid_players[footballer_id] = (bidder_id, amount, seller_id, bid_id)
             elif amount > bid_players[footballer_id][1]:
-                bid_players[footballer_id] = (bidder_id, amount, seller_id)
+                bid_players[footballer_id] = (bidder_id, amount, seller_id, bid_id)
             elif amount == bid_players[footballer_id][1]:
                 logger.warning(f"Bid for footballer {footballer_id} by {bidder_id} with amount {amount} is equal to an existing bid. Skipping.")
 
-        for footballer_id, (bidder_id, amount, seller_id) in bid_players.items():
+        for footballer_id, (bidder_id, amount, seller_id, bid_id) in bid_players.items():
             cursor.execute(
                 """
                 UPDATE footballer
@@ -182,10 +183,13 @@ class Market:
                     owner_id = %s,
                     on_market_since = NULL
                 WHERE id = %s AND league_id = %s;
-                DELETE FROM bid
-                WHERE footballer_id = %s AND league_id = %s;
+                UPDATE bid
+                SET
+                    active = false
+                    , winner = true
+                WHERE id = %s;
                 """,
-                (bidder_id, footballer_id, self.league_id, footballer_id, self.league_id)
+                (bidder_id, footballer_id, self.league_id, bid_id)
             )
 
             if bidder_id is not None:
