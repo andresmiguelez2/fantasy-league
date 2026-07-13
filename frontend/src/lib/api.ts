@@ -43,6 +43,15 @@ export interface MarketData {
   marketClosingTimestamp: string | null;
 }
 
+export interface MarketHistoryBid {
+  fromPlayerName: string;
+  toPlayerName: string;
+  footballerName: string;
+  footballerId: number;
+  amount: number;
+  timestamp: string;
+}
+
 export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || `${window.location.protocol}//${window.location.hostname}:8000`;
 
 const ACTIVE_LEAGUE_KEY = 'activeLeagueId';
@@ -277,6 +286,27 @@ export const fetchMarketFootballers = async (playerId?: string): Promise<MarketD
       position: footballer[9] ?? null,
     })),
     marketClosingTimestamp: data.market_closing_timestamp ?? null,
+  };
+};
+
+export const fetchMarketHistory = async (limit = 30, offset = 0): Promise<{ bids: MarketHistoryBid[]; total: number }> => {
+  const response = await fetch(`${BACKEND_URL}/market/past_bids/?${withLeagueId({ limit: String(limit), offset: String(offset) })}`);
+  const data = await response.json();
+
+  if (data.status !== 'success') {
+    throw new Error(data.message || 'Failed to fetch market history');
+  }
+
+  return {
+    bids: Array.isArray(data.bid_history) ? (data.bid_history as any[]).map((bid: any[]) => ({
+      fromPlayerName: bid[0],
+      toPlayerName: bid[1],
+      footballerName: bid[2],
+      footballerId: bid[3],
+      amount: bid[4],
+      timestamp: bid[5],
+    })) : [],
+    total: Number(data.meta?.total ?? 0),
   };
 };
 

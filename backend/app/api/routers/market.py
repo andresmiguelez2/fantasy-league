@@ -132,15 +132,15 @@ def get_past_bids(league_id: int, limit: int = 20, offset: int = 0):
         WHERE 
             league_id = %s
             AND active = false
-            acquired_from IS NOT NULL
-        """, (league_id)
+            AND acquired_from IS NOT NULL
+        """, (league_id,)
     )
     total = cursor.fetchone()[0]
 
     cursor.execute("""
         SELECT
-	        p_from.name AS "from"
-            , p_to.name AS "to"
+	        COALESCE(p_from.name, 'League') AS "from"
+            , COALESCE(p_to.name, 'League') AS "to"
             , fd.name
             , fd.id AS footballer_id
             , bid.amount
