@@ -82,7 +82,7 @@ def player_market(player_id: int, league_id: int):
             LEFT JOIN (
                 SELECT *
                 FROM bid
-                WHERE bidder_id = %s
+                WHERE bidder_id = %s AND active = TRUE AND league_id = %s
             ) AS b ON f.id = b.footballer_id AND f.league_id = b.league_id
             LEFT JOIN player ON player.id = f.owner_id AND player.league_id = f.league_id
             WHERE
@@ -90,7 +90,7 @@ def player_market(player_id: int, league_id: int):
                 AND f.league_id = %s
             ORDER BY is_own ASC, (f.owner_id IS NULL) DESC, on_market_since DESC
             """,
-            (player_id, player_id, league_id)
+            (player_id, player_id, league_id, league_id)
         )
         footballers = cursor.fetchall()
         market = load_market(league_id)
@@ -162,7 +162,8 @@ def place_bid(bid: BidRequest):
         else:
             cursor.execute(
                 """
-                DELETE FROM bid
+                UPDATE bid
+                SET active = false
                 WHERE footballer_id = %s AND bidder_id = %s
             """,
             (bid.footballer_id, bid.player_id)
@@ -176,8 +177,8 @@ def place_bid(bid: BidRequest):
         else:
             cursor.execute(
                 """
-                INSERT INTO bid (footballer_id, bidder_id, amount, timestamp, league_id)
-                VALUES (%s, %s, %s, now(), %s)
+                INSERT INTO bid (footballer_id, bidder_id, amount, timestamp, league_id, active)
+                VALUES (%s, %s, %s, now(), %s, true)
                 """,
                 (bid.footballer_id, bid.player_id, bid.bid_amount, bid.league_id)
             )
@@ -230,7 +231,8 @@ def reply_to_bid(bid_id: int, league_id: int, accept: bool):
                 UPDATE footballer
                 SET owner_id = %s, on_market = FALSE, on_market_since = NULL
                 WHERE id = %s AND league_id = %s;
-                DELETE FROM bid
+                UPDATE bid
+                SET active = false
                 WHERE footballer_id = %s AND league_id = %s
                 """,
                 (bidder_id, footballer_id, league_id, footballer_id, league_id)
@@ -246,7 +248,8 @@ def reply_to_bid(bid_id: int, league_id: int, accept: bool):
 
             cursor.execute(
                 """
-                DELETE FROM bid
+                UPDATE bid
+                SET active = false
                 WHERE id = %s
                 """,
                 (bid_id,)
@@ -286,7 +289,7 @@ def get_player_incoming_bids(player_id: int, league_id: int):
                 LEFT JOIN footballer AS f ON b.footballer_id = f.id AND b.league_id = f.league_id
                 LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
                 LEFT JOIN player AS p on b.bidder_id = p.id
-            WHERE f.owner_id = %s AND b.league_id = %s
+            WHERE f.owner_id = %s AND b.league_id = %s AND b.active = TRUE
             ORDER BY footballer_id, b.timestamp DESC
             """,
             (BANK_NAME, player_id, league_id)
@@ -326,7 +329,7 @@ def get_player_outgoing_bids(player_id: int, league_id: int):
                 LEFT JOIN footballer AS f ON b.footballer_id = f.id AND b.league_id = f.league_id
                 LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
                 LEFT JOIN player AS p on f.owner_id = p.id
-            WHERE b.bidder_id = %s AND b.league_id = %s
+            WHERE b.bidder_id = %s AND b.league_id = %s AND b.active = TRUE
             ORDER BY footballer_id, b.timestamp DESC
             """,
             (BANK_NAME, player_id, league_id)
@@ -398,7 +401,8 @@ def pay_release_clause(request: ReleaseClauseRequest):
         
         cursor.execute(
             """
-            DELETE FROM bid
+            UPDATE bid
+            SET active = false
             WHERE footballer_id = %s
             """,
             (request.footballer_id,)
