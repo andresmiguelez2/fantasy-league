@@ -60,9 +60,11 @@ export const PlayerInfoRibbon = () => {
                 <span className="font-semibold text-foreground">
                   €{playerInfo.budget.toLocaleString()}
                 </span>
-                <span className="text-sm font-medium text-red-500">
-                  € -{playerBidSum.toLocaleString()}
-                </span>
+                {playerBidSum > 0 && (
+                  <span className="text-sm font-medium text-red-500">
+                    € -{playerBidSum.toLocaleString()}
+                  </span>
+                )}
               </div>
           </div>
         </div>
