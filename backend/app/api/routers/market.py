@@ -483,36 +483,3 @@ def pay_release_clause(request: ReleaseClauseRequest):
             conn.close()
         if client:
             client.close()
-
-
-@router.get("/bid_sum/{player_id}")
-def get_player_bid_sum(player_id: int, league_id: int):
-    """Get the total sum of active bids made by a player in a specific league.
-    
-    Args:
-        player_id (int): The ID of the player to get the bid sum for.
-        league_id (int): The league ID to filter by.
-    """
-    try:
-        conn = pg_connect()
-        cursor = conn.cursor()
-
-        cursor.execute(
-            """
-            SELECT COALESCE(SUM(amount), 0)
-            FROM bid
-            WHERE
-                active = true
-                AND league_id = %s
-                AND bidder_id = %s
-            """,
-            (player_id, league_id)
-        )
-        total_bid_sum = cursor.fetchone()[0]
-
-        cursor.close()
-        conn.close()
-        return {"status": "success", "total_bid_sum": total_bid_sum}
-    except Exception as e:
-        logger.error(f"Error: {e}")
-        return {"status": "error", "total_bid_sum": 0}

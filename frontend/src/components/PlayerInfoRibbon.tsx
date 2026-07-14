@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { fetchPlayerInfo, getActivePlayerId, getActiveLeagueName, PlayerInfo } from "@/lib/api";
+import { fetchPlayerBidSum, fetchPlayerInfo, getActivePlayerId, getActiveLeagueName, PlayerInfo } from "@/lib/api";
 import { User, Wallet } from "lucide-react";
 
 export const PlayerInfoRibbon = () => {
   const [playerInfo, setPlayerInfo] = useState<PlayerInfo | null>(null);
+  const [playerBidSum, setPlayerBidSum] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [leagueName, setLeagueName] = useState<string | null>(null);
   const playerId = getActivePlayerId();
@@ -19,11 +20,16 @@ export const PlayerInfoRibbon = () => {
     }
     const loadPlayerInfo = async () => {
       try {
-        const data = await fetchPlayerInfo(playerId);
-        setPlayerInfo(data);
+        const [playerData, bidSum] = await Promise.all([
+          fetchPlayerInfo(playerId),
+          fetchPlayerBidSum(playerId),
+        ]);
+        setPlayerInfo(playerData);
+        setPlayerBidSum(bidSum);
       } catch (error) {
         console.error('Failed to fetch player info:', error);
         setPlayerInfo(null);
+        setPlayerBidSum(0);
       } finally {
         setLoading(false);
       }
@@ -50,9 +56,14 @@ export const PlayerInfoRibbon = () => {
           </div>
           <div className="flex items-center gap-2">
             <Wallet className="h-4 w-4 text-muted-foreground" />
-            <span className="font-semibold text-foreground">
-              €{playerInfo.budget.toLocaleString()}
-            </span>
+              <div className="flex flex-col items-end leading-tight">
+                <span className="font-semibold text-foreground">
+                  €{playerInfo.budget.toLocaleString()}
+                </span>
+                <span className="text-sm font-medium text-red-500">
+                  € -{playerBidSum.toLocaleString()}
+                </span>
+              </div>
           </div>
         </div>
       </div>

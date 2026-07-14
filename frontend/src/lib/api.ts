@@ -317,6 +317,18 @@ export interface PlayerInfo {
   budget: number;
 }
 
+export const fetchPlayerBidSum = async (playerId?: string): Promise<number> => {
+  const resolvedPlayerId = playerId ?? getActivePlayerId();
+  if (!resolvedPlayerId) {
+    throw new Error('No active player selected');
+  }
+
+  const response = await fetch(`${BACKEND_URL}/player/bid_sum/${resolvedPlayerId}?${withLeagueId({})}`);
+  const data = await response.json();
+
+  return Number(data?.total_bid_sum ?? 0);
+};
+
 // Return a `Player` shape for UI convenience (maps budget -> team_value)
 export const fetchPlayerInfo = async (playerId?: string): Promise<Player> => {
   const resolvedPlayerId = playerId ?? getActivePlayerId();
