@@ -1,11 +1,13 @@
 from fastapi import APIRouter
-from backend.app.db.database import pg_connect, mongo_client
-from backend.app.core.constants import BANK_NAME
-from .logger import logger
 from pydantic import BaseModel
+
+from .logger import logger
+from backend.app.db.database import pg_connect, mongo_client
+from backend.app.core.constants import BANK_NAME, MAX_DEBT_AS_VALUE_UNIT
 from backend.app.models.footballer import Footballer
 from backend.app.models.market import load_market
 from backend.app.models.player import debit_player_value
+from backend.app.api.routers.player import get_player_bid_sum, get_player_info, get_team_value
 
 
 router = APIRouter(prefix="/market", tags=["market"])
@@ -206,6 +208,11 @@ def place_bid(bid: BidRequest):
         footballer.id = bid.footballer_id
         footballer.get_player_data()
 
+        player_bid_sum = get_player_bid_sum(bid.player_id, bid.league_id)['total_bid_sum']
+        player_budget = get_player_info(bid.player_id, bid.league_id)['player'][2]
+        player_debt = player_bid_sum + bid.bid_amount - player_budget
+        team_value = get_team_value(bid.player_id, bid.league_id)
+
         if bid.bid_amount < footballer.data['market_details'][-1]['value'] and bid.bid_amount != 0:
             cursor.close()
             conn.close()
@@ -214,14 +221,17 @@ def place_bid(bid: BidRequest):
             cursor.close()
             conn.close()
             return {"status": "error", "message": "Cannot bid on your own footballer."}
+        elif player_debt > MAX_DEBT_AS_VALUE_UNIT * team_value:
+            cursor.close()
+            conn.close()
+            return {"status": "error", "message": f"Bid amount implies a greater debt ({player_debt:,.0f} €) than {MAX_DEBT_AS_VALUE_UNIT:.0%} of your team's value ({(team_value * MAX_DEBT_AS_VALUE_UNIT):,.0f} €)."}
         else:
             cursor.execute(
                 """
-                UPDATE bid
-                SET active = false
-                WHERE footballer_id = %s AND bidder_id = %s
+                DELETE FROM bid
+                WHERE footballer_id = %s AND bidder_id = %s AND league_id = %s
             """,
-            (bid.footballer_id, bid.player_id)
+            (bid.footballer_id, bid.player_id, bid.league_id)
         )
 
         if bid.bid_amount == 0:

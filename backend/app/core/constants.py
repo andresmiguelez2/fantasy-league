@@ -128,3 +128,4 @@ INITIAL_SQUAD_TOTAL_VALUE_TOLERANCE = 0.10  # squad value must be within ±10% o
 ### Market ####
 N_NEW_FOOTBALLERS_INTO_MARKET = 5 # number of new players to be added into new market
 RELEASE_CLAUSE_DAYS = 14 # number of days until a footballer can be released again after being bought
+MAX_DEBT_AS_VALUE_UNIT = 0.2 # maximum debt allowed as a percentage of the player's budget
