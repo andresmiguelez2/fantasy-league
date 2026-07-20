@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
 import { PlayerInfoRibbon } from "@/components/PlayerInfoRibbon";
-import { BidReplyDialog } from "@/components/BidReplyDialog";
 import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
-import { fetchIncomingBids, replyToBid, IncomingBid, BACKEND_URL } from "@/lib/api";
+import { fetchIncomingBids, BACKEND_URL } from "@/lib/api";
 import {
   Table,
   TableBody,
@@ -14,17 +13,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { MessageSquareReply } from "lucide-react";
 import { format } from "date-fns";
-import { toast } from "sonner";
 import { getActiveLeagueId, getActivePlayerId } from "@/lib/api";
 
 const IncomingBids = () => {
-  const [selectedBid, setSelectedBid] = useState<IncomingBid | null>(null);
-  const [replyDialogOpen, setReplyDialogOpen] = useState(false);
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
-  const queryClient = useQueryClient();
   const playerId = getActivePlayerId();
   const leagueId = getActiveLeagueId();
 
@@ -52,31 +45,8 @@ const IncomingBids = () => {
     }).format(value);
   };
 
-  const handleReplyClick = (e: React.MouseEvent, bid: IncomingBid) => {
-    e.stopPropagation();
-    setSelectedBid(bid);
-    setReplyDialogOpen(true);
-  };
-
   const handleRowClick = (footballerId: number) => {
     setSelectedFootballerId(footballerId);
-  };
-
-  const handleBidReply = async (accept: boolean) => {
-    if (!selectedBid) return;
-    if (!leagueId) {
-      toast.error('No active league selected');
-      return;
-    }
-
-    try {
-      await replyToBid(selectedBid.bidId, accept, leagueId);
-      toast.success(accept ? "Bid accepted" : "Bid declined");
-      queryClient.invalidateQueries({ queryKey: ["incomingBids"] });
-      setReplyDialogOpen(false);
-    } catch (error) {
-      toast.error("Failed to reply to bid");
-    }
   };
 
   return (
@@ -88,7 +58,7 @@ const IncomingBids = () => {
         {isLoading ? (
           <p className="text-muted-foreground">Loading bids...</p>
         ) : bids.length === 0 ? (
-          <p className="text-muted-foreground">No incoming bids</p>
+          <p className="text-muted-foreground">No past incoming bids</p>
         ) : (
           <div className="max-w-4xl overflow-x-auto">
             <Table>
@@ -98,7 +68,6 @@ const IncomingBids = () => {
                   <TableHead className="text-center hidden sm:table-cell">Bidder</TableHead>
                   <TableHead className="text-center hidden sm:table-cell">Timestamp</TableHead>
                   <TableHead className="text-center">Bid Value</TableHead>
-                  <TableHead className="w-[80px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -127,15 +96,6 @@ const IncomingBids = () => {
                     <TableCell className="text-center font-semibold">
                       {formatCurrency(bid.amount)}
                     </TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => handleReplyClick(e, bid)}
-                      >
-                        <MessageSquareReply className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -145,17 +105,6 @@ const IncomingBids = () => {
       </main>
 
       <PlayerInfoRibbon />
-
-      {selectedBid && (
-        <BidReplyDialog
-          open={replyDialogOpen}
-          onOpenChange={setReplyDialogOpen}
-          footballerName={selectedBid.footballerName}
-          bidAmount={selectedBid.amount}
-          onAccept={() => handleBidReply(true)}
-          onDecline={() => handleBidReply(false)}
-        />
-      )}
 
       {selectedFootballerId && (
         <FootballerInfoDialog

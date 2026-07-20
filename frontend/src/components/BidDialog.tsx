@@ -17,7 +17,8 @@ interface BidDialogProps {
   footballerName: string;
   footballerValue?: number;
   currentBid?: number;
-  onSubmit: (amount: number) => void;
+  currentBidTimestamp?: string;
+  onSubmit: (amount: number, timestamp?: string | null) => boolean | Promise<boolean>;
 }
 
 export const BidDialog = ({
@@ -26,8 +27,18 @@ export const BidDialog = ({
   footballerName,
   footballerValue,
   currentBid,
+  currentBidTimestamp,
   onSubmit,
 }: BidDialogProps) => {
+  const MILLISECONDS_PER_MINUTE = 60_000;
+
+  const toDateTimeLocalInputValue = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const offset = date.getTimezoneOffset();
+    const localDate = new Date(date.getTime() - offset * MILLISECONDS_PER_MINUTE);
+    return localDate.toISOString().slice(0, 16);
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -38,19 +49,30 @@ export const BidDialog = ({
   };
 
   const [bidAmount, setBidAmount] = useState(currentBid ? currentBid.toString() : "");
+  const [scheduledTimestamp, setScheduledTimestamp] = useState("");
 
   useEffect(() => {
     setBidAmount(currentBid ? currentBid.toString() : "");
-  }, [currentBid, open, footballerValue]);
+    if (currentBidTimestamp && new Date(currentBidTimestamp).getTime() > Date.now()) {
+      setScheduledTimestamp(toDateTimeLocalInputValue(currentBidTimestamp));
+      return;
+    }
+    setScheduledTimestamp("");
+  }, [currentBid, currentBidTimestamp, open, footballerValue]);
   
-  const handleSubmit = () => {
-    onSubmit(Number(bidAmount));
-    onOpenChange(false);
+  const handleSubmit = async () => {
+    const bidTimestamp = scheduledTimestamp ? new Date(scheduledTimestamp).toISOString() : undefined;
+    const submitted = await onSubmit(Number(bidAmount), bidTimestamp);
+    if (submitted) {
+      onOpenChange(false);
+    }
   };
   
-  const handleDeleteBid = () => {
-    onSubmit(0);
-    onOpenChange(false);
+  const handleDeleteBid = async () => {
+    const submitted = await onSubmit(0);
+    if (submitted) {
+      onOpenChange(false);
+    }
   };
   
   return (
@@ -85,6 +107,16 @@ export const BidDialog = ({
               onChange={(e) => setBidAmount(e.target.value)}
               placeholder={currentBid === undefined && footballerValue !== undefined ? formatCurrency(footballerValue) : undefined}
               min={currentBid ? currentBid + 1 : 1}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="scheduled-timestamp">Schedule for later (optional)</Label>
+            <Input
+              id="scheduled-timestamp"
+              type="datetime-local"
+              value={scheduledTimestamp}
+              onChange={(e) => setScheduledTimestamp(e.target.value)}
             />
           </div>
         </div>
