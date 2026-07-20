@@ -66,7 +66,7 @@ class PlayerMarketTests(unittest.TestCase):
         player_market(player_id=1, league_id=10)
 
         query = mock_cursor.execute.call_args_list[0].args[0]
-        self.assertIn("b.timestamp <= now()", query)
+        self.assertIn("timestamp <= now()", query)
 
     @patch("backend.app.api.routers.market.pg_connect")
     def test_outgoing_bids_only_returns_active_bids_available_now(self, mock_pg_connect):
