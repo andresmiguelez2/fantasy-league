@@ -30,7 +30,7 @@ export const BidDialog = ({
   currentBidTimestamp,
   onSubmit,
 }: BidDialogProps) => {
-  const toLocalDateTimeValue = (timestamp: string) => {
+  const toDateTimeLocalInputValue = (timestamp: string) => {
     const date = new Date(timestamp);
     const offset = date.getTimezoneOffset();
     const localDate = new Date(date.getTime() - offset * 60_000);
@@ -52,7 +52,7 @@ export const BidDialog = ({
   useEffect(() => {
     setBidAmount(currentBid ? currentBid.toString() : "");
     if (currentBidTimestamp && new Date(currentBidTimestamp).getTime() > Date.now()) {
-      setScheduledTimestamp(toLocalDateTimeValue(currentBidTimestamp));
+      setScheduledTimestamp(toDateTimeLocalInputValue(currentBidTimestamp));
       return;
     }
     setScheduledTimestamp("");
