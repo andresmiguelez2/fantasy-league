@@ -184,6 +184,7 @@ class BidRequest(BaseModel):
     footballer_id: int
     bid_amount: int
     league_id: int
+    bid_id: int | None = None
     timestamp: datetime | None = None
 
 
@@ -234,21 +235,40 @@ def place_bid(bid: BidRequest):
         footballer.id = bid.footballer_id
         footballer.get_player_data()
 
-        cursor.execute(
-            """
-            SELECT id, amount
-            FROM bid
-            WHERE
-                footballer_id = %s
-                AND bidder_id = %s
-                AND league_id = %s
-                AND active = true
-            ORDER BY timestamp DESC, id DESC
-            LIMIT 1
-            """,
-            (bid.footballer_id, bid.player_id, bid.league_id)
-        )
+        if bid.bid_id is not None:
+            cursor.execute(
+                """
+                SELECT id, amount
+                FROM bid
+                WHERE
+                    id = %s
+                    AND footballer_id = %s
+                    AND bidder_id = %s
+                    AND league_id = %s
+                    AND active = true
+                """,
+                (bid.bid_id, bid.footballer_id, bid.player_id, bid.league_id)
+            )
+        else:
+            cursor.execute(
+                """
+                SELECT id, amount
+                FROM bid
+                WHERE
+                    footballer_id = %s
+                    AND bidder_id = %s
+                    AND league_id = %s
+                    AND active = true
+                ORDER BY timestamp DESC, id DESC
+                LIMIT 1
+                """,
+                (bid.footballer_id, bid.player_id, bid.league_id)
+            )
         existing_bid = cursor.fetchone()
+        if bid.bid_id is not None and existing_bid is None:
+            cursor.close()
+            conn.close()
+            return {"status": "error", "message": "Bid not found."}
         existing_bid_id = existing_bid[0] if existing_bid else None
         existing_bid_amount = existing_bid[1] if existing_bid else 0
 

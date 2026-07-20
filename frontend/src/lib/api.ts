@@ -692,7 +692,8 @@ export const submitBid = async (
   footballerId: number,
   playerId: string,
   amount: number,
-  timestamp?: string | null
+  timestamp?: string | null,
+  bidId?: number
 ): Promise<boolean> => {
   const leagueId = getActiveLeagueId();
   if (!leagueId) {
@@ -706,6 +707,7 @@ export const submitBid = async (
       player_id: playerId,
       bid_amount: amount,
       league_id: parseInt(leagueId),
+      bid_id: bidId ?? undefined,
       timestamp: timestamp ?? undefined,
     }),
   });

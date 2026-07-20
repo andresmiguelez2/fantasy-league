@@ -235,6 +235,52 @@ class PlayerMarketTests(unittest.TestCase):
         self.assertNotIn("DELETE FROM bid", executed_sql)
         self.assertNotIn("INSERT INTO bid", executed_sql)
 
+    @patch("backend.app.api.routers.market.get_team_value", return_value=1000000)
+    @patch("backend.app.api.routers.market.get_player_info", return_value={"player": [1, "Player", 1000000]})
+    @patch("backend.app.api.routers.market.get_player_bid_sum", return_value={"total_bid_sum": 100})
+    @patch("backend.app.api.routers.market.Footballer")
+    @patch("backend.app.api.routers.market.pg_connect")
+    def test_place_bid_updates_requested_bid_id_for_future_bid_edits(
+        self,
+        mock_pg_connect,
+        mock_footballer,
+        _mock_bid_sum,
+        _mock_player_info,
+        _mock_team_value,
+    ):
+        mock_cursor = MagicMock()
+        future_timestamp = datetime(2030, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        mock_cursor.fetchone.side_effect = [
+            ("Full Name", "url-name", None),
+            (5, 100),
+        ]
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value = mock_cursor
+        mock_pg_connect.return_value = mock_conn
+
+        footballer_instance = MagicMock()
+        footballer_instance.data = {"market_details": [{"value": 100}]}
+        mock_footballer.return_value = footballer_instance
+
+        response = place_bid(
+            BidRequest(
+                player_id=1,
+                footballer_id=2,
+                bid_amount=150,
+                league_id=10,
+                bid_id=5,
+                timestamp=future_timestamp,
+            )
+        )
+
+        self.assertEqual(response["status"], "success")
+        lookup_call = mock_cursor.execute.call_args_list[1]
+        self.assertIn("WHERE", lookup_call.args[0])
+        self.assertIn("id = %s", lookup_call.args[0])
+        self.assertEqual(lookup_call.args[1], (5, 2, 1, 10))
+        update_call = mock_cursor.execute.call_args_list[2]
+        self.assertEqual(update_call.args[1], (150, future_timestamp, 5))
+
     @patch("backend.app.api.routers.market.debit_player_value")
     @patch("backend.app.api.routers.market.get_team_value", return_value=100)
     @patch("backend.app.api.routers.market.get_player_info", return_value={"player": [2, "Bidder", 100]})

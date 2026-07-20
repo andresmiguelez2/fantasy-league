@@ -70,7 +70,13 @@ const FutureBids = () => {
     }
 
     try {
-      const submitted = await submitBid(selectedBid.footballerId, playerId, amount, timestamp);
+      const submitted = await submitBid(
+        selectedBid.footballerId,
+        playerId,
+        amount,
+        timestamp,
+        selectedBid.bidId,
+      );
       if (!submitted) {
         toast.error("Failed to update bid");
         return false;
