@@ -69,7 +69,7 @@ class PlayerMarketTests(unittest.TestCase):
         self.assertIn("timestamp <= now()", query)
 
     @patch("backend.app.api.routers.market.pg_connect")
-    def test_outgoing_bids_only_returns_active_bids_available_now(self, mock_pg_connect):
+    def test_outgoing_bids_only_returns_past_inactive_bids(self, mock_pg_connect):
         mock_cursor = MagicMock()
         mock_cursor.fetchall.return_value = []
         mock_conn = MagicMock()
@@ -80,10 +80,11 @@ class PlayerMarketTests(unittest.TestCase):
 
         self.assertEqual(response["status"], "success")
         query = mock_cursor.execute.call_args.args[0]
+        self.assertIn("b.active = FALSE", query)
         self.assertIn("b.timestamp <= now()", query)
 
     @patch("backend.app.api.routers.market.pg_connect")
-    def test_incoming_bids_only_returns_active_bids_available_now(self, mock_pg_connect):
+    def test_incoming_bids_only_returns_past_inactive_bids(self, mock_pg_connect):
         mock_cursor = MagicMock()
         mock_cursor.fetchall.return_value = []
         mock_conn = MagicMock()
@@ -94,6 +95,7 @@ class PlayerMarketTests(unittest.TestCase):
 
         self.assertEqual(response["status"], "success")
         query = mock_cursor.execute.call_args.args[0]
+        self.assertIn("b.active = FALSE", query)
         self.assertIn("b.timestamp <= now()", query)
 
     @patch("backend.app.api.routers.market.pg_connect")
