@@ -132,7 +132,7 @@ export const FootballerInfoDialog = ({
   };
 
   const handleBidSubmit = async (amount: number, timestamp?: string | null) => {
-    if (!info) return;
+    if (!info) return false;
     
     const id = getCurrentPlayerId();
     if (!id) {
@@ -140,7 +140,7 @@ export const FootballerInfoDialog = ({
         description: "Unable to place bid: player ID not found",
         variant: "destructive",
       });
-      return;
+      return false;
     }
     
     const resp = await placeBid(footballerId, id, amount, timestamp);
@@ -153,7 +153,10 @@ export const FootballerInfoDialog = ({
         : scheduledForFuture
           ? `Your bid of €${amount.toLocaleString()} for ${info.name} has been scheduled.`
           : `Your bid of €${amount.toLocaleString()} for ${info.name} has been placed.`),
+      variant: resp?.status === "success" ? "default" : "destructive",
     });
+
+    return resp?.status === "success";
   };
 
   const handleReleaseClauseSubmit = async () => {

@@ -18,7 +18,7 @@ interface BidDialogProps {
   footballerValue?: number;
   currentBid?: number;
   currentBidTimestamp?: string;
-  onSubmit: (amount: number, timestamp?: string | null) => void | Promise<void>;
+  onSubmit: (amount: number, timestamp?: string | null) => boolean | Promise<boolean>;
 }
 
 export const BidDialog = ({
@@ -62,13 +62,17 @@ export const BidDialog = ({
   
   const handleSubmit = async () => {
     const bidTimestamp = scheduledTimestamp ? new Date(scheduledTimestamp).toISOString() : undefined;
-    await onSubmit(Number(bidAmount), bidTimestamp);
-    onOpenChange(false);
+    const submitted = await onSubmit(Number(bidAmount), bidTimestamp);
+    if (submitted) {
+      onOpenChange(false);
+    }
   };
   
   const handleDeleteBid = async () => {
-    await onSubmit(0);
-    onOpenChange(false);
+    const submitted = await onSubmit(0);
+    if (submitted) {
+      onOpenChange(false);
+    }
   };
   
   return (

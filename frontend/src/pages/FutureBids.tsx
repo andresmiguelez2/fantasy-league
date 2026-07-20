@@ -63,20 +63,26 @@ const FutureBids = () => {
   };
 
   const handleBidSubmit = async (amount: number, timestamp?: string | null) => {
-    if (!selectedBid) return;
+    if (!selectedBid) return false;
     if (!playerId) {
       toast.error("No active player selected");
-      return;
+      return false;
     }
 
     try {
-      await submitBid(selectedBid.footballerId, playerId, amount, timestamp);
+      const submitted = await submitBid(selectedBid.footballerId, playerId, amount, timestamp);
+      if (!submitted) {
+        toast.error("Failed to update bid");
+        return false;
+      }
+
       toast.success(amount === 0 ? "Bid deleted" : "Bid updated");
       queryClient.invalidateQueries({ queryKey: ["futureBids"] });
       queryClient.invalidateQueries({ queryKey: ["outgoingBids"] });
-      setBidDialogOpen(false);
+      return true;
     } catch (error) {
       toast.error("Failed to update bid");
+      return false;
     }
   };
 

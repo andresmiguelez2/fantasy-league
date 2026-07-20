@@ -88,7 +88,7 @@ const Market = () => {
   };
   
   const handleBidSubmit = async (amount: number, timestamp?: string | null) => {
-    if (!selectedFootballer) return;
+    if (!selectedFootballer) return false;
     
     const id = playerId || getActivePlayerId();
     if (!id) {
@@ -96,9 +96,10 @@ const Market = () => {
         description: 'Unable to place bid: no active player selected',
         variant: 'destructive',
       });
-      return;
+      return false;
     }
     const resp = await placeBid(selectedFootballer.id, id, amount, timestamp);
+    const success = resp?.status === "success";
     const scheduledForFuture = timestamp && new Date(timestamp).getTime() > Date.now();
 
     // Determine message from API response
@@ -118,7 +119,12 @@ const Market = () => {
         : scheduledForFuture
           ? `Your bid of €${amount.toLocaleString()} for ${selectedFootballer.name} has been scheduled.`
           : `Your bid of €${amount.toLocaleString()} for ${selectedFootballer.name} has been placed.`),
+      variant: success ? 'default' : 'destructive',
     });
+
+    if (!success) {
+      return false;
+    }
     
     // Update the footballer's value with the new bid
     setFootballers(prev =>
@@ -128,6 +134,8 @@ const Market = () => {
           : f
       )
     );
+
+    return true;
   };
   
   return (
