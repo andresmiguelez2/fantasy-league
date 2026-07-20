@@ -87,8 +87,8 @@ const Market = () => {
     setInfoDialogOpen(true);
   };
   
-  const handleBidSubmit = async (amount: number) => {
-    if (!selectedFootballer) return;
+  const handleBidSubmit = async (amount: number, timestamp?: string | null) => {
+    if (!selectedFootballer) return false;
     
     const id = playerId || getActivePlayerId();
     if (!id) {
@@ -96,9 +96,11 @@ const Market = () => {
         description: 'Unable to place bid: no active player selected',
         variant: 'destructive',
       });
-      return;
+      return false;
     }
-    const resp = await placeBid(selectedFootballer.id, id, amount);
+    const resp = await placeBid(selectedFootballer.id, id, amount, timestamp);
+    const success = resp?.status === "success";
+    const scheduledForFuture = timestamp && new Date(timestamp).getTime() > Date.now();
 
     // Determine message from API response
     let message = '';
@@ -114,17 +116,26 @@ const Market = () => {
       // title: amount === 0 ? "Bid deleted" : "Bid response",
       description: message || (amount === 0
         ? `Your bid for ${selectedFootballer.name} has been deleted.`
-        : `Your bid of €${amount.toLocaleString()} for ${selectedFootballer.name} has been placed.`),
+        : scheduledForFuture
+          ? `Your bid of €${amount.toLocaleString()} for ${selectedFootballer.name} has been scheduled.`
+          : `Your bid of €${amount.toLocaleString()} for ${selectedFootballer.name} has been placed.`),
+      variant: success ? 'default' : 'destructive',
     });
+
+    if (!success) {
+      return false;
+    }
     
     // Update the footballer's value with the new bid
     setFootballers(prev =>
       prev.map(f =>
         f.id === selectedFootballer.id
-          ? { ...f, value: amount, bidAmount: amount }
+          ? { ...f, value: amount, bidAmount: amount === 0 || scheduledForFuture ? 0 : amount }
           : f
       )
     );
+
+    return true;
   };
   
   return (

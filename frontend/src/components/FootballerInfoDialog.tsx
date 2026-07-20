@@ -131,8 +131,8 @@ export const FootballerInfoDialog = ({
            (typeof resp === 'string' ? resp : JSON.stringify(resp));
   };
 
-  const handleBidSubmit = async (amount: number) => {
-    if (!info) return;
+  const handleBidSubmit = async (amount: number, timestamp?: string | null) => {
+    if (!info) return false;
     
     const id = getCurrentPlayerId();
     if (!id) {
@@ -140,17 +140,23 @@ export const FootballerInfoDialog = ({
         description: "Unable to place bid: player ID not found",
         variant: "destructive",
       });
-      return;
+      return false;
     }
     
-    const resp = await placeBid(footballerId, id, amount);
+    const resp = await placeBid(footballerId, id, amount, timestamp);
     const message = extractMessage(resp);
+    const scheduledForFuture = timestamp && new Date(timestamp).getTime() > Date.now();
 
     toast({
       description: message || (amount === 0
         ? `Your bid for ${info.name} has been deleted.`
-        : `Your bid of €${amount.toLocaleString()} for ${info.name} has been placed.`),
+        : scheduledForFuture
+          ? `Your bid of €${amount.toLocaleString()} for ${info.name} has been scheduled.`
+          : `Your bid of €${amount.toLocaleString()} for ${info.name} has been placed.`),
+      variant: resp?.status === "success" ? "default" : "destructive",
     });
+
+    return resp?.status === "success";
   };
 
   const handleReleaseClauseSubmit = async () => {

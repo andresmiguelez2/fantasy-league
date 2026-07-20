@@ -422,7 +422,7 @@ def get_player_bid_sum(player_id: int, league_id: int):
                 AND league_id = %s
                 AND bidder_id = %s
             """,
-            (player_id, league_id)
+            (league_id, player_id)
         )
         total_bid_sum = cursor.fetchone()[0]
 
