@@ -327,9 +327,11 @@ def create_league(
             "status": "success",
             "league": {"id": league_id, "name": request.league_name},
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error creating league for user {user_id}: {e}")
-        return {"status": "error", "detail": "Failed to create league. The league name may already be taken."}
+        raise HTTPException(status_code=500, detail="Failed to create league. The league name may already be taken.")
 
 
 @router.get("/player-names")
@@ -469,39 +471,33 @@ def get_league_invite(
                 (league_id, user_id),
             )
             result = cursor.fetchone()
-        finally:
-            cursor.close()
-            conn.close()
 
-        if not result:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not a member of this league",
-            )
+            if not result:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Not a member of this league",
+                )
 
-        invite_code, created_by = result
+            invite_code, created_by = result
 
-        # Enforce creator-only access for leagues that have a known creator
-        if created_by is not None and created_by != user_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only the league creator can share the invite link",
-            )
+            # Enforce creator-only access for leagues that have a known creator
+            if created_by is not None and created_by != user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only the league creator can share the invite link",
+                )
 
-        # Generate and persist an invite code for leagues that pre-date this feature
-        if not invite_code:
-            invite_code = str(uuid.uuid4())
-            conn2 = pg_connect()
-            cursor2 = conn2.cursor()
-            try:
-                cursor2.execute(
+            # Generate and persist an invite code for leagues that pre-date this feature
+            if not invite_code:
+                invite_code = str(uuid.uuid4())
+                cursor.execute(
                     "UPDATE league SET invite_code = %s WHERE id = %s",
                     (invite_code, league_id),
                 )
-                conn2.commit()
-            finally:
-                cursor2.close()
-                conn2.close()
+                conn.commit()
+        finally:
+            cursor.close()
+            conn.close()
 
         return {"status": "success", "invite_code": str(invite_code)}
     except HTTPException:
