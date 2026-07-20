@@ -131,7 +131,7 @@ export const FootballerInfoDialog = ({
            (typeof resp === 'string' ? resp : JSON.stringify(resp));
   };
 
-  const handleBidSubmit = async (amount: number) => {
+  const handleBidSubmit = async (amount: number, timestamp?: string | null) => {
     if (!info) return;
     
     const id = getCurrentPlayerId();
@@ -143,13 +143,16 @@ export const FootballerInfoDialog = ({
       return;
     }
     
-    const resp = await placeBid(footballerId, id, amount);
+    const resp = await placeBid(footballerId, id, amount, timestamp);
     const message = extractMessage(resp);
+    const scheduledForFuture = timestamp && new Date(timestamp).getTime() > Date.now();
 
     toast({
       description: message || (amount === 0
         ? `Your bid for ${info.name} has been deleted.`
-        : `Your bid of €${amount.toLocaleString()} for ${info.name} has been placed.`),
+        : scheduledForFuture
+          ? `Your bid of €${amount.toLocaleString()} for ${info.name} has been scheduled.`
+          : `Your bid of €${amount.toLocaleString()} for ${info.name} has been placed.`),
     });
   };
 

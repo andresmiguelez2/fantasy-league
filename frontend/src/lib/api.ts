@@ -365,7 +365,8 @@ export const fetchPlayerInfo = async (playerId?: string): Promise<Player> => {
 export const placeBid = async (
   footballerId: number,
   playerId: string,
-  amount: number
+  amount: number,
+  timestamp?: string | null
 ): Promise<any> => {
   const leagueId = getActiveLeagueId();
   if (!leagueId) {
@@ -381,6 +382,7 @@ export const placeBid = async (
       player_id: playerId,
       bid_amount: amount,
       league_id: parseInt(leagueId),
+      timestamp: timestamp ?? undefined,
     }),
   });
 
@@ -659,13 +661,13 @@ export interface OutgoingBid {
   amount: number;
 }
 
-export const fetchOutgoingBids = async (playerId?: string): Promise<OutgoingBid[]> => {
+const fetchPlayerBids = async (endpoint: string, playerId?: string): Promise<OutgoingBid[]> => {
   const resolvedPlayerId = playerId ?? getActivePlayerId();
   if (!resolvedPlayerId) {
     throw new Error('No active player selected');
   }
 
-  const response = await fetch(`${BACKEND_URL}/market/outgoing_bids/${resolvedPlayerId}?${withLeagueId({})}`);
+  const response = await fetch(`${BACKEND_URL}/market/${endpoint}/${resolvedPlayerId}?${withLeagueId({})}`);
   const data = await response.json();
   
   return data.bids.map((bid: any[]) => ({
@@ -678,7 +680,20 @@ export const fetchOutgoingBids = async (playerId?: string): Promise<OutgoingBid[
   }));
 };
 
-export const submitBid = async (footballerId: number, playerId: string, amount: number): Promise<boolean> => {
+export const fetchOutgoingBids = async (playerId?: string): Promise<OutgoingBid[]> => {
+  return fetchPlayerBids("outgoing_bids", playerId);
+};
+
+export const fetchFutureBids = async (playerId?: string): Promise<OutgoingBid[]> => {
+  return fetchPlayerBids("future_bids", playerId);
+};
+
+export const submitBid = async (
+  footballerId: number,
+  playerId: string,
+  amount: number,
+  timestamp?: string | null
+): Promise<boolean> => {
   const leagueId = getActiveLeagueId();
   if (!leagueId) {
     throw new Error('No active league selected');
@@ -691,6 +706,7 @@ export const submitBid = async (footballerId: number, playerId: string, amount: 
       player_id: playerId,
       bid_amount: amount,
       league_id: parseInt(leagueId),
+      timestamp: timestamp ?? undefined,
     }),
   });
   const data = await response.json();

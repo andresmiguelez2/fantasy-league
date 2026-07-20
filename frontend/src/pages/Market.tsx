@@ -87,7 +87,7 @@ const Market = () => {
     setInfoDialogOpen(true);
   };
   
-  const handleBidSubmit = async (amount: number) => {
+  const handleBidSubmit = async (amount: number, timestamp?: string | null) => {
     if (!selectedFootballer) return;
     
     const id = playerId || getActivePlayerId();
@@ -98,7 +98,8 @@ const Market = () => {
       });
       return;
     }
-    const resp = await placeBid(selectedFootballer.id, id, amount);
+    const resp = await placeBid(selectedFootballer.id, id, amount, timestamp);
+    const scheduledForFuture = timestamp && new Date(timestamp).getTime() > Date.now();
 
     // Determine message from API response
     let message = '';
@@ -114,14 +115,16 @@ const Market = () => {
       // title: amount === 0 ? "Bid deleted" : "Bid response",
       description: message || (amount === 0
         ? `Your bid for ${selectedFootballer.name} has been deleted.`
-        : `Your bid of €${amount.toLocaleString()} for ${selectedFootballer.name} has been placed.`),
+        : scheduledForFuture
+          ? `Your bid of €${amount.toLocaleString()} for ${selectedFootballer.name} has been scheduled.`
+          : `Your bid of €${amount.toLocaleString()} for ${selectedFootballer.name} has been placed.`),
     });
     
     // Update the footballer's value with the new bid
     setFootballers(prev =>
       prev.map(f =>
         f.id === selectedFootballer.id
-          ? { ...f, value: amount, bidAmount: amount }
+          ? { ...f, value: amount, bidAmount: amount === 0 || scheduledForFuture ? 0 : amount }
           : f
       )
     );

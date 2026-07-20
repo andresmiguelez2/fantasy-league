@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter
 from pydantic import BaseModel
 
@@ -84,7 +86,7 @@ def player_market(player_id: int, league_id: int):
             LEFT JOIN (
                 SELECT *
                 FROM bid
-                WHERE bidder_id = %s AND active = TRUE AND league_id = %s
+                WHERE bidder_id = %s AND active = TRUE AND league_id = %s AND timestamp <= now()
             ) AS b ON f.id = b.footballer_id AND f.league_id = b.league_id
             LEFT JOIN player ON player.id = f.owner_id AND player.league_id = f.league_id
             WHERE
@@ -182,6 +184,7 @@ class BidRequest(BaseModel):
     footballer_id: int
     bid_amount: int
     league_id: int
+    timestamp: datetime | None = None
 
 @router.post("/bid")
 def place_bid(bid: BidRequest):
@@ -240,12 +243,16 @@ def place_bid(bid: BidRequest):
             conn.close()
             return {"status": "success", "message": "Bid removed successfully."}
         else:
+            bid_timestamp = bid.timestamp or datetime.now(timezone.utc)
+            if bid_timestamp.tzinfo is None:
+                bid_timestamp = bid_timestamp.replace(tzinfo=timezone.utc)
+
             cursor.execute(
                 """
                 INSERT INTO bid (footballer_id, bidder_id, amount, timestamp, league_id, active)
-                VALUES (%s, %s, %s, now(), %s, true)
+                VALUES (%s, %s, %s, %s, %s, true)
                 """,
-                (bid.footballer_id, bid.player_id, bid.bid_amount, bid.league_id)
+                (bid.footballer_id, bid.player_id, bid.bid_amount, bid_timestamp, bid.league_id)
             )
             logger.info(f"Received bid: Player {bid.player_id} bids {bid.bid_amount} on footballer {bid.footballer_id}")
             conn.commit()
@@ -354,7 +361,11 @@ def get_player_incoming_bids(player_id: int, league_id: int):
                 LEFT JOIN footballer AS f ON b.footballer_id = f.id AND b.league_id = f.league_id
                 LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
                 LEFT JOIN player AS p on b.bidder_id = p.id
-            WHERE f.owner_id = %s AND b.league_id = %s AND b.active = TRUE
+            WHERE
+                f.owner_id = %s
+                AND b.league_id = %s
+                AND b.active = TRUE
+                AND b.timestamp <= now()
             ORDER BY footballer_id, b.timestamp DESC
             """,
             (BANK_NAME, player_id, league_id)
@@ -394,8 +405,51 @@ def get_player_outgoing_bids(player_id: int, league_id: int):
                 LEFT JOIN footballer AS f ON b.footballer_id = f.id AND b.league_id = f.league_id
                 LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
                 LEFT JOIN player AS p on f.owner_id = p.id
-            WHERE b.bidder_id = %s AND b.league_id = %s AND b.active = TRUE
+            WHERE
+                b.bidder_id = %s
+                AND b.league_id = %s
+                AND b.active = TRUE
+                AND b.timestamp <= now()
             ORDER BY footballer_id, b.timestamp DESC
+            """,
+            (BANK_NAME, player_id, league_id)
+        )
+        bids = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+        return {"status": "success", "bids": bids, "columns": ["bid_id", "timestamp", "footballer_id", "owner_name", "footballer_name", "amount"]}
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return {"status": "error", "bids": []}
+
+
+@router.get("/future_bids/{player_id}")
+def get_player_future_bids(player_id: int, league_id: int):
+    """Get all outgoing bids scheduled for the future."""
+    try:
+        conn = pg_connect()
+
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT
+                b.id AS bid_id
+                , b.timestamp
+                , f.id AS footballer_id
+                , COALESCE(p.name, %s) AS owner_name
+                , fd.name AS footballer_name
+                , b.amount
+            FROM bid AS b
+                LEFT JOIN footballer AS f ON b.footballer_id = f.id AND b.league_id = f.league_id
+                LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
+                LEFT JOIN player AS p on f.owner_id = p.id
+            WHERE
+                b.bidder_id = %s
+                AND b.league_id = %s
+                AND b.active = TRUE
+                AND b.timestamp > now()
+            ORDER BY b.timestamp ASC, footballer_id
             """,
             (BANK_NAME, player_id, league_id)
         )

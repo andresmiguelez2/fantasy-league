@@ -16,6 +16,7 @@ import Fixtures from "./pages/Fixtures";
 import Market from "./pages/Market";
 import IncomingBids from "./pages/IncomingBids";
 import OutgoingBids from "./pages/OutgoingBids";
+import FutureBids from "./pages/FutureBids";
 import MarketHistory from "./pages/MarketHistory";
 import FootballerInfo from "./pages/FootballerInfo";
 import NotFound from "./pages/NotFound";
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/market" element={<ProtectedRoute><LeagueGuard><Market /></LeagueGuard></ProtectedRoute>} />
             <Route path="/market/incoming" element={<ProtectedRoute><LeagueGuard><IncomingBids /></LeagueGuard></ProtectedRoute>} />
             <Route path="/market/outgoing" element={<ProtectedRoute><LeagueGuard><OutgoingBids /></LeagueGuard></ProtectedRoute>} />
+            <Route path="/market/future" element={<ProtectedRoute><LeagueGuard><FutureBids /></LeagueGuard></ProtectedRoute>} />
             <Route path="/market/history" element={<ProtectedRoute><LeagueGuard><MarketHistory /></LeagueGuard></ProtectedRoute>} />
             <Route path="/footballer-info" element={<ProtectedRoute><LeagueGuard><FootballerInfo /></LeagueGuard></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
