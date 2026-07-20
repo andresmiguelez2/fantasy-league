@@ -364,7 +364,7 @@ def get_player_incoming_bids(player_id: int, league_id: int):
             WHERE
                 f.owner_id = %s
                 AND b.league_id = %s
-                AND b.active = FALSE
+                AND b.active = TRUE
                 AND b.timestamp <= now()
             ORDER BY footballer_id, b.timestamp DESC
             """,
@@ -408,7 +408,7 @@ def get_player_outgoing_bids(player_id: int, league_id: int):
             WHERE
                 b.bidder_id = %s
                 AND b.league_id = %s
-                AND b.active = FALSE
+                AND b.active = TRUE
                 AND b.timestamp <= now()
             ORDER BY footballer_id, b.timestamp DESC
             """,
