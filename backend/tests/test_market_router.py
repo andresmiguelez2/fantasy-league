@@ -13,6 +13,7 @@ from backend.app.api.routers.market import (
     get_player_outgoing_bids,
     place_bid,
     player_market,
+    reply_to_bid,
 )
 
 
@@ -149,6 +150,32 @@ class PlayerMarketTests(unittest.TestCase):
         self.assertEqual(response["status"], "success")
         insert_call = mock_cursor.execute.call_args_list[2]
         self.assertEqual(insert_call.args[1], (2, 1, 150, future_timestamp, 10))
+
+    @patch("backend.app.api.routers.market.debit_player_value")
+    @patch("backend.app.api.routers.market.get_team_value", return_value=100)
+    @patch("backend.app.api.routers.market.get_player_info", return_value={"player": [2, "Bidder", 100]})
+    @patch("backend.app.api.routers.market.get_player_bid_sum", return_value={"total_bid_sum": 150})
+    @patch("backend.app.api.routers.market.pg_connect")
+    def test_reply_to_bid_rejects_acceptance_when_bidder_exceeds_budget_limit(
+        self,
+        mock_pg_connect,
+        _mock_bid_sum,
+        _mock_player_info,
+        _mock_team_value,
+        mock_debit_player_value,
+    ):
+        mock_cursor = MagicMock()
+        mock_cursor.fetchone.return_value = (9, 2, 80, 4)
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value = mock_cursor
+        mock_pg_connect.return_value = mock_conn
+
+        response = reply_to_bid(bid_id=1, league_id=10, accept=True)
+
+        self.assertEqual(response["status"], "error")
+        self.assertIn("greater debt", response["message"])
+        self.assertEqual(len(mock_cursor.execute.call_args_list), 1)
+        mock_debit_player_value.assert_not_called()
 
 
 if __name__ == "__main__":

@@ -186,6 +186,23 @@ class BidRequest(BaseModel):
     league_id: int
     timestamp: datetime | None = None
 
+
+def _player_has_enough_budget(player_id: int, league_id: int, extra_bid_amount: int = 0):
+    """Check whether the player can cover active bid commitments."""
+    player_bid_sum = get_player_bid_sum(player_id, league_id)["total_bid_sum"]
+    player_budget = get_player_info(player_id, league_id)["player"][2]
+    player_debt = player_bid_sum + extra_bid_amount - player_budget
+    team_value = get_team_value(player_id, league_id)
+
+    if player_debt > MAX_DEBT_AS_VALUE_UNIT * team_value:
+        return False, (
+            f"Bid amount implies a greater debt ({player_debt:,.0f} €) than "
+            f"{MAX_DEBT_AS_VALUE_UNIT:.0%} of your team's value "
+            f"({(team_value * MAX_DEBT_AS_VALUE_UNIT):,.0f} €)."
+        )
+
+    return True, None
+
 @router.post("/bid")
 def place_bid(bid: BidRequest):
     """Place or remove a bid on a footballer. To remove a bid, bid an amount of 0.
@@ -211,10 +228,11 @@ def place_bid(bid: BidRequest):
         footballer.id = bid.footballer_id
         footballer.get_player_data()
 
-        player_bid_sum = get_player_bid_sum(bid.player_id, bid.league_id)['total_bid_sum']
-        player_budget = get_player_info(bid.player_id, bid.league_id)['player'][2]
-        player_debt = player_bid_sum + bid.bid_amount - player_budget
-        team_value = get_team_value(bid.player_id, bid.league_id)
+        has_enough_budget, budget_error = _player_has_enough_budget(
+            bid.player_id,
+            bid.league_id,
+            bid.bid_amount,
+        )
 
         if bid.bid_amount < footballer.data['market_details'][-1]['value'] and bid.bid_amount != 0:
             cursor.close()
@@ -224,10 +242,10 @@ def place_bid(bid: BidRequest):
             cursor.close()
             conn.close()
             return {"status": "error", "message": "Cannot bid on your own footballer."}
-        elif player_debt > MAX_DEBT_AS_VALUE_UNIT * team_value:
+        elif not has_enough_budget:
             cursor.close()
             conn.close()
-            return {"status": "error", "message": f"Bid amount implies a greater debt ({player_debt:,.0f} €) than {MAX_DEBT_AS_VALUE_UNIT:.0%} of your team's value ({(team_value * MAX_DEBT_AS_VALUE_UNIT):,.0f} €)."}
+            return {"status": "error", "message": budget_error}
         else:
             cursor.execute(
                 """
@@ -298,6 +316,16 @@ def reply_to_bid(bid_id: int, league_id: int, accept: bool):
         footballer_id, bidder_id, amount, owner_id = bid
 
         if accept:
+            if bidder_id is not None:
+                has_enough_budget, budget_error = _player_has_enough_budget(
+                    bidder_id,
+                    league_id,
+                )
+                if not has_enough_budget:
+                    cursor.close()
+                    conn.close()
+                    return {"status": "error", "message": budget_error}
+
             cursor.execute(
                 """
                 UPDATE footballer
