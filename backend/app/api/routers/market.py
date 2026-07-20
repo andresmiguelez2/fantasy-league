@@ -187,11 +187,17 @@ class BidRequest(BaseModel):
     timestamp: datetime | None = None
 
 
-def _player_has_enough_budget(player_id: int, league_id: int, extra_bid_amount: int = 0):
+def _player_has_enough_budget(
+    player_id: int,
+    league_id: int,
+    new_bid_amount: int = 0,
+    current_bid_amount: int = 0,
+):
     """Check whether the player can cover active bid commitments."""
     player_bid_sum = get_player_bid_sum(player_id, league_id)["total_bid_sum"]
     player_budget = get_player_info(player_id, league_id)["player"][2]
-    player_debt = player_bid_sum + extra_bid_amount - player_budget
+    adjusted_bid_sum = player_bid_sum - current_bid_amount + new_bid_amount
+    player_debt = adjusted_bid_sum - player_budget
     team_value = get_team_value(player_id, league_id)
 
     if player_debt > MAX_DEBT_AS_VALUE_UNIT * team_value:
@@ -228,10 +234,29 @@ def place_bid(bid: BidRequest):
         footballer.id = bid.footballer_id
         footballer.get_player_data()
 
+        cursor.execute(
+            """
+            SELECT id, amount
+            FROM bid
+            WHERE
+                footballer_id = %s
+                AND bidder_id = %s
+                AND league_id = %s
+                AND active = true
+            ORDER BY timestamp DESC, id DESC
+            LIMIT 1
+            """,
+            (bid.footballer_id, bid.player_id, bid.league_id)
+        )
+        existing_bid = cursor.fetchone()
+        existing_bid_id = existing_bid[0] if existing_bid else None
+        existing_bid_amount = existing_bid[1] if existing_bid else 0
+
         has_enough_budget, budget_error = _player_has_enough_budget(
             bid.player_id,
             bid.league_id,
             bid.bid_amount,
+            existing_bid_amount,
         )
 
         if bid.bid_amount < footballer.data['market_details'][-1]['value'] and bid.bid_amount != 0:
@@ -246,16 +271,17 @@ def place_bid(bid: BidRequest):
             cursor.close()
             conn.close()
             return {"status": "error", "message": budget_error}
-        else:
-            cursor.execute(
-                """
-                DELETE FROM bid
-                WHERE footballer_id = %s AND bidder_id = %s AND league_id = %s
-            """,
-            (bid.footballer_id, bid.player_id, bid.league_id)
-        )
 
         if bid.bid_amount == 0:
+            if existing_bid_id is not None:
+                cursor.execute(
+                    """
+                    UPDATE bid
+                    SET active = false
+                    WHERE id = %s
+                    """,
+                    (existing_bid_id,)
+                )
             conn.commit()
             cursor.close()
             conn.close()
@@ -265,14 +291,29 @@ def place_bid(bid: BidRequest):
             if bid_timestamp.tzinfo is None:
                 bid_timestamp = bid_timestamp.replace(tzinfo=timezone.utc)
 
-            cursor.execute(
-                """
-                INSERT INTO bid (footballer_id, bidder_id, amount, timestamp, league_id, active)
-                VALUES (%s, %s, %s, %s, %s, true)
-                """,
-                (bid.footballer_id, bid.player_id, bid.bid_amount, bid_timestamp, bid.league_id)
-            )
-            logger.info(f"Received bid: Player {bid.player_id} bids {bid.bid_amount} on footballer {bid.footballer_id}")
+            if existing_bid_id is not None:
+                cursor.execute(
+                    """
+                    UPDATE bid
+                    SET amount = %s, timestamp = %s
+                    WHERE id = %s
+                    """,
+                    (bid.bid_amount, bid_timestamp, existing_bid_id)
+                )
+                logger.info(
+                    f"Updated bid: Player {bid.player_id} bids {bid.bid_amount} on footballer {bid.footballer_id}"
+                )
+            else:
+                cursor.execute(
+                    """
+                    INSERT INTO bid (footballer_id, bidder_id, amount, timestamp, league_id, active)
+                    VALUES (%s, %s, %s, %s, %s, true)
+                    """,
+                    (bid.footballer_id, bid.player_id, bid.bid_amount, bid_timestamp, bid.league_id)
+                )
+                logger.info(
+                    f"Received bid: Player {bid.player_id} bids {bid.bid_amount} on footballer {bid.footballer_id}"
+                )
             conn.commit()
             cursor.close()
             conn.close()

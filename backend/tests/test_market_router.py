@@ -8,6 +8,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from backend.app.api.routers.market import (
     BidRequest,
+    _player_has_enough_budget,
     get_player_future_bids,
     get_player_incoming_bids,
     get_player_outgoing_bids,
@@ -127,7 +128,7 @@ class PlayerMarketTests(unittest.TestCase):
         _mock_team_value,
     ):
         mock_cursor = MagicMock()
-        mock_cursor.fetchone.return_value = ("Full Name", "url-name", None)
+        mock_cursor.fetchone.side_effect = [("Full Name", "url-name", None), None]
         mock_conn = MagicMock()
         mock_conn.cursor.return_value = mock_cursor
         mock_pg_connect.return_value = mock_conn
@@ -150,6 +151,89 @@ class PlayerMarketTests(unittest.TestCase):
         self.assertEqual(response["status"], "success")
         insert_call = mock_cursor.execute.call_args_list[2]
         self.assertEqual(insert_call.args[1], (2, 1, 150, future_timestamp, 10))
+
+    @patch("backend.app.api.routers.market.get_team_value", return_value=200)
+    @patch("backend.app.api.routers.market.get_player_info", return_value={"player": [1, "Player", 100]})
+    @patch("backend.app.api.routers.market.get_player_bid_sum", return_value={"total_bid_sum": 100})
+    def test_player_has_enough_budget_allows_replacing_existing_bid_without_double_counting(
+        self,
+        _mock_bid_sum,
+        _mock_player_info,
+        _mock_team_value,
+    ):
+        has_enough_budget, budget_error = _player_has_enough_budget(
+            player_id=1,
+            league_id=10,
+            new_bid_amount=130,
+            current_bid_amount=100,
+        )
+
+        self.assertTrue(has_enough_budget)
+        self.assertIsNone(budget_error)
+
+    @patch("backend.app.api.routers.market.get_team_value", return_value=200)
+    @patch("backend.app.api.routers.market.get_player_info", return_value={"player": [1, "Player", 100]})
+    @patch("backend.app.api.routers.market.get_player_bid_sum", return_value={"total_bid_sum": 150})
+    def test_player_has_enough_budget_allows_removing_existing_bid(
+        self,
+        _mock_bid_sum,
+        _mock_player_info,
+        _mock_team_value,
+    ):
+        has_enough_budget, budget_error = _player_has_enough_budget(
+            player_id=1,
+            league_id=10,
+            new_bid_amount=0,
+            current_bid_amount=60,
+        )
+
+        self.assertTrue(has_enough_budget)
+        self.assertIsNone(budget_error)
+
+    @patch("backend.app.api.routers.market.get_team_value", return_value=1000000)
+    @patch("backend.app.api.routers.market.get_player_info", return_value={"player": [1, "Player", 1000000]})
+    @patch("backend.app.api.routers.market.get_player_bid_sum", return_value={"total_bid_sum": 100})
+    @patch("backend.app.api.routers.market.Footballer")
+    @patch("backend.app.api.routers.market.pg_connect")
+    def test_place_bid_updates_existing_bid_instead_of_deleting_and_reinserting(
+        self,
+        mock_pg_connect,
+        mock_footballer,
+        _mock_bid_sum,
+        _mock_player_info,
+        _mock_team_value,
+    ):
+        mock_cursor = MagicMock()
+        future_timestamp = datetime(2030, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        mock_cursor.fetchone.side_effect = [
+            ("Full Name", "url-name", None),
+            (9, 100),
+        ]
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value = mock_cursor
+        mock_pg_connect.return_value = mock_conn
+
+        footballer_instance = MagicMock()
+        footballer_instance.data = {"market_details": [{"value": 100}]}
+        mock_footballer.return_value = footballer_instance
+
+        response = place_bid(
+            BidRequest(
+                player_id=1,
+                footballer_id=2,
+                bid_amount=150,
+                league_id=10,
+                timestamp=future_timestamp,
+            )
+        )
+
+        self.assertEqual(response["status"], "success")
+        update_call = mock_cursor.execute.call_args_list[2]
+        self.assertIn("UPDATE bid", update_call.args[0])
+        self.assertEqual(update_call.args[1], (150, future_timestamp, 9))
+        executed_sql = " ".join(call.args[0] for call in mock_cursor.execute.call_args_list)
+        self.assertNotIn("DELETE FROM bid", executed_sql)
+        self.assertNotIn("INSERT INTO bid", executed_sql)
 
     @patch("backend.app.api.routers.market.debit_player_value")
     @patch("backend.app.api.routers.market.get_team_value", return_value=100)
