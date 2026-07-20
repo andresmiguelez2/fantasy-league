@@ -30,10 +30,12 @@ export const BidDialog = ({
   currentBidTimestamp,
   onSubmit,
 }: BidDialogProps) => {
+  const MILLISECONDS_PER_MINUTE = 60_000;
+
   const toDateTimeLocalInputValue = (timestamp: string) => {
     const date = new Date(timestamp);
     const offset = date.getTimezoneOffset();
-    const localDate = new Date(date.getTime() - offset * 60_000);
+    const localDate = new Date(date.getTime() - offset * MILLISECONDS_PER_MINUTE);
     return localDate.toISOString().slice(0, 16);
   };
 
