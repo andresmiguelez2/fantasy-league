@@ -69,13 +69,13 @@ const IncomingBids = () => {
       if (success) {
         toast.success("Bid accepted");
         queryClient.invalidateQueries({ queryKey: ["incomingBids"] });
+        setReplyDialogOpen(false);
       } else {
         toast.error("Failed to accept bid");
       }
     } catch {
       toast.error("Failed to accept bid");
     }
-    setReplyDialogOpen(false);
   };
 
   const handleDecline = async () => {
@@ -85,13 +85,13 @@ const IncomingBids = () => {
       if (success) {
         toast.success("Bid declined");
         queryClient.invalidateQueries({ queryKey: ["incomingBids"] });
+        setReplyDialogOpen(false);
       } else {
         toast.error("Failed to decline bid");
       }
     } catch {
       toast.error("Failed to decline bid");
     }
-    setReplyDialogOpen(false);
   };
 
   return (
