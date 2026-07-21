@@ -4,6 +4,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, field_validator
+from backend.app.utils.setup_auth_db import create_user
 from backend.app.db.database import pg_connect
 from backend.app.core.auth import verify_token
 from backend.app.core.constants import (
@@ -298,6 +299,16 @@ def create_league(
                 VALUES (now() + INTERVAL '-1 second', %s)
                 """, 
                 (league_id,)
+            )
+
+            # Create legaue user
+            league_user_id = create_user('league_user', ''.join(random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=20)))
+            cursor.execute(
+                """
+                INSERT INTO player (name, league_id, user_id, budget)
+                VALUES ('League', %s, %s, 0)
+                """,
+                (league_id, league_user_id),
             )
 
             # Create a player for this user in the new league (always auto-generate the player ID)
