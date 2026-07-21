@@ -188,10 +188,10 @@ class Market:
                 UPDATE bid
                 SET
                     active = false
-                    , winner = true
+                    , acquired_from = %s
                 WHERE id = %s;
                 """,
-                (bidder_id, footballer_id, self.league_id, bid_id)
+                (bidder_id, footballer_id, self.league_id, seller_id, bid_id)
             )
 
             if bidder_id is not None:
