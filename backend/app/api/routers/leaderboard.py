@@ -36,8 +36,12 @@ def leaderboard(fixture_id: str, league_id: int):
                         WHERE footballer.league_id = %s
                         GROUP BY footballer.owner_id
                     ) AS f ON player.id = f.owner_id
-                    WHERE player.league_id = %s
-                    ORDER BY points DESC
+                    WHERE
+                        player.league_id = %s
+                        AND player.points IS NOT NULL
+                        AND player.budget IS NOT NULL
+                        AND player.lineup IS NOT NULL
+                    ORDER BY player.points DESC
                     """,
                     (league_id, league_id)
                 )
@@ -65,8 +69,12 @@ def leaderboard(fixture_id: str, league_id: int):
                         FROM fixture_details
                         WHERE fixture_n = %s AND league_id = %s
                     ) AS fixture ON fixture.player_id = player.id
-                    WHERE player.league_id = %s
-                    ORDER BY points DESC
+                    WHERE
+                        player.league_id = %s
+                        AND player.points IS NOT NULL
+                        AND player.budget IS NOT NULL
+                        AND player.lineup IS NOT NULL
+                    ORDER BY fixture.points DESC
                     """,
                     (league_id, fixture_id, league_id, league_id)
                 )

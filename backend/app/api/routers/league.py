@@ -302,11 +302,11 @@ def create_league(
             )
 
             # Create legaue user
-            league_user_id = create_user('league_user', ''.join(random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=20)))
+            league_user_id = create_user(f'league_user_{league_id}', ''.join(random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=20)))
             cursor.execute(
                 """
-                INSERT INTO player (name, league_id, user_id, budget)
-                VALUES ('League', %s, %s, 0)
+                INSERT INTO player (name, league_id, user_id, budget, lineup, points)
+                VALUES ('League', %s, %s, NULL, NULL, NULL)
                 """,
                 (league_id, league_user_id),
             )
@@ -552,6 +552,7 @@ def delete_league(
             cursor.execute("DELETE FROM fixture_details WHERE league_id = %s", (league_id,))
             cursor.execute("DELETE FROM footballer WHERE league_id = %s", (league_id,))
             cursor.execute("DELETE FROM player WHERE league_id = %s", (league_id,))
+            cursor.execute("DELETE FROM users WHERE username = %s", (f'league_user_{league_id}',))
             cursor.execute("DELETE FROM market WHERE league_id = %s", (league_id,))
             cursor.execute("DELETE FROM league WHERE id = %s", (league_id,))
 
