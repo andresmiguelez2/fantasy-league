@@ -393,10 +393,10 @@ def reply_to_bid(bid_id: int, league_id: int, accept: bool):
                 SET owner_id = %s, on_market = FALSE, on_market_since = NULL
                 WHERE id = %s AND league_id = %s;
                 UPDATE bid
-                SET active = false
+                SET active = false, acquired_from = %s
                 WHERE footballer_id = %s AND league_id = %s
                 """,
-                (bidder_id, footballer_id, league_id, footballer_id, league_id)
+                (bidder_id, footballer_id, league_id, owner_id, footballer_id, league_id)
             )
             if bidder_id is not None:
                 debit_player_value(bidder_id, amount)
