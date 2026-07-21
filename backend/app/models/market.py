@@ -188,10 +188,16 @@ class Market:
                 UPDATE bid
                 SET
                     active = false
-                    , acquired_from = %s
+                    , acquired_from = COALESCE(%s, (SELECT id
+                        FROM player
+                        WHERE
+                            budget IS NULL
+                            AND points IS NULL
+                            AND lineup IS NULL
+                            AND league_id = %s))
                 WHERE id = %s;
                 """,
-                (bidder_id, footballer_id, self.league_id, seller_id, bid_id)
+                (bidder_id, footballer_id, self.league_id, seller_id, self.league_id, bid_id)
             )
 
             if bidder_id is not None:
