@@ -283,8 +283,8 @@ class Market:
             bid_amount = Market.get_random_bid(value)
             cursor.execute(
                 """
-                INSERT INTO bid (footballer_id, bidder_id, amount, timestamp, league_id)
-                VALUES (%s, %s, %s, now(), %s)
+                INSERT INTO bid (footballer_id, bidder_id, amount, timestamp, league_id, active)
+                VALUES (%s, %s, %s, now(), %s, true)
                 """,
                 (id, None, bid_amount, self.league_id)
             )
