@@ -68,6 +68,7 @@ def get_footballer_info(footballer_id: int, league_id: int):
                 , f.owner_id
                 , p.name as owner_name
                 , fd.position
+                , fd.availability
             FROM footballer_data fd
             LEFT JOIN footballer f ON fd.id = f.id
             LEFT JOIN player p ON f.owner_id = p.id AND f.league_id = p.league_id
@@ -96,6 +97,7 @@ def get_footballer_info(footballer_id: int, league_id: int):
                 "owner_id": footballer_data[4],
                 "owner_name": footballer_data[5],
                 "position": footballer_data[6],
+                "availability": footballer_data[7],
                 "market_details": document['market_details'],
                 "fixture_breakdown": extract_fixture_points(document['fixture_breakdown']),
             }
