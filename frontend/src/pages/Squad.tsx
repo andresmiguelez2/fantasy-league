@@ -75,6 +75,7 @@ const Squad = () => {
                   totalPoints={footballer.totalPoints}
                   averagePoints={footballer.averagePoints}
                   position={footballer.position}
+                  availability={footballer.availability}
                   onClick={() => handleFootballerClick(footballer)}
                 />
                 ))}
