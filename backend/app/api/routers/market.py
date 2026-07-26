@@ -231,9 +231,9 @@ def place_bid(bid: BidRequest):
                 """
                 SELECT footballer_data.FULL_name, footballer.url_name, footballer.owner_id
                 FROM footballer LEFT JOIN footballer_data ON footballer.id = footballer_data.id
-                WHERE footballer.id = %s
+                WHERE footballer.id = %s AND footballer.league_id = %s
             """,
-            (bid.footballer_id,)
+            (bid.footballer_id, bid.league_id)
         )
         full_name, url_name, owner_id = cursor.fetchone()
 
@@ -284,6 +284,7 @@ def place_bid(bid: BidRequest):
             bid.league_id,
             bid.bid_amount,
             existing_bid_amount,
+            adjust_team_value = owner_id is not None,
         )
 
         if bid.bid_amount < footballer.data['market_details'][-1]['value'] and bid.bid_amount != 0:
