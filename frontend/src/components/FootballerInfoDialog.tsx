@@ -17,7 +17,7 @@ import {
 import { BidDialog } from "@/components/BidDialog";
 import { ReleaseClauseDialog } from "@/components/ReleaseClauseDialog";
 import { AvailabilityIcon } from "@/components/AvailabilityIcon";
-import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail, placeBid, payReleaseClause, fetchMarketStatus, changeMarketStatus, getActivePlayerId, BACKEND_URL } from "@/lib/api";
+import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail, placeBid, payReleaseClause, scheduleReleaseClauseBid, fetchMarketStatus, changeMarketStatus, getActivePlayerId, BACKEND_URL } from "@/lib/api";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, Cell } from "recharts";
 import { MoreVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -161,7 +161,7 @@ export const FootballerInfoDialog = ({
   };
 
   const handleReleaseClauseSubmit = async () => {
-    if (!info) return;
+    if (!info) return false;
     
     const id = getCurrentPlayerId();
     if (!id) {
@@ -169,7 +169,7 @@ export const FootballerInfoDialog = ({
         description: "Unable to pay release clause: player ID not found",
         variant: "destructive",
       });
-      return;
+      return false;
     }
     
     const resp = await payReleaseClause(footballerId, id);
@@ -186,6 +186,28 @@ export const FootballerInfoDialog = ({
         .then(setInfo)
         .catch(console.error);
     }
+    return resp?.status === "success";
+  };
+
+  const handleScheduleReleaseClauseBidSubmit = async (amount: number) => {
+    if (!info) return false;
+
+    const id = getCurrentPlayerId();
+    if (!id) {
+      toast({
+        description: "Unable to schedule release clause bid: player ID not found",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    const resp = await scheduleReleaseClauseBid(footballerId, id, amount);
+    const message = extractMessage(resp);
+    toast({
+      description: message || `Release clause bid for ${info.name} has been scheduled.`,
+      variant: resp?.status === "success" ? "default" : "destructive",
+    });
+    return resp?.status === "success";
   };
 
   // Check if "Offer Amount" and "Pay release clause" options should be available
@@ -455,6 +477,7 @@ export const FootballerInfoDialog = ({
         footballerName={info.name}
         footballerId={footballerId}
         onSubmit={handleReleaseClauseSubmit}
+        onScheduleSubmit={handleScheduleReleaseClauseBidSubmit}
       />
     </Dialog>
   );
