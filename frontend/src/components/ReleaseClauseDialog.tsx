@@ -140,6 +140,7 @@ export const ReleaseClauseDialog = ({
                     min={1}
                     step={1}
                   />
+                  <div className="text-xs text-muted-foreground">Only whole euro amounts are allowed.</div>
                 </div>
               </div>
             )}
