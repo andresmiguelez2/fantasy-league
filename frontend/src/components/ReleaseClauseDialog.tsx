@@ -131,7 +131,7 @@ export const ReleaseClauseDialog = ({
                   </div>
                 )}
                 <div className="space-y-2">
-                  <Label htmlFor="scheduled-release-clause-bid">Bid amount (€)</Label>
+                  <Label htmlFor="scheduled-release-clause-bid">Bid amount for release clause (€)</Label>
                   <Input
                     id="scheduled-release-clause-bid"
                     type="number"
@@ -140,7 +140,6 @@ export const ReleaseClauseDialog = ({
                     min={1}
                     step={1}
                   />
-                  <div className="text-xs text-muted-foreground">Only whole euro amounts are allowed.</div>
                 </div>
               </div>
             )}
