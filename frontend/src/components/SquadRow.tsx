@@ -57,16 +57,16 @@ export const SquadRow = ({ id, name, value, totalPoints, averagePoints, position
         <span className="font-semibold">{name}</span>
       </TableCell>
       <TableCell className="text-center">
-        <div className="flex items-center justify-center gap-1">
-          {positionStyle ? (
-            <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold uppercase ${positionStyle.className}`}>
-              {positionStyle.label}
-            </span>
-          ) : (
-            <span className="text-muted-foreground text-xs">{position ?? "—"}</span>
-          )}
-          <AvailabilityIcon availability={availability} />
-        </div>
+        {positionStyle ? (
+          <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold uppercase ${positionStyle.className}`}>
+            {positionStyle.label}
+          </span>
+        ) : (
+          <span className="text-muted-foreground text-xs">{position ?? "—"}</span>
+        )}
+      </TableCell>
+      <TableCell className="text-center">
+        <AvailabilityIcon availability={availability} />
       </TableCell>
       <TableCell className="text-center">
         <span className="font-semibold text-green-600">{totalPoints}</span>
