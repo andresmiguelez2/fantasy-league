@@ -195,20 +195,24 @@ def _player_has_enough_budget(
     league_id: int,
     new_bid_amount: int = 0,
     current_bid_amount: int = 0,
+    adjust_team_value: bool = True,
 ):
     """Check whether the player can cover active bid commitments."""
     player_bid_sum = get_player_bid_sum(player_id, league_id)["total_bid_sum"]
     player_budget = get_player_info(player_id, league_id)["player"][2]
     adjusted_bid_sum = player_bid_sum - current_bid_amount + new_bid_amount
     player_debt = adjusted_bid_sum - player_budget
-    team_value = get_team_value(player_id, league_id)
+    team_value = get_team_value(player_id, league_id) if adjust_team_value else 0
 
     if player_debt > MAX_DEBT_AS_VALUE_UNIT * team_value:
-        return False, (
-            f"Bid amount implies a greater debt ({player_debt:,.0f} €) than "
-            f"{MAX_DEBT_AS_VALUE_UNIT:.0%} of your team's value "
-            f"({(team_value * MAX_DEBT_AS_VALUE_UNIT):,.0f} €)."
-        )
+        if adjust_team_value:
+            return False, (
+                f"Bid amount implies a greater debt ({player_debt:,.0f} €) than "
+                f"{MAX_DEBT_AS_VALUE_UNIT:.0%} of your team's value "
+                f"({(team_value * MAX_DEBT_AS_VALUE_UNIT):,.0f} €)."
+            )
+        else:
+            return False, f"Bid amount implies a debt ({player_debt:,.0f} €)."
 
     return True, None
 
@@ -581,9 +585,9 @@ def pay_release_clause(request: ReleaseClauseRequest):
                 owner_id
                 , release_clause
             FROM footballer
-            WHERE id = %s
+            WHERE id = %s AND league_id = %s
             """,
-            (request.footballer_id,)
+            (request.footballer_id, request.league_id)
         )
         
         result = cursor.fetchone()
@@ -605,6 +609,7 @@ def pay_release_clause(request: ReleaseClauseRequest):
             request.league_id,
             new_bid_amount=release_clause,
             current_bid_amount=0,
+            adjust_team_value=False  # Do not adjust team value when paying release clause
         )
         if not has_enough_budget:
             return {"status": "error", "message": budget_error}
@@ -614,18 +619,17 @@ def pay_release_clause(request: ReleaseClauseRequest):
             """
             UPDATE footballer
             SET owner_id = %s, on_market = FALSE, on_market_since = NULL, on_lineup = FALSE
-            WHERE id = %s
+            WHERE id = %s AND league_id = %s
             """,
-            (request.player_id, request.footballer_id)
+            (request.player_id, request.footballer_id, request.league_id)
         )
         
         cursor.execute(
             """
-            UPDATE bid
-            SET active = false
-            WHERE footballer_id = %s
+            INSERT INTO bid (amount, timestamp, bidder_id, footballer_id, league_id, active, acquired_from)
+            VALUES (%s, now(), %s, %s, %s, FALSE, %s)
             """,
-            (request.footballer_id,)
+            (release_clause, request.player_id, request.footballer_id, request.league_id, owner_id)
         )
         
         # Update player budgets
