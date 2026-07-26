@@ -557,6 +557,7 @@ def get_player_future_bids(player_id: int, league_id: int):
 class ReleaseClauseRequest(BaseModel):
     player_id: int
     footballer_id: int
+    league_id: int | None
 
 @router.post("/pay_release_clause")
 def pay_release_clause(request: ReleaseClauseRequest):
@@ -598,6 +599,15 @@ def pay_release_clause(request: ReleaseClauseRequest):
         # Cannot acquire your own footballer
         if owner_id == request.player_id:
             return {"status": "error", "message": "Cannot pay release clause for your own footballer."}
+
+        has_enough_budget, budget_error = _player_has_enough_budget(
+            request.player_id,
+            request.league_id,
+            new_bid_amount=release_clause,
+            current_bid_amount=0,
+        )
+        if not has_enough_budget:
+            return {"status": "error", "message": budget_error}
         
         # Transfer the footballer
         cursor.execute(
