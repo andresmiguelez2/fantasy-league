@@ -586,7 +586,7 @@ def schedule_release_clause_bid(request: ScheduleReleaseClauseBidRequest):
                 owner_id
                 , release_clause
                 , acquisition_ts
-                , COALESCE(acquisition_ts < now() - interval '%s days', FALSE) AS rc_available
+                , COALESCE(acquisition_ts < now() - make_interval(days => %s), FALSE) AS rc_available
             FROM footballer
             WHERE id = %s AND league_id = %s
             """,
@@ -596,13 +596,15 @@ def schedule_release_clause_bid(request: ScheduleReleaseClauseBidRequest):
         if not result:
             return {"status": "error", "message": "Footballer not found."}
 
-        owner_id, _, acquisition_ts, rc_available = result
+        owner_id, release_clause_amount, acquisition_ts, rc_available = result
         if owner_id is None:
             return {"status": "error", "message": "Release clause not available for this footballer."}
         if owner_id == request.player_id:
             return {"status": "error", "message": "Cannot schedule a release clause bid for your own footballer."}
         if rc_available:
             return {"status": "error", "message": "Release clause is already available. Pay it directly instead."}
+        if release_clause_amount is None:
+            return {"status": "error", "message": "Release clause not configured for this footballer."}
         if acquisition_ts is None:
             return {"status": "error", "message": "Release clause schedule cannot be computed for this footballer."}
 

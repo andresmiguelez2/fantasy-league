@@ -38,7 +38,7 @@ export const ReleaseClauseDialog = ({
 }: ReleaseClauseDialogProps) => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<ReleaseClauseData | null>(null);
-  const [scheduledBidAmount, setScheduledBidAmount] = useState("");
+  const [bidAmountInput, setBidAmountInput] = useState("");
   
   useEffect(() => {
     if (open && footballerId) {
@@ -46,7 +46,7 @@ export const ReleaseClauseDialog = ({
       fetchReleaseClauseData(footballerId)
         .then(data => {
           setData(data);
-          setScheduledBidAmount(data?.release_clause ? data.release_clause.toString() : "");
+          setBidAmountInput(data?.release_clause ? data.release_clause.toString() : "");
           setLoading(false);
         })
         .catch(err => {
@@ -61,7 +61,7 @@ export const ReleaseClauseDialog = ({
 
     const submitted = data.rc_available
       ? await onSubmit()
-      : await onScheduleSubmit(Number(scheduledBidAmount));
+      : await onScheduleSubmit(Number(bidAmountInput));
     if (submitted) {
       onOpenChange(false);
     }
@@ -93,7 +93,7 @@ export const ReleaseClauseDialog = ({
     return `${days} ${hh}:${mm}:${ss}`;
   };
 
-  const parsedScheduledBidAmount = Number(scheduledBidAmount);
+  const parsedScheduledBidAmount = Number(bidAmountInput);
   const isValidScheduledBid = Number.isInteger(parsedScheduledBidAmount) && parsedScheduledBidAmount >= 1;
   
   return (
@@ -135,8 +135,8 @@ export const ReleaseClauseDialog = ({
                   <Input
                     id="scheduled-release-clause-bid"
                     type="number"
-                    value={scheduledBidAmount}
-                    onChange={(e) => setScheduledBidAmount(e.target.value)}
+                    value={bidAmountInput}
+                    onChange={(e) => setBidAmountInput(e.target.value)}
                     min={1}
                     step={1}
                   />
