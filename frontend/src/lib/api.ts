@@ -507,10 +507,10 @@ export const fetchAllFootballers = async (
     name: footballer[1],
     value: footballer[2],
     ownerId: footballer[3] || '',
-    onMarketSince: footballer[4] || '',
-    bidAmount: footballer[5] || 0,
-    averagePoints: footballer[6],
-    totalPoints: footballer[7],
+    averagePoints: footballer[4],
+    totalPoints: footballer[5],
+    position: footballer[6] ?? null,
+    availability: footballer[7] ?? null,
   }));
 };
 

@@ -237,10 +237,10 @@ def get_all_footballers(league_id: int, limit: int = 20, offset: int = 0, page: 
                 , fd.name
                 , fd.value
                 , p.name AS owner_name
-                , NULL as on_market_since
-                , NULL as bid_amount
                 , fd.average_points
                 , fd.total_points
+                , fd.position
+	            , fd.availability
             FROM footballer f
             JOIN footballer_data fd ON fd.id = f.id
             LEFT JOIN player p on f.owner_id = p.id AND f.league_id = p.league_id
@@ -271,10 +271,10 @@ def get_all_footballers(league_id: int, limit: int = 20, offset: int = 0, page: 
                 "name",
                 "value",
                 "owner_name",
-                "on_market_since",
-                "bid_amount",
                 "average_points",
-                "total_points"
+                "total_points",
+                "position",
+                "availability",
             ]
         }
     except Exception as e:
