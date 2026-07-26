@@ -135,6 +135,7 @@ export const ReleaseClauseDialog = ({
                     value={scheduledBidAmount}
                     onChange={(e) => setScheduledBidAmount(e.target.value)}
                     min={1}
+                    step={1}
                   />
                 </div>
               </div>
@@ -152,7 +153,7 @@ export const ReleaseClauseDialog = ({
           </Button>
           <Button 
             onClick={handleSubmit}
-            disabled={loading || !data || (!data.rc_available && Number(scheduledBidAmount) <= 0)}
+            disabled={loading || !data || (!data.rc_available && (!Number.isInteger(Number(scheduledBidAmount)) || Number(scheduledBidAmount) < 1))}
           >
             {data?.rc_available ? "Pay Release Clause" : "Schedule Release Clause Bid"}
           </Button>

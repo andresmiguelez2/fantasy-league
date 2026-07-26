@@ -612,6 +612,12 @@ def schedule_release_clause_bid(request: ScheduleReleaseClauseBidRequest):
         scheduled_timestamp = acquisition_ts + timedelta(days=RELEASE_CLAUSE_DAYS, seconds=1)
         now_utc = datetime.now(timezone.utc)
         if scheduled_timestamp <= now_utc:
+            logger.warning(
+                "Computed release clause schedule timestamp is in the past for footballer %s in league %s. "
+                "Falling back to now + 1 second.",
+                request.footballer_id,
+                request.league_id,
+            )
             scheduled_timestamp = now_utc + timedelta(seconds=1)
 
         response = place_bid(
@@ -625,7 +631,7 @@ def schedule_release_clause_bid(request: ScheduleReleaseClauseBidRequest):
             )
         )
         if response.get("status") != "success":
-            return response
+            return {"status": "error", "message": "Unable to schedule release clause bid."}
 
         return {
             "status": "success",
@@ -634,7 +640,7 @@ def schedule_release_clause_bid(request: ScheduleReleaseClauseBidRequest):
         }
     except Exception as e:
         logger.error(f"Error scheduling release clause bid: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "Unable to schedule release clause bid."}
     finally:
         if cursor:
             cursor.close()
