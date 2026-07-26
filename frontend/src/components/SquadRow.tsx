@@ -1,6 +1,7 @@
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BACKEND_URL } from "@/lib/api";
+import { AvailabilityIcon } from "@/components/AvailabilityIcon";
 
 interface SquadRowProps {
   id: number;
@@ -9,6 +10,7 @@ interface SquadRowProps {
   totalPoints: number;
   averagePoints: number | string;
   position?: string | null;
+  availability?: string | null;
   onClick?: () => void;
 }
 
@@ -19,7 +21,7 @@ const POSITION_STYLES: Record<string, { label: string; className: string }> = {
   fw: { label: "FW", className: "bg-red-500 text-white" },
 };
 
-export const SquadRow = ({ id, name, value, totalPoints, averagePoints, position, onClick }: SquadRowProps) => {
+export const SquadRow = ({ id, name, value, totalPoints, averagePoints, position, availability, onClick }: SquadRowProps) => {
   const formatValue = (val: number) => {
     return new Intl.NumberFormat('en-ES', {
       style: 'currency',
@@ -62,6 +64,9 @@ export const SquadRow = ({ id, name, value, totalPoints, averagePoints, position
         ) : (
           <span className="text-muted-foreground text-xs">{position ?? "—"}</span>
         )}
+      </TableCell>
+      <TableCell className="text-center">
+        <AvailabilityIcon availability={availability} />
       </TableCell>
       <TableCell className="text-center">
         <span className="font-semibold text-green-600">{totalPoints}</span>

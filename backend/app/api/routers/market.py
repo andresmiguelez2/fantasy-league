@@ -81,6 +81,7 @@ def player_market(player_id: int, league_id: int):
                 , f_data.total_points
                 , COALESCE((f.owner_id = %s), FALSE) AS is_own
                 , f_data.position
+                , f_data.availability
             FROM footballer AS f 
             LEFT JOIN footballer_data AS f_data ON f.id = f_data.id
             LEFT JOIN (
@@ -116,7 +117,8 @@ def player_market(player_id: int, league_id: int):
                 "average_points",
                 "total_points",
                 "is_own",
-                "position"
+                "position",
+                "availability"
             ]
         }
     except Exception as e:

@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BACKEND_URL } from "@/lib/api";
+import { AvailabilityIcon } from "@/components/AvailabilityIcon";
 
 const POSITION_STYLES: Record<string, { label: string; className: string }> = {
   gk:  { label: "GK",  className: "bg-yellow-400 text-yellow-900" },
@@ -22,6 +23,7 @@ interface FootballerCardProps {
   totalPoints?: number;
   averagePoints?: number | string;
   position?: string | null;
+  availability?: string | null;
 }
 
 export const FootballerCard = ({
@@ -36,6 +38,7 @@ export const FootballerCard = ({
   totalPoints,
   averagePoints,
   position,
+  availability,
 }: FootballerCardProps) => {
   const formatMoney = (amount: number) => {
      return new Intl.NumberFormat('en-ES', {
@@ -77,13 +80,16 @@ export const FootballerCard = ({
         </div>
 
         <div className="text-center flex-shrink-0">
-          {positionStyle ? (
-            <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold uppercase ${positionStyle.className}`}>
-              {positionStyle.label}
-            </span>
-          ) : (
-            <span className="text-muted-foreground text-xs">{position ?? "—"}</span>
-          )}
+          <div className="flex items-center justify-center gap-1">
+            {positionStyle ? (
+              <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold uppercase ${positionStyle.className}`}>
+                {positionStyle.label}
+              </span>
+            ) : (
+              <span className="text-muted-foreground text-xs">{position ?? "—"}</span>
+            )}
+            <AvailabilityIcon availability={availability} />
+          </div>
         </div>
 
         <div className="text-center flex-shrink-0">

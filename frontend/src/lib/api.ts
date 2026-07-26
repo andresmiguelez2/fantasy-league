@@ -23,6 +23,7 @@ export interface Footballer {
   onMarket: boolean;
   onMarketSince: string | null;
   position: string | null;
+  availability: string | null;
 }
 
 export interface MarketFootballer {
@@ -36,6 +37,7 @@ export interface MarketFootballer {
   totalPoints: number;
   isOwn: boolean;
   position: string | null;
+  availability: string | null;
 }
 
 export interface MarketData {
@@ -259,6 +261,7 @@ export const fetchSquadFootballers = async (playerId?: string): Promise<Football
     onMarket: footballer[6],
     onMarketSince: footballer[7],
     position: footballer[8] ?? null,
+    availability: footballer[9] ?? null,
   }));
 };
 
@@ -284,6 +287,7 @@ export const fetchMarketFootballers = async (playerId?: string): Promise<MarketD
       totalPoints: footballer[7],
       isOwn: footballer[8] === true,
       position: footballer[9] ?? null,
+      availability: footballer[10] ?? null,
     })),
     marketClosingTimestamp: data.market_closing_timestamp ?? null,
   };
@@ -411,6 +415,7 @@ export interface FootballerInfo {
   owner_id: number | null;
   owner_name: string | null;
   position: string | null;
+  availability: string | null;
 }
 
 export interface FixtureDetail {
@@ -502,10 +507,10 @@ export const fetchAllFootballers = async (
     name: footballer[1],
     value: footballer[2],
     ownerId: footballer[3] || '',
-    onMarketSince: footballer[4] || '',
-    bidAmount: footballer[5] || 0,
-    averagePoints: footballer[6],
-    totalPoints: footballer[7],
+    averagePoints: footballer[4],
+    totalPoints: footballer[5],
+    position: footballer[6] ?? null,
+    availability: footballer[7] ?? null,
   }));
 };
 

@@ -68,6 +68,7 @@ def get_footballer_info(footballer_id: int, league_id: int):
                 , f.owner_id
                 , p.name as owner_name
                 , fd.position
+                , fd.availability
             FROM footballer_data fd
             LEFT JOIN footballer f ON fd.id = f.id
             LEFT JOIN player p ON f.owner_id = p.id AND f.league_id = p.league_id
@@ -96,6 +97,7 @@ def get_footballer_info(footballer_id: int, league_id: int):
                 "owner_id": footballer_data[4],
                 "owner_name": footballer_data[5],
                 "position": footballer_data[6],
+                "availability": footballer_data[7],
                 "market_details": document['market_details'],
                 "fixture_breakdown": extract_fixture_points(document['fixture_breakdown']),
             }
@@ -235,10 +237,10 @@ def get_all_footballers(league_id: int, limit: int = 20, offset: int = 0, page: 
                 , fd.name
                 , fd.value
                 , p.name AS owner_name
-                , NULL as on_market_since
-                , NULL as bid_amount
                 , fd.average_points
                 , fd.total_points
+                , fd.position
+	            , fd.availability
             FROM footballer f
             JOIN footballer_data fd ON fd.id = f.id
             LEFT JOIN player p on f.owner_id = p.id AND f.league_id = p.league_id
@@ -269,10 +271,10 @@ def get_all_footballers(league_id: int, limit: int = 20, offset: int = 0, page: 
                 "name",
                 "value",
                 "owner_name",
-                "on_market_since",
-                "bid_amount",
                 "average_points",
-                "total_points"
+                "total_points",
+                "position",
+                "availability",
             ]
         }
     except Exception as e:

@@ -24,7 +24,7 @@ class PlayerMarketTests(unittest.TestCase):
     def test_player_market_returns_market_closing_timestamp(self, mock_pg_connect, mock_load_market):
         mock_cursor = MagicMock()
         mock_cursor.fetchall.return_value = [
-            (1, "Player A", 100, None, "2025-01-01 12:00:00", None, 1.2, 10, False, "FW")
+            (1, "Player A", 100, None, "2025-01-01 12:00:00", None, 1.2, 10, False, "FW", "available")
         ]
         mock_conn = MagicMock()
         mock_conn.cursor.return_value = mock_cursor
