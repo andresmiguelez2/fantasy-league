@@ -92,6 +92,9 @@ export const ReleaseClauseDialog = ({
     
     return `${days} ${hh}:${mm}:${ss}`;
   };
+
+  const parsedScheduledBidAmount = Number(scheduledBidAmount);
+  const isValidScheduledBid = Number.isInteger(parsedScheduledBidAmount) && parsedScheduledBidAmount >= 1;
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -153,7 +156,7 @@ export const ReleaseClauseDialog = ({
           </Button>
           <Button 
             onClick={handleSubmit}
-            disabled={loading || !data || (!data.rc_available && (!Number.isInteger(Number(scheduledBidAmount)) || Number(scheduledBidAmount) < 1))}
+            disabled={loading || !data || (!data.rc_available && !isValidScheduledBid)}
           >
             {data?.rc_available ? "Pay Release Clause" : "Schedule Release Clause Bid"}
           </Button>
