@@ -626,8 +626,8 @@ def pay_release_clause(request: ReleaseClauseRequest):
         
         cursor.execute(
             """
-            INSERT INTO bid (amount, timestamp, bidder_id, footballer_id, league_id, active, acquired_from)
-            VALUES (%s, now(), %s, %s, %s, FALSE, %s)
+            INSERT INTO bid (amount, timestamp, bidder_id, footballer_id, league_id, active, acquired_from, release_clause)
+            VALUES (%s, now(), %s, %s, %s, FALSE, %s, TRUE)
             """,
             (release_clause, request.player_id, request.footballer_id, request.league_id, owner_id)
         )
