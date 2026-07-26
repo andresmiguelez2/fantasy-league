@@ -288,23 +288,30 @@ export const FootballerInfoDialog = ({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Points</p>
-                  <div className="flex items-center gap-2">
-                    <p className="text-2xl font-bold text-primary">{info.total_points}</p>
-                    <AvailabilityIcon availability={info.availability} />
-                  </div>
+                  <p className="text-2xl font-bold text-primary">{info.total_points}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Average Points</p>
                   <p className="text-2xl font-bold text-secondary">{info.average_points.toFixed(2)}</p>
                 </div>
               </div>
-              {info.position && (
-                <div className="mt-3">
-                  <p className="text-sm text-muted-foreground">Position</p>
-                  <p className="text-sm font-semibold uppercase">{info.position}</p>
-                </div>
-              )}
             </Card>
+
+            {(info.position || info.availability) && (
+              <Card className="p-4">
+                <div className="flex items-center justify-between">
+                  {info.position && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Position</p>
+                      <p className="text-sm font-semibold uppercase">{info.position}</p>
+                    </div>
+                  )}
+                  {info.availability && (
+                    <AvailabilityIcon availability={info.availability} showText />
+                  )}
+                </div>
+              </Card>
+            )}
 
             <Card className="p-4">
               <div className="flex items-start justify-between">
