@@ -688,6 +688,75 @@ export const fetchFutureBids = async (playerId?: string): Promise<OutgoingBid[]>
   return fetchPlayerBids("future_bids", playerId);
 };
 
+export interface AppNotification {
+  id: number;
+  type: string;
+  title: string;
+  message: string;
+  createdAt: string;
+  readAt: string | null;
+}
+
+export const fetchNotifications = async (
+  playerId?: string,
+  options: { unreadOnly?: boolean; limit?: number } = {}
+): Promise<AppNotification[]> => {
+  const resolvedPlayerId = playerId ?? getActivePlayerId();
+  if (!resolvedPlayerId) {
+    throw new Error("No active player selected");
+  }
+
+  const unreadOnly = options.unreadOnly ?? true;
+  const limit = options.limit ?? 20;
+  const query = withLeagueId({
+    unread_only: unreadOnly ? "true" : "false",
+    limit: String(limit),
+  });
+
+  const response = await fetch(`${BACKEND_URL}/notifications/${resolvedPlayerId}?${query}`);
+  const data = await response.json();
+
+  return (data.notifications ?? []).map((notification: any) => ({
+    id: notification.id,
+    type: notification.type,
+    title: notification.title,
+    message: notification.message,
+    createdAt: notification.created_at,
+    readAt: notification.read_at ?? null,
+  }));
+};
+
+export const markNotificationsRead = async (
+  notificationIds: number[],
+  playerId?: string
+): Promise<void> => {
+  if (!notificationIds.length) {
+    return;
+  }
+
+  const resolvedPlayerId = playerId ?? getActivePlayerId();
+  if (!resolvedPlayerId) {
+    throw new Error("No active player selected");
+  }
+
+  const leagueId = getActiveLeagueId();
+  if (!leagueId) {
+    throw new Error("No active league selected");
+  }
+
+  await fetch(`${BACKEND_URL}/notifications/mark-read`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      player_id: Number(resolvedPlayerId),
+      league_id: Number(leagueId),
+      notification_ids: notificationIds,
+    }),
+  });
+};
+
 export const submitBid = async (
   footballerId: number,
   playerId: string,
