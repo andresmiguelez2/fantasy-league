@@ -594,6 +594,7 @@ def get_player_future_bids(player_id: int, league_id: int):
 class ReleaseClauseRequest(BaseModel):
     player_id: int
     footballer_id: int
+    league_id: int
 
 @router.post("/pay_release_clause")
 def pay_release_clause(request: ReleaseClauseRequest):
@@ -617,9 +618,9 @@ def pay_release_clause(request: ReleaseClauseRequest):
                 owner_id
                 , release_clause
             FROM footballer
-            WHERE id = %s
+            WHERE id = %s AND league_id = %s
             """,
-            (request.footballer_id,)
+            (request.footballer_id, request.league_id)
         )
         
         result = cursor.fetchone()
@@ -641,18 +642,18 @@ def pay_release_clause(request: ReleaseClauseRequest):
             """
             UPDATE footballer
             SET owner_id = %s, on_market = FALSE, on_market_since = NULL, on_lineup = FALSE
-            WHERE id = %s
+            WHERE id = %s AND league_id = %s
             """,
-            (request.player_id, request.footballer_id)
+            (request.player_id, request.footballer_id, request.league_id)
         )
         
         cursor.execute(
             """
             UPDATE bid
             SET active = false
-            WHERE footballer_id = %s
+            WHERE footballer_id = %s AND league_id = %s
             """,
-            (request.footballer_id,)
+            (request.footballer_id, request.league_id)
         )
         
         # Update player budgets

@@ -827,6 +827,11 @@ export const changeMarketStatus = async (footballerId: number, onMarket: boolean
 };
 
 export const payReleaseClause = async (footballerId: number, playerId: string): Promise<PayReleaseClauseResponse> => {
+  const leagueId = getActiveLeagueId();
+  if (!leagueId) {
+    throw new Error('No active league selected');
+  }
+
   const res = await fetch(`${BACKEND_URL}/market/pay_release_clause`, {
     method: 'POST',
     headers: {
@@ -835,6 +840,7 @@ export const payReleaseClause = async (footballerId: number, playerId: string): 
     body: JSON.stringify({
       footballer_id: footballerId,
       player_id: playerId,
+      league_id: parseInt(leagueId),
     }),
   });
 
