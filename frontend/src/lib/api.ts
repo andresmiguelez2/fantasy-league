@@ -23,6 +23,7 @@ export interface Footballer {
   onMarket: boolean;
   onMarketSince: string | null;
   position: string | null;
+  availability: string | null;
 }
 
 export interface MarketFootballer {
@@ -36,6 +37,7 @@ export interface MarketFootballer {
   totalPoints: number;
   isOwn: boolean;
   position: string | null;
+  availability: string | null;
 }
 
 export interface MarketData {
@@ -262,6 +264,7 @@ export const fetchSquadFootballers = async (playerId?: string): Promise<Football
     onMarket: footballer[6],
     onMarketSince: footballer[7],
     position: footballer[8] ?? null,
+    availability: footballer[9] ?? null,
   }));
 };
 
@@ -287,6 +290,7 @@ export const fetchMarketFootballers = async (playerId?: string): Promise<MarketD
       totalPoints: footballer[7],
       isOwn: footballer[8] === true,
       position: footballer[9] ?? null,
+      availability: footballer[10] ?? null,
     })),
     marketClosingTimestamp: data.market_closing_timestamp ?? null,
   };
@@ -319,6 +323,18 @@ export interface PlayerInfo {
   points: number;
   budget: number;
 }
+
+export const fetchPlayerBidSum = async (playerId?: string): Promise<number> => {
+  const resolvedPlayerId = playerId ?? getActivePlayerId();
+  if (!resolvedPlayerId) {
+    throw new Error('No active player selected');
+  }
+
+  const response = await fetch(`${BACKEND_URL}/player/bid_sum/${resolvedPlayerId}?${withLeagueId({})}`);
+  const data = await response.json();
+
+  return Number(data?.total_bid_sum ?? 0);
+};
 
 // Return a `Player` shape for UI convenience (maps budget -> team_value)
 export const fetchPlayerInfo = async (playerId?: string): Promise<Player> => {
@@ -356,7 +372,8 @@ export const fetchPlayerInfo = async (playerId?: string): Promise<Player> => {
 export const placeBid = async (
   footballerId: number,
   playerId: string,
-  amount: number
+  amount: number,
+  timestamp?: string | null
 ): Promise<any> => {
   const leagueId = getActiveLeagueId();
   if (!leagueId) {
@@ -372,6 +389,7 @@ export const placeBid = async (
       player_id: playerId,
       bid_amount: amount,
       league_id: parseInt(leagueId),
+      timestamp: timestamp ?? undefined,
     }),
   });
 
@@ -400,6 +418,7 @@ export interface FootballerInfo {
   owner_id: number | null;
   owner_name: string | null;
   position: string | null;
+  availability: string | null;
 }
 
 export interface FixtureDetail {
@@ -491,10 +510,10 @@ export const fetchAllFootballers = async (
     name: footballer[1],
     value: footballer[2],
     ownerId: footballer[3] || '',
-    onMarketSince: footballer[4] || '',
-    bidAmount: footballer[5] || 0,
-    averagePoints: footballer[6],
-    totalPoints: footballer[7],
+    averagePoints: footballer[4],
+    totalPoints: footballer[5],
+    position: footballer[6] ?? null,
+    availability: footballer[7] ?? null,
   }));
 };
 
@@ -650,13 +669,13 @@ export interface OutgoingBid {
   amount: number;
 }
 
-export const fetchOutgoingBids = async (playerId?: string): Promise<OutgoingBid[]> => {
+const fetchPlayerBids = async (endpoint: string, playerId?: string): Promise<OutgoingBid[]> => {
   const resolvedPlayerId = playerId ?? getActivePlayerId();
   if (!resolvedPlayerId) {
     throw new Error('No active player selected');
   }
 
-  const response = await fetch(`${BACKEND_URL}/market/outgoing_bids/${resolvedPlayerId}?${withLeagueId({})}`);
+  const response = await fetch(`${BACKEND_URL}/market/${endpoint}/${resolvedPlayerId}?${withLeagueId({})}`);
   const data = await response.json();
   
   return data.bids.map((bid: any[]) => ({
@@ -669,7 +688,21 @@ export const fetchOutgoingBids = async (playerId?: string): Promise<OutgoingBid[
   }));
 };
 
-export const submitBid = async (footballerId: number, playerId: string, amount: number): Promise<boolean> => {
+export const fetchOutgoingBids = async (playerId?: string): Promise<OutgoingBid[]> => {
+  return fetchPlayerBids("outgoing_bids", playerId);
+};
+
+export const fetchFutureBids = async (playerId?: string): Promise<OutgoingBid[]> => {
+  return fetchPlayerBids("future_bids", playerId);
+};
+
+export const submitBid = async (
+  footballerId: number,
+  playerId: string,
+  amount: number,
+  timestamp?: string | null,
+  bidId?: number
+): Promise<boolean> => {
   const leagueId = getActiveLeagueId();
   if (!leagueId) {
     throw new Error('No active league selected');
@@ -682,6 +715,8 @@ export const submitBid = async (footballerId: number, playerId: string, amount: 
       player_id: playerId,
       bid_amount: amount,
       league_id: parseInt(leagueId),
+      bid_id: bidId ?? undefined,
+      timestamp: timestamp ?? undefined,
     }),
   });
   const data = await response.json();
@@ -731,6 +766,10 @@ export const changeMarketStatus = async (footballerId: number, onMarket: boolean
 };
 
 export const payReleaseClause = async (footballerId: number, playerId: string): Promise<PayReleaseClauseResponse> => {
+  const leagueId = getActiveLeagueId();
+  if (!leagueId) {
+    throw new Error('No active league selected');
+  }
   const res = await fetch(`${BACKEND_URL}/market/pay_release_clause`, {
     method: 'POST',
     headers: {
@@ -739,6 +778,7 @@ export const payReleaseClause = async (footballerId: number, playerId: string): 
     body: JSON.stringify({
       footballer_id: footballerId,
       player_id: playerId,
+      league_id: parseInt(leagueId),
     }),
   });
 

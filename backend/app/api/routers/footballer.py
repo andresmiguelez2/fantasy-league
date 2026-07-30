@@ -8,7 +8,7 @@ from fastapi.responses import Response
 from backend.app.models.footballer import Footballer
 import time
 import datetime
-from backend.app.core.constants import FANTASY_PLAYER_URL, FOOTBALLER_POSITIONS, UPDATE_DB_INTERVAL, LINEUP_POSITIONS, RELEASE_CLAUSE_DAYS
+from backend.app.core.constants import FANTASY_PLAYER_URL, FOOTBALLER_POSITIONS, UPDATE_DB_INTERVAL, LINEUP_POSITIONS, RELEASE_CLAUSE_DAYS, PLACE_ON_MARKET_WITH_RELEASE_CLAUSE
 
 
 router = APIRouter(prefix="/footballer", tags=["footballer"])
@@ -68,6 +68,7 @@ def get_footballer_info(footballer_id: int, league_id: int):
                 , f.owner_id
                 , p.name as owner_name
                 , fd.position
+                , fd.availability
             FROM footballer_data fd
             LEFT JOIN footballer f ON fd.id = f.id
             LEFT JOIN player p ON f.owner_id = p.id AND f.league_id = p.league_id
@@ -96,6 +97,7 @@ def get_footballer_info(footballer_id: int, league_id: int):
                 "owner_id": footballer_data[4],
                 "owner_name": footballer_data[5],
                 "position": footballer_data[6],
+                "availability": footballer_data[7],
                 "market_details": document['market_details'],
                 "fixture_breakdown": extract_fixture_points(document['fixture_breakdown']),
             }
@@ -235,10 +237,10 @@ def get_all_footballers(league_id: int, limit: int = 20, offset: int = 0, page: 
                 , fd.name
                 , fd.value
                 , p.name AS owner_name
-                , NULL as on_market_since
-                , NULL as bid_amount
                 , fd.average_points
                 , fd.total_points
+                , fd.position
+	            , fd.availability
             FROM footballer f
             JOIN footballer_data fd ON fd.id = f.id
             LEFT JOIN player p on f.owner_id = p.id AND f.league_id = p.league_id
@@ -269,10 +271,10 @@ def get_all_footballers(league_id: int, limit: int = 20, offset: int = 0, page: 
                 "name",
                 "value",
                 "owner_name",
-                "on_market_since",
-                "bid_amount",
                 "average_points",
-                "total_points"
+                "total_points",
+                "position",
+                "availability",
             ]
         }
     except Exception as e:
@@ -579,6 +581,36 @@ def get_market_status(footballer_id: int, league_id: int):
         return {"status": "error", "message": str(e)}
 
 
+def _can_change_market_status(footballer_id: int, league_id: int) -> bool:
+    """Check if a footballer can change market status based on release clause availability."""
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT COALESCE(acquisition_ts < now() - interval '%s days', FALSE) AS rc_available
+            FROM footballer
+            WHERE id = %s AND league_id = %s
+            """,
+            (RELEASE_CLAUSE_DAYS, footballer_id, league_id)
+        )
+
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if row is None:
+            return False
+        elif PLACE_ON_MARKET_WITH_RELEASE_CLAUSE:
+            return True
+        else:
+            return row[0]
+    except Exception as e:
+        logger.error(f"Error checking footballer release clause availability: {e}")
+        return False
+
+
 @router.post("/change_market_status/{footballer_id}")
 def change_market_status(footballer_id: int, league_id: int, on_market: bool):
     """Change the market status of a footballer."""
@@ -586,23 +618,27 @@ def change_market_status(footballer_id: int, league_id: int, on_market: bool):
         conn = pg_connect()
         cursor = conn.cursor()
 
-        cursor.execute(
-            """
-            UPDATE footballer
-            SET
-                on_market = %s
-                , on_market_since = CASE WHEN %s THEN NOW() ELSE NULL END
-            WHERE id = %s AND league_id = %s
-            """,
-            (on_market, on_market, footballer_id, league_id)
-        )
+        if _can_change_market_status(footballer_id, league_id):
+            cursor.execute(
+                """
+                UPDATE footballer
+                SET
+                    on_market = %s
+                    , on_market_since = CASE WHEN %s THEN NOW() ELSE NULL END
+                WHERE id = %s AND league_id = %s
+                """,
+                (on_market, on_market, footballer_id, league_id)
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
 
-        conn.commit()
-        cursor.close()
-        conn.close()
-
-        logger.info(f"Footballer {footballer_id} market status changed to {'on market' if on_market else 'off market'}.")
-        return {"status": "success", "footballer_id": footballer_id, "on_market": on_market}
+            logger.info(f"Footballer {footballer_id} market status changed to {'on market' if on_market else 'off market'}.")
+            return {"status": "success", "footballer_id": footballer_id, "on_market": on_market}
+        else:
+            cursor.close()
+            conn.close()
+            return {"status": "error", "message": "Footballer cannot be placed on market due to restrictions."}
     except Exception as e:
         logger.error(f"Error changing footballer market status: {e}")
         return {"status": "error", "message": str(e)}

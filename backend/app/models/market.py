@@ -155,6 +155,8 @@ class Market:
             FROM bid JOIN footballer ON footballer.id = bid.footballer_id
             WHERE
                 bid.league_id = %s
+                AND bid.active = TRUE
+                AND bid.timestamp <= now()
                 -- Include both free agents (owner_id IS NULL) and player-owned footballers on sale.
                 AND footballer.on_market = TRUE -- extra safety check
             ORDER BY 
@@ -186,10 +188,16 @@ class Market:
                 UPDATE bid
                 SET
                     active = false
-                    , winner = true
+                    , acquired_from = COALESCE(%s, (SELECT id
+                        FROM player
+                        WHERE
+                            budget IS NULL
+                            AND points IS NULL
+                            AND lineup IS NULL
+                            AND league_id = %s))
                 WHERE id = %s;
                 """,
-                (bidder_id, footballer_id, self.league_id, bid_id)
+                (bidder_id, footballer_id, self.league_id, seller_id, self.league_id, bid_id)
             )
 
             if bidder_id is not None:
@@ -275,8 +283,8 @@ class Market:
             bid_amount = Market.get_random_bid(value)
             cursor.execute(
                 """
-                INSERT INTO bid (footballer_id, bidder_id, amount, timestamp, league_id)
-                VALUES (%s, %s, %s, now(), %s)
+                INSERT INTO bid (footballer_id, bidder_id, amount, timestamp, league_id, active)
+                VALUES (%s, %s, %s, now(), %s, true)
                 """,
                 (id, None, bid_amount, self.league_id)
             )

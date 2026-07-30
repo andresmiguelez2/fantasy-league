@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { BidDialog } from "@/components/BidDialog";
 import { ReleaseClauseDialog } from "@/components/ReleaseClauseDialog";
+import { AvailabilityIcon } from "@/components/AvailabilityIcon";
 import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail, placeBid, payReleaseClause, fetchMarketStatus, changeMarketStatus, getActivePlayerId, BACKEND_URL } from "@/lib/api";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, Cell } from "recharts";
 import { MoreVertical } from "lucide-react";
@@ -131,8 +132,8 @@ export const FootballerInfoDialog = ({
            (typeof resp === 'string' ? resp : JSON.stringify(resp));
   };
 
-  const handleBidSubmit = async (amount: number) => {
-    if (!info) return;
+  const handleBidSubmit = async (amount: number, timestamp?: string | null) => {
+    if (!info) return false;
     
     const id = getCurrentPlayerId();
     if (!id) {
@@ -140,17 +141,23 @@ export const FootballerInfoDialog = ({
         description: "Unable to place bid: player ID not found",
         variant: "destructive",
       });
-      return;
+      return false;
     }
     
-    const resp = await placeBid(footballerId, id, amount);
+    const resp = await placeBid(footballerId, id, amount, timestamp);
     const message = extractMessage(resp);
+    const scheduledForFuture = timestamp && new Date(timestamp).getTime() > Date.now();
 
     toast({
       description: message || (amount === 0
         ? `Your bid for ${info.name} has been deleted.`
-        : `Your bid of €${amount.toLocaleString()} for ${info.name} has been placed.`),
+        : scheduledForFuture
+          ? `Your bid of €${amount.toLocaleString()} for ${info.name} has been scheduled.`
+          : `Your bid of €${amount.toLocaleString()} for ${info.name} has been placed.`),
+      variant: resp?.status === "success" ? "default" : "destructive",
     });
+
+    return resp?.status === "success";
   };
 
   const handleReleaseClauseSubmit = async () => {
@@ -289,6 +296,22 @@ export const FootballerInfoDialog = ({
                 </div>
               </div>
             </Card>
+
+            {(info.position || info.availability) && (
+              <Card className="p-4">
+                <div className="flex items-center justify-between">
+                  {info.position && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Position</p>
+                      <p className="text-sm font-semibold uppercase">{info.position}</p>
+                    </div>
+                  )}
+                  {info.availability && (
+                    <AvailabilityIcon availability={info.availability} showText />
+                  )}
+                </div>
+              </Card>
+            )}
 
             <Card className="p-4">
               <div className="flex items-start justify-between">

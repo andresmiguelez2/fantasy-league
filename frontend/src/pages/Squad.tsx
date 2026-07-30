@@ -60,6 +60,7 @@ const Squad = () => {
                 <TableRow>
                   <TableHead>Player</TableHead>
                   <TableHead className="text-center">Pos</TableHead>
+                  <TableHead className="text-center">Avail</TableHead>
                   <TableHead className="text-center">Total pts</TableHead>
                   <TableHead className="text-center hidden sm:table-cell">Avg pts</TableHead>
                   <TableHead className="text-center hidden sm:table-cell">Value</TableHead>
@@ -75,6 +76,7 @@ const Squad = () => {
                   totalPoints={footballer.totalPoints}
                   averagePoints={footballer.averagePoints}
                   position={footballer.position}
+                  availability={footballer.availability}
                   onClick={() => handleFootballerClick(footballer)}
                 />
                 ))}

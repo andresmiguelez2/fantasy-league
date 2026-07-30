@@ -107,9 +107,11 @@ export const SubstitutesDialog = ({
               <TableHeader>
                 <TableRow>
                   <TableHead>Player</TableHead>
+                  <TableHead className="text-center">Pos</TableHead>
+                  <TableHead className="text-center">Avail</TableHead>
                   <TableHead className="text-center">Total Pts</TableHead>
-                  <TableHead className="text-center">Avg Pts</TableHead>
-                  <TableHead className="text-center">Value</TableHead>
+                  <TableHead className="text-center hidden sm:table-cell">Avg Pts</TableHead>
+                  <TableHead className="text-center hidden sm:table-cell">Value</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

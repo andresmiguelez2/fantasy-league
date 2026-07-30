@@ -399,3 +399,71 @@ def validate_lineup(player_id: int, league_id: int, lineup: list[int]):
             logger.info(f"Footballers removed from player's {player_id} lineup due to incompatibilities: {footballers_to_remove}")
     except Exception as e:
         logger.error(f"Error validating lineup: {e}")
+
+
+@router.get("/bid_sum/{player_id}")
+def get_player_bid_sum(player_id: int, league_id: int):
+    """Get the total sum of active bids made by a player in a specific league.
+    
+    Args:
+        player_id (int): The ID of the player to get the bid sum for.
+        league_id (int): The league ID to filter by.
+    """
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT COALESCE(SUM(amount), 0)
+            FROM bid
+            WHERE
+                active = true
+                AND league_id = %s
+                AND bidder_id = %s
+            """,
+            (league_id, player_id)
+        )
+        total_bid_sum = cursor.fetchone()[0]
+
+        cursor.close()
+        conn.close()
+        return {"status": "success", "total_bid_sum": total_bid_sum}
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return {"status": "error", "total_bid_sum": 0}
+
+
+def get_team_value(player_id: int, league_id: int) -> int:
+    """Get the total value of a player's team in a specific league.
+
+    Args:
+        player_id (int): The ID of the player to get the team value for.
+        league_id (int): The league ID to filter by.
+
+    Returns:
+        int: The total value of the player's team.
+    """
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT
+                COALESCE(SUM(footballer_data.value), 0)
+            FROM footballer JOIN footballer_data ON footballer.id = footballer_data.id
+            WHERE
+                footballer.league_id = %s
+                AND footballer.owner_id = %s
+            """,
+            (league_id, player_id)
+        )
+        team_value = int(cursor.fetchone()[0])
+
+        cursor.close()
+        conn.close()
+        return team_value
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return 0

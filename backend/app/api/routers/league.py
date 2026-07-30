@@ -4,6 +4,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, field_validator
+from backend.app.utils.setup_auth_db import create_user
 from backend.app.db.database import pg_connect
 from backend.app.core.auth import verify_token
 from backend.app.core.constants import (
@@ -300,6 +301,16 @@ def create_league(
                 (league_id,)
             )
 
+            # Create legaue user
+            league_user_id = create_user(f'league_user_{league_id}', ''.join(random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=20)))
+            cursor.execute(
+                """
+                INSERT INTO player (name, league_id, user_id, budget, lineup, points)
+                VALUES ('League', %s, %s, NULL, NULL, NULL)
+                """,
+                (league_id, league_user_id),
+            )
+
             # Create a player for this user in the new league (always auto-generate the player ID)
             cursor.execute(
                 """
@@ -327,9 +338,11 @@ def create_league(
             "status": "success",
             "league": {"id": league_id, "name": request.league_name},
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error creating league for user {user_id}: {e}")
-        return {"status": "error", "detail": "Failed to create league. The league name may already be taken."}
+        raise HTTPException(status_code=500, detail="Failed to create league. The league name may already be taken.")
 
 
 @router.get("/player-names")
@@ -469,39 +482,33 @@ def get_league_invite(
                 (league_id, user_id),
             )
             result = cursor.fetchone()
-        finally:
-            cursor.close()
-            conn.close()
 
-        if not result:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not a member of this league",
-            )
+            if not result:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Not a member of this league",
+                )
 
-        invite_code, created_by = result
+            invite_code, created_by = result
 
-        # Enforce creator-only access for leagues that have a known creator
-        if created_by is not None and created_by != user_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only the league creator can share the invite link",
-            )
+            # Enforce creator-only access for leagues that have a known creator
+            if created_by is not None and created_by != user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only the league creator can share the invite link",
+                )
 
-        # Generate and persist an invite code for leagues that pre-date this feature
-        if not invite_code:
-            invite_code = str(uuid.uuid4())
-            conn2 = pg_connect()
-            cursor2 = conn2.cursor()
-            try:
-                cursor2.execute(
+            # Generate and persist an invite code for leagues that pre-date this feature
+            if not invite_code:
+                invite_code = str(uuid.uuid4())
+                cursor.execute(
                     "UPDATE league SET invite_code = %s WHERE id = %s",
                     (invite_code, league_id),
                 )
-                conn2.commit()
-            finally:
-                cursor2.close()
-                conn2.close()
+                conn.commit()
+        finally:
+            cursor.close()
+            conn.close()
 
         return {"status": "success", "invite_code": str(invite_code)}
     except HTTPException:
@@ -545,6 +552,7 @@ def delete_league(
             cursor.execute("DELETE FROM fixture_details WHERE league_id = %s", (league_id,))
             cursor.execute("DELETE FROM footballer WHERE league_id = %s", (league_id,))
             cursor.execute("DELETE FROM player WHERE league_id = %s", (league_id,))
+            cursor.execute("DELETE FROM users WHERE username = %s", (f'league_user_{league_id}',))
             cursor.execute("DELETE FROM market WHERE league_id = %s", (league_id,))
             cursor.execute("DELETE FROM league WHERE id = %s", (league_id,))
 

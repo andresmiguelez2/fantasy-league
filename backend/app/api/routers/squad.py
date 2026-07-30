@@ -30,6 +30,7 @@ def squad(player_id: int, league_id: int):
                 , f.on_market
                 , f.on_market_since
                 , fd.position
+                , fd.availability
             FROM footballer f LEFT JOIN footballer_data fd ON f.id = fd.id
             WHERE f.owner_id = %s AND f.league_id = %s
             ORDER BY fd.position, fd.name
@@ -52,7 +53,8 @@ def squad(player_id: int, league_id: int):
                 "average_points",
                 "on_market",
                 "on_market_since",
-                "position"
+                "position",
+                "availability"
             ]
         }
     except Exception as e:

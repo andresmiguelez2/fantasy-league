@@ -62,20 +62,32 @@ const OutgoingBids = () => {
     setSelectedFootballerId(footballerId);
   };
 
-  const handleBidSubmit = async (amount: number) => {
-    if (!selectedBid) return;
+  const handleBidSubmit = async (amount: number, timestamp?: string | null) => {
+    if (!selectedBid) return false;
     if (!playerId) {
       toast.error("No active player selected");
-      return;
+      return false;
     }
-    
+
     try {
-      await submitBid(selectedBid.footballerId, playerId, amount);
+      const submitted = await submitBid(
+        selectedBid.footballerId,
+        playerId,
+        amount,
+        timestamp,
+        selectedBid.bidId,
+      );
+      if (!submitted) {
+        toast.error("Failed to update bid");
+        return false;
+      }
+
       toast.success(amount === 0 ? "Bid deleted" : "Bid updated");
       queryClient.invalidateQueries({ queryKey: ["outgoingBids"] });
-      setBidDialogOpen(false);
-    } catch (error) {
+      return true;
+    } catch {
       toast.error("Failed to update bid");
+      return false;
     }
   };
 
@@ -88,7 +100,7 @@ const OutgoingBids = () => {
         {isLoading ? (
           <p className="text-muted-foreground">Loading bids...</p>
         ) : bids.length === 0 ? (
-          <p className="text-muted-foreground">No outgoing bids</p>
+          <p className="text-muted-foreground">No past outgoing bids</p>
         ) : (
           <div className="max-w-4xl overflow-x-auto">
             <Table>
@@ -152,6 +164,7 @@ const OutgoingBids = () => {
           onOpenChange={setBidDialogOpen}
           footballerName={selectedBid.footballerName}
           currentBid={selectedBid.amount}
+          currentBidTimestamp={selectedBid.timestamp}
           onSubmit={handleBidSubmit}
         />
       )}

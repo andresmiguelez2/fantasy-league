@@ -1,11 +1,15 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter
-from backend.app.db.database import pg_connect, mongo_client
-from backend.app.core.constants import BANK_NAME
-from .logger import logger
 from pydantic import BaseModel
+
+from .logger import logger
+from backend.app.db.database import pg_connect, mongo_client
+from backend.app.core.constants import BANK_NAME, MAX_DEBT_AS_VALUE_UNIT
 from backend.app.models.footballer import Footballer
 from backend.app.models.market import load_market
 from backend.app.models.player import debit_player_value
+from backend.app.api.routers.player import get_player_bid_sum, get_player_info, get_team_value
 
 
 router = APIRouter(prefix="/market", tags=["market"])
@@ -77,12 +81,13 @@ def player_market(player_id: int, league_id: int):
                 , f_data.total_points
                 , COALESCE((f.owner_id = %s), FALSE) AS is_own
                 , f_data.position
+                , f_data.availability
             FROM footballer AS f 
             LEFT JOIN footballer_data AS f_data ON f.id = f_data.id
             LEFT JOIN (
                 SELECT *
                 FROM bid
-                WHERE bidder_id = %s AND active = TRUE AND league_id = %s
+                WHERE bidder_id = %s AND active = TRUE AND league_id = %s AND timestamp <= now()
             ) AS b ON f.id = b.footballer_id AND f.league_id = b.league_id
             LEFT JOIN player ON player.id = f.owner_id AND player.league_id = f.league_id
             WHERE
@@ -112,7 +117,8 @@ def player_market(player_id: int, league_id: int):
                 "average_points",
                 "total_points",
                 "is_own",
-                "position"
+                "position",
+                "availability"
             ]
         }
     except Exception as e:
@@ -180,6 +186,35 @@ class BidRequest(BaseModel):
     footballer_id: int
     bid_amount: int
     league_id: int
+    bid_id: int | None = None
+    timestamp: datetime | None = None
+
+
+def _player_has_enough_budget(
+    player_id: int,
+    league_id: int,
+    new_bid_amount: int = 0,
+    current_bid_amount: int = 0,
+    adjust_team_value: bool = True,
+):
+    """Check whether the player can cover active bid commitments."""
+    player_bid_sum = get_player_bid_sum(player_id, league_id)["total_bid_sum"]
+    player_budget = get_player_info(player_id, league_id)["player"][2]
+    adjusted_bid_sum = player_bid_sum - current_bid_amount + new_bid_amount
+    player_debt = adjusted_bid_sum - player_budget
+    team_value = get_team_value(player_id, league_id) if adjust_team_value else 0
+
+    if player_debt > MAX_DEBT_AS_VALUE_UNIT * team_value:
+        if adjust_team_value:
+            return False, (
+                f"Bid amount implies a greater debt ({player_debt:,.0f} €) than "
+                f"{MAX_DEBT_AS_VALUE_UNIT:.0%} of your team's value "
+                f"({(team_value * MAX_DEBT_AS_VALUE_UNIT):,.0f} €)."
+            )
+        else:
+            return False, f"Bid amount implies a debt ({player_debt:,.0f} €)."
+
+    return True, None
 
 @router.post("/bid")
 def place_bid(bid: BidRequest):
@@ -206,6 +241,50 @@ def place_bid(bid: BidRequest):
         footballer.id = bid.footballer_id
         footballer.get_player_data()
 
+        if bid.bid_id is not None:
+            cursor.execute(
+                """
+                SELECT id, amount
+                FROM bid
+                WHERE
+                    id = %s
+                    AND footballer_id = %s
+                    AND bidder_id = %s
+                    AND league_id = %s
+                    AND active = true
+                """,
+                (bid.bid_id, bid.footballer_id, bid.player_id, bid.league_id)
+            )
+        else:
+            cursor.execute(
+                """
+                SELECT id, amount
+                FROM bid
+                WHERE
+                    footballer_id = %s
+                    AND bidder_id = %s
+                    AND league_id = %s
+                    AND active = true
+                ORDER BY timestamp DESC, id DESC
+                LIMIT 1
+                """,
+                (bid.footballer_id, bid.player_id, bid.league_id)
+            )
+        existing_bid = cursor.fetchone()
+        if bid.bid_id is not None and existing_bid is None:
+            cursor.close()
+            conn.close()
+            return {"status": "error", "message": "Bid not found."}
+        existing_bid_id = existing_bid[0] if existing_bid else None
+        existing_bid_amount = existing_bid[1] if existing_bid else 0
+
+        has_enough_budget, budget_error = _player_has_enough_budget(
+            bid.player_id,
+            bid.league_id,
+            bid.bid_amount,
+            existing_bid_amount,
+        )
+
         if bid.bid_amount < footballer.data['market_details'][-1]['value'] and bid.bid_amount != 0:
             cursor.close()
             conn.close()
@@ -214,30 +293,53 @@ def place_bid(bid: BidRequest):
             cursor.close()
             conn.close()
             return {"status": "error", "message": "Cannot bid on your own footballer."}
-        else:
-            cursor.execute(
-                """
-                UPDATE bid
-                SET active = false
-                WHERE footballer_id = %s AND bidder_id = %s
-            """,
-            (bid.footballer_id, bid.player_id)
-        )
+        elif not has_enough_budget:
+            cursor.close()
+            conn.close()
+            return {"status": "error", "message": budget_error}
 
         if bid.bid_amount == 0:
+            if existing_bid_id is not None:
+                cursor.execute(
+                    """
+                    UPDATE bid
+                    SET active = false
+                    WHERE id = %s
+                    """,
+                    (existing_bid_id,)
+                )
             conn.commit()
             cursor.close()
             conn.close()
             return {"status": "success", "message": "Bid removed successfully."}
         else:
-            cursor.execute(
-                """
-                INSERT INTO bid (footballer_id, bidder_id, amount, timestamp, league_id, active)
-                VALUES (%s, %s, %s, now(), %s, true)
-                """,
-                (bid.footballer_id, bid.player_id, bid.bid_amount, bid.league_id)
-            )
-            logger.info(f"Received bid: Player {bid.player_id} bids {bid.bid_amount} on footballer {bid.footballer_id}")
+            bid_timestamp = bid.timestamp or datetime.now(timezone.utc)
+            if bid_timestamp.tzinfo is None:
+                bid_timestamp = bid_timestamp.replace(tzinfo=timezone.utc)
+
+            if existing_bid_id is not None:
+                cursor.execute(
+                    """
+                    UPDATE bid
+                    SET amount = %s, timestamp = %s
+                    WHERE id = %s
+                    """,
+                    (bid.bid_amount, bid_timestamp, existing_bid_id)
+                )
+                logger.info(
+                    f"Updated bid: Player {bid.player_id} bids {bid.bid_amount} on footballer {bid.footballer_id}"
+                )
+            else:
+                cursor.execute(
+                    """
+                    INSERT INTO bid (footballer_id, bidder_id, amount, timestamp, league_id, active)
+                    VALUES (%s, %s, %s, %s, %s, true)
+                    """,
+                    (bid.footballer_id, bid.player_id, bid.bid_amount, bid_timestamp, bid.league_id)
+                )
+                logger.info(
+                    f"Received bid: Player {bid.player_id} bids {bid.bid_amount} on footballer {bid.footballer_id}"
+                )
             conn.commit()
             cursor.close()
             conn.close()
@@ -281,16 +383,26 @@ def reply_to_bid(bid_id: int, league_id: int, accept: bool):
         footballer_id, bidder_id, amount, owner_id = bid
 
         if accept:
+            if bidder_id is not None:
+                has_enough_budget, budget_error = _player_has_enough_budget(
+                    bidder_id,
+                    league_id,
+                )
+                if not has_enough_budget:
+                    cursor.close()
+                    conn.close()
+                    return {"status": "error", "message": budget_error}
+
             cursor.execute(
                 """
                 UPDATE footballer
                 SET owner_id = %s, on_market = FALSE, on_market_since = NULL
                 WHERE id = %s AND league_id = %s;
                 UPDATE bid
-                SET active = false
+                SET active = false, acquired_from = %s
                 WHERE footballer_id = %s AND league_id = %s
                 """,
-                (bidder_id, footballer_id, league_id, footballer_id, league_id)
+                (bidder_id, footballer_id, league_id, owner_id, footballer_id, league_id)
             )
             if bidder_id is not None:
                 debit_player_value(bidder_id, amount)
@@ -344,7 +456,11 @@ def get_player_incoming_bids(player_id: int, league_id: int):
                 LEFT JOIN footballer AS f ON b.footballer_id = f.id AND b.league_id = f.league_id
                 LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
                 LEFT JOIN player AS p on b.bidder_id = p.id
-            WHERE f.owner_id = %s AND b.league_id = %s AND b.active = TRUE
+            WHERE
+                f.owner_id = %s
+                AND b.league_id = %s
+                AND b.active = TRUE
+                AND b.timestamp <= now()
             ORDER BY footballer_id, b.timestamp DESC
             """,
             (BANK_NAME, player_id, league_id)
@@ -384,8 +500,51 @@ def get_player_outgoing_bids(player_id: int, league_id: int):
                 LEFT JOIN footballer AS f ON b.footballer_id = f.id AND b.league_id = f.league_id
                 LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
                 LEFT JOIN player AS p on f.owner_id = p.id
-            WHERE b.bidder_id = %s AND b.league_id = %s AND b.active = TRUE
+            WHERE
+                b.bidder_id = %s
+                AND b.league_id = %s
+                AND b.active = TRUE
+                AND b.timestamp <= now()
             ORDER BY footballer_id, b.timestamp DESC
+            """,
+            (BANK_NAME, player_id, league_id)
+        )
+        bids = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+        return {"status": "success", "bids": bids, "columns": ["bid_id", "timestamp", "footballer_id", "owner_name", "footballer_name", "amount"]}
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return {"status": "error", "bids": []}
+
+
+@router.get("/future_bids/{player_id}")
+def get_player_future_bids(player_id: int, league_id: int):
+    """Get all outgoing bids scheduled for the future."""
+    try:
+        conn = pg_connect()
+
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT
+                b.id AS bid_id
+                , b.timestamp
+                , f.id AS footballer_id
+                , COALESCE(p.name, %s) AS owner_name
+                , fd.name AS footballer_name
+                , b.amount
+            FROM bid AS b
+                LEFT JOIN footballer AS f ON b.footballer_id = f.id AND b.league_id = f.league_id
+                LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
+                LEFT JOIN player AS p on f.owner_id = p.id
+            WHERE
+                b.bidder_id = %s
+                AND b.league_id = %s
+                AND b.active = TRUE
+                AND b.timestamp > now()
+            ORDER BY b.timestamp ASC, footballer_id
             """,
             (BANK_NAME, player_id, league_id)
         )
@@ -402,6 +561,7 @@ def get_player_outgoing_bids(player_id: int, league_id: int):
 class ReleaseClauseRequest(BaseModel):
     player_id: int
     footballer_id: int
+    league_id: int | None
 
 @router.post("/pay_release_clause")
 def pay_release_clause(request: ReleaseClauseRequest):
@@ -425,9 +585,9 @@ def pay_release_clause(request: ReleaseClauseRequest):
                 owner_id
                 , release_clause
             FROM footballer
-            WHERE id = %s
+            WHERE id = %s AND league_id = %s
             """,
-            (request.footballer_id,)
+            (request.footballer_id, request.league_id)
         )
         
         result = cursor.fetchone()
@@ -443,24 +603,33 @@ def pay_release_clause(request: ReleaseClauseRequest):
         # Cannot acquire your own footballer
         if owner_id == request.player_id:
             return {"status": "error", "message": "Cannot pay release clause for your own footballer."}
+
+        has_enough_budget, budget_error = _player_has_enough_budget(
+            request.player_id,
+            request.league_id,
+            new_bid_amount=release_clause,
+            current_bid_amount=0,
+            adjust_team_value=False  # Do not adjust team value when paying release clause
+        )
+        if not has_enough_budget:
+            return {"status": "error", "message": budget_error}
         
         # Transfer the footballer
         cursor.execute(
             """
             UPDATE footballer
             SET owner_id = %s, on_market = FALSE, on_market_since = NULL, on_lineup = FALSE
-            WHERE id = %s
+            WHERE id = %s AND league_id = %s
             """,
-            (request.player_id, request.footballer_id)
+            (request.player_id, request.footballer_id, request.league_id)
         )
         
         cursor.execute(
             """
-            UPDATE bid
-            SET active = false
-            WHERE footballer_id = %s
+            INSERT INTO bid (amount, timestamp, bidder_id, footballer_id, league_id, active, acquired_from, release_clause)
+            VALUES (%s, now(), %s, %s, %s, FALSE, %s, TRUE)
             """,
-            (request.footballer_id,)
+            (release_clause, request.player_id, request.footballer_id, request.league_id, owner_id)
         )
         
         # Update player budgets
