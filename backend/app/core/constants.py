@@ -98,7 +98,7 @@ TEAM_NAME_DICT = {
     43: 'Real Oviedo',
     45: 'Castellón',
 }
-COMPETITION_NAME = 'LaLiga 2025/26'
+COMPETITION_NAME = 'LaLiga 2026/27'
 FOOTBALLER_POSITIONS = {
     'def': 'DF',
     'med': 'MD',
