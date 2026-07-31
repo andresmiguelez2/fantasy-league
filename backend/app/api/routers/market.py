@@ -1,11 +1,11 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter
 from pydantic import BaseModel
 
 from .logger import logger
 from backend.app.db.database import pg_connect, mongo_client
-from backend.app.core.constants import BANK_NAME, MAX_DEBT_AS_VALUE_UNIT
+from backend.app.core.constants import BANK_NAME, MAX_DEBT_AS_VALUE_UNIT, RELEASE_CLAUSE_DAYS
 from backend.app.models.footballer import Footballer
 from backend.app.models.market import load_market
 from backend.app.models.player import debit_player_value
@@ -188,6 +188,7 @@ class BidRequest(BaseModel):
     league_id: int
     bid_id: int | None = None
     timestamp: datetime | None = None
+    release_clause: bool = False
 
 
 def _player_has_enough_budget(
@@ -230,9 +231,9 @@ def place_bid(bid: BidRequest):
                 """
                 SELECT footballer_data.FULL_name, footballer.url_name, footballer.owner_id
                 FROM footballer LEFT JOIN footballer_data ON footballer.id = footballer_data.id
-                WHERE footballer.id = %s
+                WHERE footballer.id = %s AND footballer.league_id = %s
             """,
-            (bid.footballer_id,)
+            (bid.footballer_id, bid.league_id)
         )
         full_name, url_name, owner_id = cursor.fetchone()
 
@@ -283,6 +284,7 @@ def place_bid(bid: BidRequest):
             bid.league_id,
             bid.bid_amount,
             existing_bid_amount,
+            adjust_team_value = owner_id is not None,
         )
 
         if bid.bid_amount < footballer.data['market_details'][-1]['value'] and bid.bid_amount != 0:
@@ -321,10 +323,10 @@ def place_bid(bid: BidRequest):
                 cursor.execute(
                     """
                     UPDATE bid
-                    SET amount = %s, timestamp = %s
+                    SET amount = %s, timestamp = %s, release_clause = %s
                     WHERE id = %s
                     """,
-                    (bid.bid_amount, bid_timestamp, existing_bid_id)
+                    (bid.bid_amount, bid_timestamp, bid.release_clause, existing_bid_id)
                 )
                 logger.info(
                     f"Updated bid: Player {bid.player_id} bids {bid.bid_amount} on footballer {bid.footballer_id}"
@@ -332,10 +334,10 @@ def place_bid(bid: BidRequest):
             else:
                 cursor.execute(
                     """
-                    INSERT INTO bid (footballer_id, bidder_id, amount, timestamp, league_id, active)
-                    VALUES (%s, %s, %s, %s, %s, true)
+                    INSERT INTO bid (footballer_id, bidder_id, amount, timestamp, league_id, active, release_clause)
+                    VALUES (%s, %s, %s, %s, %s, true, %s)
                     """,
-                    (bid.footballer_id, bid.player_id, bid.bid_amount, bid_timestamp, bid.league_id)
+                    (bid.footballer_id, bid.player_id, bid.bid_amount, bid_timestamp, bid.league_id, bid.release_clause)
                 )
                 logger.info(
                     f"Received bid: Player {bid.player_id} bids {bid.bid_amount} on footballer {bid.footballer_id}"
@@ -563,6 +565,91 @@ class ReleaseClauseRequest(BaseModel):
     footballer_id: int
     league_id: int | None
 
+
+class ScheduleReleaseClauseBidRequest(BaseModel):
+    player_id: int
+    footballer_id: int
+    bid_amount: int
+    league_id: int
+
+
+@router.post("/schedule_release_clause_bid")
+def schedule_release_clause_bid(request: ScheduleReleaseClauseBidRequest):
+    conn = None
+    cursor = None
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT
+                owner_id
+                , release_clause
+                , acquisition_ts
+                , COALESCE(acquisition_ts < now() - make_interval(days => %s), FALSE) AS rc_available
+            FROM footballer
+            WHERE id = %s AND league_id = %s
+            """,
+            (RELEASE_CLAUSE_DAYS, request.footballer_id, request.league_id),
+        )
+        result = cursor.fetchone()
+        if not result:
+            return {"status": "error", "message": "Footballer not found."}
+
+        owner_id, release_clause_amount, acquisition_ts, rc_available = result
+        if owner_id is None:
+            return {"status": "error", "message": "Release clause not available for this footballer."}
+        if owner_id == request.player_id:
+            return {"status": "error", "message": "Cannot schedule a release clause bid for your own footballer."}
+        if rc_available:
+            return {"status": "error", "message": "Release clause is already available. Pay it directly instead."}
+        if release_clause_amount is None:
+            return {"status": "error", "message": "Release clause not configured for this footballer."}
+        if acquisition_ts is None:
+            return {"status": "error", "message": "Release clause schedule cannot be computed for this footballer."}
+
+        if acquisition_ts.tzinfo is None:
+            acquisition_ts = acquisition_ts.replace(tzinfo=timezone.utc)
+
+        scheduled_timestamp = acquisition_ts + timedelta(days=RELEASE_CLAUSE_DAYS, seconds=1)
+        now_utc = datetime.now(timezone.utc)
+        if scheduled_timestamp <= now_utc:
+            logger.warning(
+                "Computed release clause schedule timestamp is in the past for footballer %s in league %s. "
+                "Falling back to now + 1 second.",
+                request.footballer_id,
+                request.league_id,
+            )
+            scheduled_timestamp = now_utc + timedelta(seconds=1)
+
+        response = place_bid(
+            BidRequest(
+                player_id=request.player_id,
+                footballer_id=request.footballer_id,
+                bid_amount=request.bid_amount,
+                league_id=request.league_id,
+                timestamp=scheduled_timestamp,
+                release_clause=True,
+            )
+        )
+        if response.get("status") != "success":
+            return {"status": "error", "message": "Unable to schedule release clause bid."}
+
+        return {
+            "status": "success",
+            "message": "Release clause bid scheduled successfully.",
+            "scheduled_timestamp": scheduled_timestamp.isoformat(),
+        }
+    except Exception as e:
+        logger.error(f"Error scheduling release clause bid: {e}")
+        return {"status": "error", "message": "Unable to schedule release clause bid."}
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
 @router.post("/pay_release_clause")
 def pay_release_clause(request: ReleaseClauseRequest):
     """Pay the release clause to acquire a footballer.
@@ -626,8 +713,8 @@ def pay_release_clause(request: ReleaseClauseRequest):
         
         cursor.execute(
             """
-            INSERT INTO bid (amount, timestamp, bidder_id, footballer_id, league_id, active, acquired_from)
-            VALUES (%s, now(), %s, %s, %s, FALSE, %s)
+            INSERT INTO bid (amount, timestamp, bidder_id, footballer_id, league_id, active, acquired_from, release_clause)
+            VALUES (%s, now(), %s, %s, %s, FALSE, %s, TRUE)
             """,
             (release_clause, request.player_id, request.footballer_id, request.league_id, owner_id)
         )
