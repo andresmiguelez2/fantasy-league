@@ -76,7 +76,7 @@ export const CreateLeagueDialog = ({
               id="league-name"
               value={leagueName}
               onChange={(e) => setLeagueName(e.target.value)}
-              placeholder="e.g. Friends League 2025"
+              placeholder="e.g. Friends League 2026"
             />
           </div>
 
