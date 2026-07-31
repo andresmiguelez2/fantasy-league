@@ -373,7 +373,8 @@ export const placeBid = async (
   footballerId: number,
   playerId: string,
   amount: number,
-  timestamp?: string | null
+  timestamp?: string | null,
+  releaseClause?: boolean,
 ): Promise<any> => {
   const leagueId = getActiveLeagueId();
   if (!leagueId) {
@@ -390,6 +391,7 @@ export const placeBid = async (
       bid_amount: amount,
       league_id: parseInt(leagueId),
       timestamp: timestamp ?? undefined,
+      release_clause: releaseClause ?? undefined,
     }),
   });
 
@@ -738,6 +740,14 @@ export interface PayReleaseClauseResponse {
   text?: string;
 }
 
+export interface ScheduleReleaseClauseBidResponse {
+  status: string;
+  message?: string;
+  scheduled_timestamp?: string;
+  ok?: boolean;
+  text?: string;
+}
+
 export const fetchReleaseClauseData = async (footballerId: number): Promise<ReleaseClauseData> => {
   const response = await fetch(
     `${BACKEND_URL}/footballer/release_clause_data/${footballerId}?${withLeagueId({})}`
@@ -778,6 +788,40 @@ export const payReleaseClause = async (footballerId: number, playerId: string): 
     body: JSON.stringify({
       footballer_id: footballerId,
       player_id: playerId,
+      league_id: parseInt(leagueId),
+    }),
+  });
+
+  const text = await res.text();
+  if (!text) {
+    return { status: res.status.toString(), ok: res.ok };
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { status: res.status.toString(), ok: res.ok, text };
+  }
+};
+
+export const scheduleReleaseClauseBid = async (
+  footballerId: number,
+  playerId: string,
+  amount: number,
+): Promise<ScheduleReleaseClauseBidResponse> => {
+  const leagueId = getActiveLeagueId();
+  if (!leagueId) {
+    throw new Error('No active league selected');
+  }
+  const res = await fetch(`${BACKEND_URL}/market/schedule_release_clause_bid`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      footballer_id: footballerId,
+      player_id: Number(playerId),
+      bid_amount: amount,
       league_id: parseInt(leagueId),
     }),
   });
