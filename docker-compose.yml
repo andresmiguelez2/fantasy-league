@@ -75,7 +75,5 @@ services:
 
 volumes:
   pgdata:
-    external: true
-    name: 54b48694854fc9c216cc4bb7dd7e253520819687d6928b3ee13b54156ff0e874
   mongo_data:
   frontend_node_modules:
