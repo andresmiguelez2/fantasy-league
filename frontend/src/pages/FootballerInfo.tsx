@@ -91,11 +91,11 @@ const FootballerInfo = () => {
   }, [page, sortBy, sortOrder, search, loadFootballers]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-20">
+    <div className="min-h-screen bg-background pb-20">
       <Header />
       <NavigationTabs leagueId={leagueId} />
       
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="container mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="flex flex-col gap-4 mb-6">
           <h1 className="text-3xl font-bold text-foreground">All Footballers</h1>
           <div className="flex gap-2 items-center flex-wrap">
@@ -129,16 +129,15 @@ const FootballerInfo = () => {
           <LoadingSkeleton type="footballers" />
         ) : (
           <>
-            <div className="rounded-xl border border-border bg-card shadow-lg overflow-x-auto">
-              <Table>
+            <div className="max-w-4xl overflow-x-auto">
+              <Table className="table-fixed w-full">
                 <TableHeader>
-                  <TableRow className="hover:bg-transparent border-border/50">
-                    <TableHead className="text-muted-foreground font-semibold">Player</TableHead>
-                    <TableHead className="text-center text-muted-foreground font-semibold">Pos</TableHead>
-                    <TableHead className="text-center text-muted-foreground font-semibold">Avail</TableHead>
-                    <TableHead className="text-center text-muted-foreground font-semibold">Total Points</TableHead>
-                    <TableHead className="text-center text-muted-foreground font-semibold hidden sm:table-cell">Average Points</TableHead>
-                    <TableHead className="text-center text-muted-foreground font-semibold hidden sm:table-cell">Value</TableHead>
+                  <TableRow>
+                    <TableHead className="w-[40%]">Name</TableHead>
+                    <TableHead className="w-[10%] text-center"></TableHead>
+                    <TableHead className="w-[10%] text-center"></TableHead>
+                    <TableHead className="w-[18%] text-center">Points</TableHead>
+                    <TableHead className="w-[22%] text-center">Value</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -173,7 +172,7 @@ const FootballerInfo = () => {
             )}
           </>
         )}
-      </div>
+      </main>
 
       {selectedFootballerId && (
         <FootballerInfoDialog
