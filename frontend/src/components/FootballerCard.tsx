@@ -45,7 +45,7 @@ export const FootballerCard = ({
       style: 'currency',
       currency: 'EUR',
       notation: 'compact',
-      maximumFractionDigits: 1,
+      maximumFractionDigits: 2,
     }).format(amount);
   };
 

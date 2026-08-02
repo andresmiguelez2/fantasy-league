@@ -55,17 +55,16 @@ const Squad = () => {
           <LoadingSkeleton type="footballers" />
         ) : (
           <div className="max-w-4xl overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead className="text-center">Pos</TableHead>
-                  <TableHead className="text-center">Avail</TableHead>
-                  <TableHead className="text-center">Total pts</TableHead>
-                  <TableHead className="text-center hidden sm:table-cell">Avg pts</TableHead>
-                  <TableHead className="text-center hidden sm:table-cell">Value</TableHead>
-                </TableRow>
-              </TableHeader>
+           <Table className="table-fixed w-full">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[40%]">Name</TableHead>
+                <TableHead className="w-[10%] text-center"></TableHead>
+                <TableHead className="w-[10%] text-center"></TableHead>
+                <TableHead className="w-[18%] text-center">Points</TableHead>
+                <TableHead className="w-[22%] text-center">Value</TableHead>
+              </TableRow>
+            </TableHeader>
               <TableBody>
                 {footballers.map((footballer) => (
                   <SquadRow
