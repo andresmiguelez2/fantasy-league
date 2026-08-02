@@ -14,8 +14,8 @@ export const PlayerRow = ({ playerId, name, points, team_value, onPlayerClick }:
     return new Intl.NumberFormat('en-ES', {
       style: 'currency',
       currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      notation: 'compact',
+      maximumFractionDigits: 1,
     }).format(val);
   };
   
@@ -50,7 +50,7 @@ export const PlayerRow = ({ playerId, name, points, team_value, onPlayerClick }:
       <TableCell className="text-center">
         <span className="text-accent font-semibold">{points} pts</span>
       </TableCell>
-      <TableCell className="text-center hidden sm:table-cell">
+      <TableCell className="text-center">
         <span className="text-secondary font-semibold">{formatValue(team_value)}</span>
       </TableCell>
     </TableRow>

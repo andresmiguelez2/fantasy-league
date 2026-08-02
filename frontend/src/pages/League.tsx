@@ -350,7 +350,7 @@ const League = () => {
                 <TableRow>
                   <TableHead>Player</TableHead>
                   <TableHead className="text-center">Points</TableHead>
-                  <TableHead className="text-center hidden sm:table-cell">Team Value</TableHead>
+                  <TableHead className="text-center">Team Value</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
