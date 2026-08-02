@@ -37,8 +37,8 @@ export const FootballerInfoRow = ({
     return new Intl.NumberFormat('en-ES', {
       style: 'currency',
       currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      notation: 'compact',
+      maximumFractionDigits: 2,
     }).format(val);
   };
   
@@ -83,12 +83,14 @@ export const FootballerInfoRow = ({
         <AvailabilityIcon availability={availability} />
       </TableCell>
       <TableCell className="text-center">
-        <span className="font-semibold text-green-600">{totalPoints}</span>
+        <div className="text-sm font-semibold text-foreground">
+          {totalPoints ?? 0}
+        </div>
+        <div className="text-xs text-muted-foreground">
+          {averagePoints ?? '0'}
+        </div>
       </TableCell>
-      <TableCell className="text-center hidden sm:table-cell">
-        <span className="font-semibold">{averagePoints}</span>
-      </TableCell>
-      <TableCell className="text-center hidden sm:table-cell">
+      <TableCell className="text-center">
         <span className="text-secondary font-semibold">{formatValue(value)}</span>
       </TableCell>
     </TableRow>
