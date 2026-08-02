@@ -4,6 +4,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, field_validator
+from backend.app.api.routers.footballer import update_footballer_info
 from backend.app.utils.setup_auth_db import create_user
 from backend.app.db.database import pg_connect
 from backend.app.core.auth import verify_token
@@ -16,6 +17,7 @@ from backend.app.core.constants import (
     INITIAL_SQUAD_TOTAL_VALUE_LIMIT,
     INITIAL_SQUAD_PLAYER_VALUE_LIMIT,
     INITIAL_SQUAD_TOTAL_VALUE_TOLERANCE,
+    UPDATE_DB_INTERVAL,
 )
 from .logger import logger
 
@@ -142,6 +144,9 @@ def _assign_initial_squad(cursor, player_id: int, league_id: int) -> list[int]:
         selected_ids.extend(f_id for f_id, _ in chosen)
 
     if selected_ids:
+        for footballer_id in selected_ids:
+            update_footballer_info(footballer_id, UPDATE_DB_INTERVAL)
+
         cursor.execute(
             """
             UPDATE footballer
