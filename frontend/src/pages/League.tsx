@@ -298,7 +298,7 @@ const League = () => {
             </Button>
           )}
           <Select value={selectedFixture} onValueChange={setSelectedFixture}>
-            <SelectTrigger className="w-[140px] sm:w-[180px]">
+            <SelectTrigger className="w-[100px] sm:w-[180px]">
               <SelectValue placeholder="Select fixture" />
             </SelectTrigger>
             <SelectContent>
@@ -321,7 +321,7 @@ const League = () => {
                 onClick={() => setInviteDialogOpen(true)}
                 className="flex items-center gap-2"
               >
-                <Link className="h-4 w-4" />
+                <Link className="h-4 w-3" />
                 Invite
               </Button>
               <Button
@@ -330,7 +330,7 @@ const League = () => {
                 onClick={() => setDeleteDialogOpen(true)}
                 className="flex items-center gap-2"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-4 w-3" />
                 Delete League
               </Button>
             </div>
