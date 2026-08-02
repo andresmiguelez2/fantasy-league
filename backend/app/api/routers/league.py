@@ -158,33 +158,22 @@ def _assign_initial_squad(cursor, player_id: int, league_id: int) -> list[int]:
     return selected_ids
 
 
-def _ensure_league_columns():
-    """Add invite_code and created_by columns to league table if they do not already exist."""
-    try:
-        conn = pg_connect()
-        cursor = conn.cursor()
-        try:
-            cursor.execute(
-                """
-                ALTER TABLE league
-                ADD COLUMN IF NOT EXISTS invite_code UUID UNIQUE DEFAULT NULL
-                """
-            )
-            cursor.execute(
-                """
-                ALTER TABLE league
-                ADD COLUMN IF NOT EXISTS created_by INT REFERENCES users(id) DEFAULT NULL
-                """
-            )
-            conn.commit()
-        finally:
-            cursor.close()
-            conn.close()
-    except Exception as e:
-        logger.error(f"Error ensuring league columns: {e}")
+def _bid_for_initial_footballers(cursor, player_id: int, league_id: int, league_player_id: int):
+    cursor.execute('''
+        SELECT f.id, fd.value
+        FROM footballer AS f JOIN footballer_data AS fd on f.id = fd.id
+        WHERE league_id = %s AND owner_id = %s
+        ''', 
+        (league_id, player_id))
 
+    footballers = cursor.fetchall()
 
-_ensure_league_columns()
+    for footballer_id, value in footballers:
+        cursor.execute('''
+            INSERT INTO bid (amount, timestamp, bidder_id, footballer_id, league_id, active)
+            VALUES (%s, now(), %s, %s, %s, true)
+            ''', 
+            (value, league_player_id, footballer_id, league_id))
 
 
 def _get_user_leagues(user_id: int):
@@ -302,14 +291,17 @@ def create_league(
             )
 
             # Create legaue user
-            league_user_id = create_user(f'league_user_{league_id}', ''.join(random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=20)))
+            league_user_id = create_user(f'league_user_{league_id}', ''.join(random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=20)), cursor=cursor)
             cursor.execute(
                 """
                 INSERT INTO player (name, league_id, user_id, budget, lineup, points)
                 VALUES ('League', %s, %s, NULL, NULL, NULL)
+                RETURNING id
                 """,
                 (league_id, league_user_id),
             )
+
+            league_player_id = cursor.fetchone()[0]
 
             # Create a player for this user in the new league (always auto-generate the player ID)
             cursor.execute(
@@ -323,6 +315,7 @@ def create_league(
             player_id = cursor.fetchone()[0]
 
             _assign_initial_squad(cursor, player_id, league_id)
+            _bid_for_initial_footballers(cursor, player_id, league_id, league_player_id)
 
             conn.commit()
         finally:
@@ -570,6 +563,26 @@ def delete_league(
         raise HTTPException(status_code=500, detail="Failed to delete league")
 
 
+def get_league_player_id(cursor, league_id: int) -> int:
+    """Get the player ID for the 'League' user in a given league."""
+    cursor.execute(
+        """SELECT id 
+        FROM player
+        WHERE
+            league_id = %s
+            -- AND name = 'League'
+            AND budget IS NULL
+            AND points IS NULL
+            AND lineup IS NULL
+        """,
+        (league_id,),
+    )
+    result = cursor.fetchone()
+    if not result:
+        raise ValueError(f"No 'League' player found for league {league_id}")
+    return result[0]
+
+
 @router.post("/join")
 def join_league(
     request: JoinLeagueRequest,
@@ -621,6 +634,8 @@ def join_league(
             player_id = cursor.fetchone()[0]
 
             _assign_initial_squad(cursor, player_id, league_id)
+            league_player_id = get_league_player_id(cursor, league_id)
+            _bid_for_initial_footballers(cursor, player_id, league_id, league_player_id)
 
             conn.commit()
         finally:

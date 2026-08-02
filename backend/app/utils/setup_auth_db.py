@@ -22,14 +22,17 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def create_user(username: str, password: str):
+def create_user(username: str, password: str, cursor=None):
     """Create a new user"""
-    try:
+    close_conn = False
+    if cursor is None:
         conn = pg_connect()
         cursor = conn.cursor()
-        
+        close_conn = True
+
+    try:
         password_hash = get_password_hash(password)
-        
+
         cursor.execute(
             """
             INSERT INTO users (username, password_hash)
@@ -38,15 +41,17 @@ def create_user(username: str, password: str):
             """,
             (username, password_hash)
         )
-        
+
         user_id = cursor.fetchone()[0]
-        conn.commit()
-        
+        if close_conn:
+            conn.commit()
+
         logger.info(f"User created successfully: {username} (ID: {user_id})")
-        
-        cursor.close()
-        conn.close()
-        
+
+        if close_conn:
+            cursor.close()
+            conn.close()
+
         return user_id
     except Exception as e:
         logger.error(f"Error creating user: {e}")
