@@ -137,7 +137,7 @@ const MarketHistory = () => {
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent border-border/50">
-                    <TableHead className="text-muted-foreground font-semibold">Footballer</TableHead>
+                    <TableHead className="text-muted-foreground font-semibold">Name</TableHead>
                     <TableHead className="text-muted-foreground font-semibold">From / To</TableHead>
                     <TableHead className="text-center text-muted-foreground font-semibold">Amount</TableHead>
                     <TableHead className="text-center text-muted-foreground font-semibold hidden sm:table-cell">Timestamp</TableHead>

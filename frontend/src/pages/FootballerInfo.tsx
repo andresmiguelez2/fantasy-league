@@ -133,7 +133,7 @@ const FootballerInfo = () => {
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent border-border/50">
-                    <TableHead className="text-muted-foreground font-semibold">Player</TableHead>
+                    <TableHead className="text-muted-foreground font-semibold">Name</TableHead>
                     <TableHead className="text-center text-muted-foreground font-semibold">Pos</TableHead>
                     <TableHead className="text-center text-muted-foreground font-semibold">Avail</TableHead>
                     <TableHead className="text-center text-muted-foreground font-semibold">Total Points</TableHead>

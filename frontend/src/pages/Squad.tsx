@@ -58,7 +58,7 @@ const Squad = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Player</TableHead>
+                  <TableHead>Name</TableHead>
                   <TableHead className="text-center">Pos</TableHead>
                   <TableHead className="text-center">Avail</TableHead>
                   <TableHead className="text-center">Total pts</TableHead>
