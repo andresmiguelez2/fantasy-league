@@ -122,7 +122,7 @@ const Fixtures = () => {
               className="flex flex-col items-center gap-0.5 sm:gap-1"
             >
               <div
-                className={`relative w-14 h-16 sm:w-24 md:w-32 sm:h-28 md:h-36 bg-card border-2 border-primary rounded-lg flex items-center justify-center transition-colors shadow-lg overflow-hidden ${hasFootballer ? 'hover:bg-primary/10 cursor-pointer' : ''}`}
+                className={`relative w-16 h-20 sm:w-28 sm:h-32 md:w-40 md:h-44 bg-card border-2 border-primary rounded-lg flex items-center justify-center transition-colors shadow-lg overflow-hidden ${hasFootballer ? 'hover:bg-primary/10 cursor-pointer' : ''}`}
                 onClick={() => handleFootballerClick(footballerId)}
               >
                 {hasFootballer ? (

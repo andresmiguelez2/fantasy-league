@@ -191,7 +191,7 @@ const Lineup = () => {
               className="flex flex-col items-center gap-0.5 sm:gap-1"
             >
               <div
-                className="w-14 h-16 sm:w-24 md:w-32 sm:h-28 md:h-36 bg-card border-2 border-primary rounded-lg flex items-center justify-center transition-colors shadow-lg overflow-hidden hover:bg-primary/10 cursor-pointer"
+                className="w-16 h-20 sm:w-28 sm:h-32 md:w-40 md:h-44 bg-card border-2 border-primary rounded-lg flex items-center justify-center transition-colors shadow-lg overflow-hidden hover:bg-primary/10 cursor-pointer"
                 onClick={() => handleFootballerClick(rowIndex, footballerId)}
               >
                 {hasFootballer ? (
@@ -201,11 +201,11 @@ const Lineup = () => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-[10px] sm:text-sm text-muted-foreground font-medium">Empty</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground font-medium">Empty</span>
                 )}
               </div>
               {shortName && (
-                <span className="text-[9px] sm:text-xs font-semibold text-white drop-shadow-md text-center max-w-[56px] sm:max-w-none truncate">
+                <span className="text-[10px] sm:text-xs font-semibold text-white drop-shadow-md text-center max-w-[64px] sm:max-w-none truncate">
                   {shortName}
                 </span>
               )}
