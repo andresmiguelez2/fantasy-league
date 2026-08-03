@@ -1,15 +1,24 @@
-from fastapi import APIRouter
-from backend.app.db.database import pg_connect, mongo_client
-from .logger import logger
-from pydantic import BaseModel
-from backend.app.utils.aux_functions import extract_fixture_points, scrape_page
-import imghdr
-from fastapi.responses import Response
-from backend.app.models.footballer import Footballer
-import time
 import datetime
-from backend.app.core.constants import FANTASY_PLAYER_URL, FOOTBALLER_POSITIONS, UPDATE_DB_INTERVAL, LINEUP_POSITIONS, RELEASE_CLAUSE_DAYS, PLACE_ON_MARKET_WITH_RELEASE_CLAUSE
+import imghdr
+import time
 
+from fastapi import APIRouter
+from fastapi.responses import Response
+from pydantic import BaseModel
+
+from backend.app.core.constants import (
+    FANTASY_PLAYER_URL,
+    FOOTBALLER_POSITIONS,
+    LINEUP_POSITIONS,
+    PLACE_ON_MARKET_WITH_RELEASE_CLAUSE,
+    RELEASE_CLAUSE_DAYS,
+    UPDATE_DB_INTERVAL,
+)
+from backend.app.db.database import mongo_client, pg_connect
+from backend.app.models.footballer import Footballer
+from backend.app.utils.aux_functions import extract_fixture_points, scrape_page
+
+from .logger import logger
 
 router = APIRouter(prefix="/footballer", tags=["footballer"])
 
@@ -69,6 +78,7 @@ def get_footballer_info(footballer_id: int, league_id: int):
                 , p.name as owner_name
                 , fd.position
                 , fd.availability
+                , now() - f.acquisition_ts AS time_since_acquisition
             FROM footballer_data fd
             LEFT JOIN footballer f ON fd.id = f.id
             LEFT JOIN player p ON f.owner_id = p.id AND f.league_id = p.league_id
@@ -86,6 +96,8 @@ def get_footballer_info(footballer_id: int, league_id: int):
         if document is None or footballer_data is None:
             return {"status": "error", "message": "Footballer not found."}
 
+        release_clause_available = footballer_data[8].total_seconds() - RELEASE_CLAUSE_DAYS * 24 * 60 * 60 if footballer_data[8] is not None else None
+
         return {
             "status": "success",
             "footballer_info": {
@@ -98,6 +110,7 @@ def get_footballer_info(footballer_id: int, league_id: int):
                 "owner_name": footballer_data[5],
                 "position": footballer_data[6],
                 "availability": footballer_data[7],
+                "time_to_release_clause": release_clause_available if footballer_data[8] is not None else None,
                 "market_details": document['market_details'],
                 "fixture_breakdown": extract_fixture_points(document['fixture_breakdown']),
             }

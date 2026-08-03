@@ -418,6 +418,7 @@ export interface FootballerInfo {
   owner_name: string | null;
   position: string | null;
   availability: string | null;
+  time_to_release_clause: number | null;
 }
 
 export interface FixtureDetail {
