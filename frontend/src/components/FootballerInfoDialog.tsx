@@ -18,7 +18,7 @@ import { BidDialog } from "@/components/BidDialog";
 import { ReleaseClauseDialog } from "@/components/ReleaseClauseDialog";
 import { IncrementReleaseClauseDialog } from "@/components/IncrementReleaseClauseDialog";
 import { AvailabilityIcon } from "@/components/AvailabilityIcon";
-import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail, placeBid, payReleaseClause, scheduleReleaseClauseBid, fetchMarketStatus, changeMarketStatus, getActivePlayerId, BACKEND_URL, incrementReleaseClause } from "@/lib/api";
+import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail, placeBid, payReleaseClause, scheduleReleaseClauseBid, fetchMarketStatus, changeMarketStatus, getActivePlayerId, BACKEND_URL, incrementReleaseClause, fetchReleaseClauseData } from "@/lib/api";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, Cell } from "recharts";
 import { MoreVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -54,6 +54,7 @@ export const FootballerInfoDialog = ({
   const [releaseClauseDialogOpen, setReleaseClauseDialogOpen] = useState(false);
   const [incrementReleaseClauseDialogOpen, setIncrementReleaseClauseDialogOpen] = useState(false);
   const [onMarket, setOnMarket] = useState<boolean | null>(null);
+  const [releaseClause, setReleaseClause] = useState<number | null>(null);
   const { toast } = useToast();
   const { playerId } = useParams();
 
@@ -75,6 +76,14 @@ export const FootballerInfoDialog = ({
     if (open && footballerId) {
       fetchMarketStatus(footballerId)
         .then(setOnMarket)
+        .catch(console.error);
+    }
+  }, [open, footballerId]);
+
+  useEffect(() => {
+    if (open && footballerId) {
+      fetchReleaseClauseData(footballerId)
+        .then((data) => setReleaseClause(data.release_clause))
         .catch(console.error);
     }
   }, [open, footballerId]);
@@ -417,9 +426,17 @@ export const FootballerInfoDialog = ({
 
             <Card className="p-4">
               <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">Market Value</p>
-                  <p className="text-2xl font-bold text-accent">{formatValue(info.market_value)}</p>
+                <div className="flex-1 flex gap-6">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Market Value</p>
+                    <p className="text-2xl font-bold text-accent">{formatValue(info.market_value)}</p>
+                  </div>
+                  {releaseClause !== null && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Release Clause</p>
+                      <p className="text-2xl font-bold text-destructive">{formatValue(releaseClause)}</p>
+                    </div>
+                  )}
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
