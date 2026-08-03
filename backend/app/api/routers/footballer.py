@@ -692,8 +692,8 @@ def get_release_clause_data(footballer_id: int, league_id: int):
         return {"status": "error", "message": str(e)}
 
 
-@router.post("/increment_release_clause_player/{footballer_id}")
-def increment_release_clause_player(footballer_id: int, league_id: int, player_id: int, value: int):
+@router.post("/increment_release_clause/{footballer_id}")
+def increment_release_clause(footballer_id: int, league_id: int, player_id: int, value: int):
     """Increment the release clause of a footballer."""
     try:
         if value <= 0:
@@ -704,9 +704,9 @@ def increment_release_clause_player(footballer_id: int, league_id: int, player_i
 
         cursor.execute(
             """
-            SELECT owner_id, release_clause
-            FROM footballer
-            WHERE id = %s AND league_id = %s
+            SELECT f.owner_id, f.release_clause, fd.value
+            FROM footballer AS f JOIN footballer_data AS fd ON f.id = fd.id
+            WHERE f.id = %s AND f.league_id = %s
             """,
             (footballer_id, league_id),
         )
@@ -715,12 +715,12 @@ def increment_release_clause_player(footballer_id: int, league_id: int, player_i
         if not row:
             return {"status": "error", "message": "Footballer not found."}
 
-        owner_id, current_release_clause = row
+        owner_id, current_release_clause, footballer_value = row
 
         if owner_id != player_id:
             return {"status": "error", "message": "You can only increment the release clause of your own footballer."}
 
-        new_release_clause = (current_release_clause or MIN_RELEASE_CLAUSE_VALUE) + value
+        new_release_clause = max(current_release_clause, MIN_RELEASE_CLAUSE_VALUE, footballer_value) + value
 
         cursor.execute(
             """

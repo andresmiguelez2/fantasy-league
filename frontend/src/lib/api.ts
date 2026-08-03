@@ -851,7 +851,7 @@ export const incrementReleaseClause = async (
     value: String(increment),
   });
   const res = await fetch(
-    `${BACKEND_URL}/footballer/increment_release_clause_player/${footballerId}?${params}`,
+    `${BACKEND_URL}/footballer/increment_release_clause/${footballerId}?${params}`,
     { method: 'POST' },
   );
   return res.json();
