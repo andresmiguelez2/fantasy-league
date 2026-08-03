@@ -6,14 +6,15 @@ from fastapi import APIRouter
 from fastapi.responses import Response
 from pydantic import BaseModel
 
+from backend.app.api.routers.market import _player_has_enough_budget, debit_player_value
 from backend.app.core.constants import (
     FANTASY_PLAYER_URL,
     FOOTBALLER_POSITIONS,
     LINEUP_POSITIONS,
+    MIN_RELEASE_CLAUSE_VALUE,
     PLACE_ON_MARKET_WITH_RELEASE_CLAUSE,
     RELEASE_CLAUSE_DAYS,
     UPDATE_DB_INTERVAL,
-    MIN_RELEASE_CLAUSE_VALUE,
 )
 from backend.app.db.database import mongo_client, pg_connect
 from backend.app.models.footballer import Footballer
@@ -720,6 +721,10 @@ def increment_release_clause(footballer_id: int, league_id: int, player_id: int,
         if owner_id != player_id:
             return {"status": "error", "message": "You can only increment the release clause of your own footballer."}
 
+        has_enough_budget, _ = _player_has_enough_budget(player_id, league_id, value)
+        if not has_enough_budget:
+            return {"status": "error", "message": "You do not have enough budget to increment the release clause."}
+
         new_release_clause = max(current_release_clause, MIN_RELEASE_CLAUSE_VALUE, footballer_value) + value
 
         cursor.execute(
@@ -730,7 +735,8 @@ def increment_release_clause(footballer_id: int, league_id: int, player_id: int,
             """,
             (new_release_clause, footballer_id, league_id),
         )
-
+        debit_player_value(player_id, value)
+        
         conn.commit()
 
         logger.info(
