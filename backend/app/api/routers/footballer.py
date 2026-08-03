@@ -691,8 +691,8 @@ def get_release_clause_data(footballer_id: int, league_id: int):
         return {"status": "error", "message": str(e)}
 
 
-@router.post("/increment_release_clause/{footballer_id}")
-def increment_release_clause(footballer_id: int, league_id: int, value: int):
+@router.post("/increment_release_clause_player/{footballer_id}")
+def increment_release_clause_player(footballer_id: int, league_id: int, player_id: int, value: int):
     """Increment the release clause of a footballer."""
     try:
         conn = pg_connect()
@@ -702,10 +702,10 @@ def increment_release_clause(footballer_id: int, league_id: int, value: int):
             """
             UPDATE footballer
             SET release_clause = release_clause + %s
-            WHERE id = %s AND league_id = %s
+            WHERE id = %s AND league_id = %s AND owner_id = %s
             RETURNING release_clause
             """,
-            (value, footballer_id, league_id)
+            (value, footballer_id, league_id, player_id)
         )
 
         new_release_clause = cursor.fetchone()
