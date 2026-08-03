@@ -37,7 +37,7 @@ export const IncrementReleaseClauseDialog = ({
       setFetchingClause(true);
       fetchReleaseClauseData(footballerId)
         .then((data) => {
-          setCurrentReleaseClause(data.release_clause);
+          setCurrentReleaseClause(data.release_clause ?? null);
         })
         .catch(() => {
           setCurrentReleaseClause(null);

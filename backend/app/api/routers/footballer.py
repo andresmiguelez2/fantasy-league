@@ -725,7 +725,7 @@ def increment_release_clause(footballer_id: int, league_id: int, player_id: int,
         if not has_enough_budget:
             return {"status": "error", "message": "You do not have enough budget to increment the release clause."}
 
-        new_release_clause = max(current_release_clause, MIN_RELEASE_CLAUSE_VALUE, footballer_value) + value
+        new_release_clause = max(current_release_clause or 0, MIN_RELEASE_CLAUSE_VALUE, footballer_value) + value
 
         cursor.execute(
             """

@@ -83,7 +83,7 @@ export const FootballerInfoDialog = ({
   useEffect(() => {
     if (open && footballerId) {
       fetchReleaseClauseData(footballerId)
-        .then((data) => setReleaseClause(data.release_clause))
+        .then((data) => setReleaseClause(data.release_clause ?? null))
         .catch(console.error);
     }
   }, [open, footballerId]);
