@@ -658,6 +658,76 @@ def change_market_status(footballer_id: int, league_id: int, on_market: bool):
         return {"status": "error", "message": str(e)}
 
 
+class IncrementReleaseClauseRequest(BaseModel):
+    player_id: int
+    league_id: int
+    increment: int
+
+
+@router.post("/increment_release_clause/{footballer_id}")
+def increment_release_clause(footballer_id: int, request: IncrementReleaseClauseRequest):
+    """Increment the release clause of a footballer owned by the requesting player."""
+    conn = None
+    cursor = None
+    try:
+        if request.increment <= 0:
+            return {"status": "error", "message": "Increment must be a positive value."}
+
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT owner_id, release_clause
+            FROM footballer
+            WHERE id = %s AND league_id = %s
+            """,
+            (footballer_id, request.league_id),
+        )
+        row = cursor.fetchone()
+
+        if not row:
+            return {"status": "error", "message": "Footballer not found."}
+
+        owner_id, current_release_clause = row
+
+        if owner_id != request.player_id:
+            return {"status": "error", "message": "You can only increment the release clause of your own footballer."}
+
+        new_release_clause = (current_release_clause or 0) + request.increment
+
+        cursor.execute(
+            """
+            UPDATE footballer
+            SET release_clause = %s
+            WHERE id = %s AND league_id = %s
+            """,
+            (new_release_clause, footballer_id, request.league_id),
+        )
+
+        conn.commit()
+
+        logger.info(
+            f"Release clause incremented: Footballer {footballer_id} by Player {request.player_id} "
+            f"from {current_release_clause} to {new_release_clause}"
+        )
+        return {
+            "status": "success",
+            "message": f"Release clause updated to €{new_release_clause:,.0f}.",
+            "release_clause": new_release_clause,
+        }
+    except Exception as e:
+        logger.error(f"Error incrementing release clause: {e}")
+        if conn:
+            conn.rollback()
+        return {"status": "error", "message": str(e)}
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
 @router.get("/release_clause_data/{footballer_id}")
 def get_release_clause_data(footballer_id: int, league_id: int):
     """Get the release clause data for a footballer."""

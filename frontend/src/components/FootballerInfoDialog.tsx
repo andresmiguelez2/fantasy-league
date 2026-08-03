@@ -16,8 +16,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { BidDialog } from "@/components/BidDialog";
 import { ReleaseClauseDialog } from "@/components/ReleaseClauseDialog";
+import { IncrementReleaseClauseDialog } from "@/components/IncrementReleaseClauseDialog";
 import { AvailabilityIcon } from "@/components/AvailabilityIcon";
-import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail, placeBid, payReleaseClause, scheduleReleaseClauseBid, fetchMarketStatus, changeMarketStatus, getActivePlayerId, BACKEND_URL } from "@/lib/api";
+import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail, placeBid, payReleaseClause, scheduleReleaseClauseBid, fetchMarketStatus, changeMarketStatus, getActivePlayerId, BACKEND_URL, incrementReleaseClause } from "@/lib/api";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, Cell } from "recharts";
 import { MoreVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -51,6 +52,7 @@ export const FootballerInfoDialog = ({
   const [fixtureDetail, setFixtureDetail] = useState<FixtureDetail | null>(null);
   const [bidDialogOpen, setBidDialogOpen] = useState(false);
   const [releaseClauseDialogOpen, setReleaseClauseDialogOpen] = useState(false);
+  const [incrementReleaseClauseDialogOpen, setIncrementReleaseClauseDialogOpen] = useState(false);
   const [onMarket, setOnMarket] = useState<boolean | null>(null);
   const { toast } = useToast();
   const { playerId } = useParams();
@@ -291,6 +293,25 @@ export const FootballerInfoDialog = ({
     }
   };
 
+  const handleIncrementReleaseClause = async (increment: number) => {
+    const id = getCurrentPlayerId();
+    if (!id) {
+      toast({
+        description: "Unable to increment release clause: player ID not found",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    const resp = await incrementReleaseClause(footballerId, id, increment);
+    const message = extractMessage(resp);
+    toast({
+      description: message || `Release clause updated for ${info?.name}.`,
+      variant: resp?.status === "success" ? "default" : "destructive",
+    });
+    return resp?.status === "success";
+  };
+
   if (loading || !info) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -422,6 +443,11 @@ export const FootballerInfoDialog = ({
                         {onMarket ? "Remove from market" : "Place on market"}
                       </DropdownMenuItem>
                     )}
+                    {isOwner && (
+                      <DropdownMenuItem onClick={() => setIncrementReleaseClauseDialogOpen(true)}>
+                        Increment release clause
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -537,6 +563,13 @@ export const FootballerInfoDialog = ({
         footballerId={footballerId}
         onSubmit={handleReleaseClauseSubmit}
         onScheduleSubmit={handleScheduleReleaseClauseBidSubmit}
+      />
+
+      <IncrementReleaseClauseDialog
+        open={incrementReleaseClauseDialogOpen}
+        onOpenChange={setIncrementReleaseClauseDialogOpen}
+        footballerName={info.name}
+        onSubmit={handleIncrementReleaseClause}
       />
     </Dialog>
   );
