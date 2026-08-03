@@ -723,4 +723,4 @@ def increment_release_clause_player(footballer_id: int, league_id: int, player_i
         return {"status": "success", "new_release_clause": new_release_clause[0]}
     except Exception as e:
         logger.error(f"Error incrementing footballer release clause: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "An error occurred while incrementing the release clause."}
