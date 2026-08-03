@@ -752,7 +752,7 @@ def increment_release_clause(footballer_id: int, league_id: int, player_id: int,
         logger.error(f"Error incrementing release clause: {e}")
         if conn:
             conn.rollback()
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "An error occurred while incrementing the release clause."}
     finally:
         if cursor:
             cursor.close()
