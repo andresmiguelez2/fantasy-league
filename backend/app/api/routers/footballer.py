@@ -689,3 +689,38 @@ def get_release_clause_data(footballer_id: int, league_id: int):
     except Exception as e:
         logger.error(f"Error getting footballer release clause data: {e}")
         return {"status": "error", "message": str(e)}
+
+
+@router.post("/increment_release_clause/{footballer_id}")
+def increment_release_clause(footballer_id: int, league_id: int, value: int):
+    """Increment the release clause of a footballer."""
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            UPDATE footballer
+            SET release_clause = release_clause + %s
+            WHERE id = %s AND league_id = %s
+            RETURNING release_clause
+            """,
+            (value, footballer_id, league_id)
+        )
+
+        new_release_clause = cursor.fetchone()
+
+        if not new_release_clause:
+            cursor.close()
+            conn.close()
+            return {"status": "error", "message": "Footballer not found."}
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        logger.info(f"Footballer {footballer_id} release clause incremented by {value}. New value: {new_release_clause[0]}")
+        return {"status": "success", "new_release_clause": new_release_clause[0]}
+    except Exception as e:
+        logger.error(f"Error incrementing footballer release clause: {e}")
+        return {"status": "error", "message": str(e)}
