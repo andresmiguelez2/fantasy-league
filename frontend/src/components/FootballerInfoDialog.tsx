@@ -569,6 +569,7 @@ export const FootballerInfoDialog = ({
         open={incrementReleaseClauseDialogOpen}
         onOpenChange={setIncrementReleaseClauseDialogOpen}
         footballerName={info.name}
+        footballerId={footballerId}
         onSubmit={handleIncrementReleaseClause}
       />
     </Dialog>
