@@ -25,7 +25,6 @@ interface ReleaseClauseData {
   status: string;
   rc_available: boolean;
   release_clause: number;
-  time_until_rc?: number;
 }
 
 export const ReleaseClauseDialog = ({
@@ -124,12 +123,12 @@ export const ReleaseClauseDialog = ({
                 <div className="text-sm text-destructive">
                   Release clause is not available for this footballer.
                 </div>
-                {data.time_until_rc !== undefined && data.time_until_rc > 0 && (
+                {/* {data.time_until_rc !== undefined && data.time_until_rc > 0 && (
                   <div className="text-sm text-muted-foreground">
                     Time remaining: <span className="font-semibold" aria-label="Days hours minutes seconds">{formatTimeRemaining(data.time_until_rc)}</span>
                     <div className="text-xs mt-1 opacity-75">(days hh:mm:ss)</div>
                   </div>
-                )}
+                )} */}
                 <div className="space-y-2">
                   <Label htmlFor="scheduled-release-clause-bid">Bid amount for release clause (€)</Label>
                   <Input

@@ -670,7 +670,7 @@ def get_release_clause_data(footballer_id: int, league_id: int):
             SELECT
                 COALESCE(acquisition_ts < now() - interval '%s days', FALSE) AS rc_available
                 , release_clause
-                , (acquisition_ts + interval '%s days' - now()) AS time_until_rc
+                -- , (acquisition_ts + interval '%s days' - now()) AS time_until_rc
             FROM footballer
             WHERE id = %s AND league_id = %s
             """,
@@ -685,7 +685,7 @@ def get_release_clause_data(footballer_id: int, league_id: int):
         if not data:
             return {"status": "error", "message": "Footballer not found."}
         
-        return {"status": "success", "rc_available": data[0], "release_clause": data[1], "time_until_rc": data[2]}
+        return {"status": "success", "rc_available": data[0], "release_clause": data[1]}
     except Exception as e:
         logger.error(f"Error getting footballer release clause data: {e}")
         return {"status": "error", "message": str(e)}
