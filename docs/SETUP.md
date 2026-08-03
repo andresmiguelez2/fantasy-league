@@ -37,6 +37,24 @@ Here you can find sample files:
 
 ## 2. Contaniner setp
 
+
+### HTTPS certificates (required for local HTTPS)
+
+Create a `certs/` folder in the repository root with:
+
+- `certs/localhost.pem`
+- `certs/localhost-key.pem`
+
+You can generate self-signed certs for local use, for example:
+```
+mkdir -p certs
+openssl req -x509 -newkey rsa:2048 -sha256 -days 365 -nodes \
+  -keyout certs/localhost-key.pem \
+  -out certs/localhost.pem \
+  -subj "/CN=localhost"
+```
+
+
 The app is comprised of 5 Docker containers:
   1. `backend_app`: runs the game logic.
   2. `frontend_app`: visualises the game and interacts with the user.
@@ -51,7 +69,7 @@ docker compose -f 'docker-compose.yml' up -d --build
 
 ## 3. Database setup
 
-  1. Log into the PGAdmin console via http://localhost:5050, using the credentials specified in `secrets/pgadmin.env`.
+  1. Log into the PGAdmin console via https://localhost:5050, using the credentials specified in `secrets/pgadmin.env`.
   2. Register a server with the envirnonmental variables (as per the example):
   - hostname: db
   - port: 5432
@@ -81,7 +99,7 @@ exit
 
 ## 5. Create a default user and league
 
-Go to http://localhost:5173 and create a user and a league, following the on-screen instructions.
+Go to https://localhost:5173 and create a user and a league, following the on-screen instructions.
 
 ## 6. Download footballer and fixture data
 
