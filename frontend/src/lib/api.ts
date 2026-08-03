@@ -840,20 +840,20 @@ export const incrementReleaseClause = async (
   footballerId: number,
   playerId: string,
   increment: number,
-): Promise<{ status: string; message?: string; release_clause?: number }> => {
+): Promise<{ status: string; message?: string; new_release_clause?: number }> => {
   const leagueId = getActiveLeagueId();
   if (!leagueId) {
     throw new Error('No active league selected');
   }
-  const res = await fetch(`${BACKEND_URL}/footballer/increment_release_clause/${footballerId}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      player_id: Number(playerId),
-      league_id: parseInt(leagueId),
-      increment,
-    }),
+  const params = new URLSearchParams({
+    league_id: leagueId,
+    player_id: playerId,
+    value: String(increment),
   });
+  const res = await fetch(
+    `${BACKEND_URL}/footballer/increment_release_clause_player/${footballerId}?${params}`,
+    { method: 'POST' },
+  );
   return res.json();
 };
 
