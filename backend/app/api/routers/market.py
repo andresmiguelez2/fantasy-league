@@ -371,7 +371,10 @@ def reply_to_bid(bid_id: int, league_id: int, accept: bool):
                     , b.bidder_id
                     , b.amount
                     , f.owner_id
-                FROM bid AS b LEFT JOIN footballer AS f ON b.footballer_id = f.id
+                    , p.budget
+                FROM 
+                    bid AS b LEFT JOIN footballer AS f ON b.footballer_id = f.id 
+                    LEFT JOIN player AS p on b.bidder_id = p.id AND b.league_id = p.league_id
                 WHERE b.id = %s AND f.league_id = %s
             """,
             (bid_id, league_id)
@@ -382,10 +385,10 @@ def reply_to_bid(bid_id: int, league_id: int, accept: bool):
             conn.close()
             return {"status": "error", "message": "Bid not found."}
         
-        footballer_id, bidder_id, amount, owner_id = bid
+        footballer_id, bidder_id, amount, owner_id, budget = bid
 
         if accept:
-            if bidder_id is not None:
+            if budget is not None:
                 has_enough_budget, budget_error = _player_has_enough_budget(
                     bidder_id,
                     league_id,
@@ -406,7 +409,7 @@ def reply_to_bid(bid_id: int, league_id: int, accept: bool):
                 """,
                 (bidder_id, footballer_id, league_id, owner_id, footballer_id, league_id)
             )
-            if bidder_id is not None:
+            if budget is not None:
                 debit_player_value(bidder_id, amount)
             if owner_id is not None:
                 debit_player_value(owner_id, -amount)
