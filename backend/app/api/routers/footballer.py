@@ -13,6 +13,7 @@ from backend.app.core.constants import (
     PLACE_ON_MARKET_WITH_RELEASE_CLAUSE,
     RELEASE_CLAUSE_DAYS,
     UPDATE_DB_INTERVAL,
+    MIN_RELEASE_CLAUSE_VALUE,
 )
 from backend.app.db.database import mongo_client, pg_connect
 from backend.app.models.footballer import Footballer
@@ -695,32 +696,59 @@ def get_release_clause_data(footballer_id: int, league_id: int):
 def increment_release_clause_player(footballer_id: int, league_id: int, player_id: int, value: int):
     """Increment the release clause of a footballer."""
     try:
+        if value <= 0:
+            return {"status": "error", "message": "Increment must be a positive value."}
+
         conn = pg_connect()
         cursor = conn.cursor()
 
         cursor.execute(
             """
-            UPDATE footballer
-            SET release_clause = release_clause + %s
-            WHERE id = %s AND league_id = %s AND owner_id = %s
-            RETURNING release_clause
+            SELECT owner_id, release_clause
+            FROM footballer
+            WHERE id = %s AND league_id = %s
             """,
-            (value, footballer_id, league_id, player_id)
+            (footballer_id, league_id),
         )
+        row = cursor.fetchone()
 
-        new_release_clause = cursor.fetchone()
-
-        if not new_release_clause:
-            cursor.close()
-            conn.close()
+        if not row:
             return {"status": "error", "message": "Footballer not found."}
 
-        conn.commit()
-        cursor.close()
-        conn.close()
+        owner_id, current_release_clause = row
 
-        logger.info(f"Footballer {footballer_id} release clause incremented by {value}. New value: {new_release_clause[0]}")
-        return {"status": "success", "new_release_clause": new_release_clause[0]}
+        if owner_id != player_id:
+            return {"status": "error", "message": "You can only increment the release clause of your own footballer."}
+
+        new_release_clause = (current_release_clause or MIN_RELEASE_CLAUSE_VALUE) + value
+
+        cursor.execute(
+            """
+            UPDATE footballer
+            SET release_clause = %s
+            WHERE id = %s AND league_id = %s
+            """,
+            (new_release_clause, footballer_id, league_id),
+        )
+
+        conn.commit()
+
+        logger.info(
+            f"Release clause incremented: Footballer {footballer_id} by Player {player_id} "
+            f"from {current_release_clause} to {new_release_clause}"
+        )
+        return {
+            "status": "success",
+            "message": f"Release clause updated to €{new_release_clause:,.0f}.",
+            "release_clause": new_release_clause,
+        }
     except Exception as e:
-        logger.error(f"Error incrementing footballer release clause: {e}")
-        return {"status": "error", "message": "An error occurred while incrementing the release clause."}
+        logger.error(f"Error incrementing release clause: {e}")
+        if conn:
+            conn.rollback()
+        return {"status": "error", "message": str(e)}
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
