@@ -315,7 +315,7 @@ def get_footballer_image(footballer_id: int):
 
 
 @router.post("/update/{footballer_id}")
-def update_footballer_info(footballer_id: int):
+def update_footballer_info(footballer_id: int, update_threshold_seconds: int | None = None):
     """Update footballer information in the database.
     The method will fetch the source for the footballer and update relevant fields in both PostgreSQL and MongoDB."""
     init_time = time.time()
@@ -327,9 +327,9 @@ def update_footballer_info(footballer_id: int):
 
         cursor.execute(
             """
-            SELECT url_name
-            FROM footballer
-            WHERE id = %s
+            SELECT f.url_name, EXTRACT('seconds' from now() - fd.last_updated)
+            FROM footballer AS f JOIN footballer_data as fd on f.id = fd.id
+            WHERE f.id = %s
             LIMIT 1
             """,
             (footballer_id,)
@@ -340,39 +340,40 @@ def update_footballer_info(footballer_id: int):
         if not row or not row[0]:
             return {"status": "error", "message": "url_name not found for footballer"}
 
-        url_name = row[0]
+        url_name, last_update_seconds = row
 
         fb = Footballer(obtain_data=False)
         fb.id = footballer_id
         fb.url_name = url_name
         fb.get_player_data()
 
-        if fb.data['market_details']:
-            cursor.execute(
-                """
-                UPDATE footballer_data
-                SET (last_updated, total_points, average_points, value, availability) = (SELECT NOW(), %s, %s, %s, CAST(%s AS AVAILABILITY_TYPE))
-                WHERE id = %s
-                """,
-                (fb.data['total_points'], fb.data['average_points'], fb.data['market_details'][-1]['value'], fb.availability, footballer_id)
-            )
+        if not update_threshold_seconds or int(last_update_seconds) > update_threshold_seconds:
+            if fb.data['market_details']:
+                cursor.execute(
+                    """
+                    UPDATE footballer_data
+                    SET (last_updated, total_points, average_points, value, availability) = (SELECT NOW(), %s, %s, %s, CAST(%s AS AVAILABILITY_TYPE))
+                    WHERE id = %s
+                    """,
+                    (fb.data['total_points'], fb.data['average_points'], fb.data['market_details'][-1]['value'], fb.availability, footballer_id)
+                )
 
-            client = mongo_client()
-            db = client["FantasyMDB"]
+                client = mongo_client()
+                db = client["FantasyMDB"]
 
-            update_fields = {}
-            if fb.data is not None:
-                if fb.data.get("market_details") is not None:
-                    update_fields["market_details"] = fb.data["market_details"]
-                if fb.data.get("fixture_breakdown") is not None:
-                    update_fields["fixture_breakdown"] = fb.data["fixture_breakdown"]
-                # if fb.data.get("image_binary") is not None:
-                #     update_fields["image_binary"] = fb.data["image_binary"]
+                update_fields = {}
+                if fb.data is not None:
+                    if fb.data.get("market_details") is not None:
+                        update_fields["market_details"] = fb.data["market_details"]
+                    if fb.data.get("fixture_breakdown") is not None:
+                        update_fields["fixture_breakdown"] = fb.data["fixture_breakdown"]
+                    # if fb.data.get("image_binary") is not None:
+                    #     update_fields["image_binary"] = fb.data["image_binary"]
 
-            if update_fields:
-                db.footballer.update_one({"id": footballer_id}, {"$set": update_fields}, upsert=True)
-        else:
-            logger.warning(f"No market details found for footballer {footballer_id}; skipping update. Consider removing from database")
+                if update_fields:
+                    db.footballer.update_one({"id": footballer_id}, {"$set": update_fields}, upsert=True)
+            else:
+                logger.warning(f"No market details found for footballer {footballer_id}; skipping update. Consider removing from database")
 
         conn.commit()
         cursor.close()

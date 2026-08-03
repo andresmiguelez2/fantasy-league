@@ -4,7 +4,8 @@ import logging
 import psycopg2
 import random
 
-from backend.app.core.constants import N_NEW_FOOTBALLERS_INTO_MARKET
+from backend.app.api.routers.footballer import update_footballer_info
+from backend.app.core.constants import N_NEW_FOOTBALLERS_INTO_MARKET, UPDATE_DB_INTERVAL
 from pymongo import MongoClient
 from backend.app.db.database import pg_connect, mongo_client
 
@@ -127,6 +128,9 @@ class Market:
         )
         free_agents = cursor.fetchall()
         chosen_free_agents = random.sample(free_agents, min(n_agents, len(free_agents)))
+
+        for footballer_id in chosen_free_agents:
+            update_footballer_info(footballer_id, UPDATE_DB_INTERVAL)
 
         cursor.execute(
             """
