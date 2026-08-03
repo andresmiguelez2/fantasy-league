@@ -371,20 +371,21 @@ export const FootballerInfoDialog = ({
               <Card className="p-4">
                 <div className="flex items-center justify-between">
                   {info.position && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Position</p>
-                      <p className="text-sm font-semibold uppercase">{info.position}</p>
+                    <div className="w-14 flex-shrink-0">
+                      <p className="text-sm font-semibold uppercase truncate">{info.position}</p>
                     </div>
                   )}
                   <div className="flex items-center gap-6 ml-auto">
                     {info.availability && (
-                      <AvailabilityIcon availability={info.availability} showText />
+                      <div className="w-20 flex-shrink-0 flex justify-center">
+                        <AvailabilityIcon availability={info.availability} showText />
+                      </div>
                     )}
-                    <div className="text-right">
+                    <div className="w-36 flex-shrink-0 text-right">
                       <p className="text-sm text-muted-foreground">Release Clause</p>
-                      <p className="text-sm font-semibold">
+                      <p className="text-sm font-semibold truncate">
                         {releaseClauseRemainingSeconds === null
-                          ? "Release clause available"
+                          ? "Available"
                           : formatReleaseClauseCountdown(releaseClauseRemainingSeconds)}
                       </p>
                     </div>
