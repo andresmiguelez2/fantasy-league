@@ -1,5 +1,6 @@
 # Secrets
 secrets/
+certs/
 
 # Devcontainer
 .devcontainer/devcontainer-lock.json
