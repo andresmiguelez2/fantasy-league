@@ -6,12 +6,10 @@ from fastapi import APIRouter
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-from backend.app.api.routers.market import _player_has_enough_budget, debit_player_value
 from backend.app.core.constants import (
     FANTASY_PLAYER_URL,
     FOOTBALLER_POSITIONS,
     LINEUP_POSITIONS,
-    MIN_RELEASE_CLAUSE_VALUE,
     PLACE_ON_MARKET_WITH_RELEASE_CLAUSE,
     RELEASE_CLAUSE_DAYS,
     UPDATE_DB_INTERVAL,
@@ -691,70 +689,3 @@ def get_release_clause_data(footballer_id: int, league_id: int):
     except Exception as e:
         logger.error(f"Error getting footballer release clause data: {e}")
         return {"status": "error", "message": str(e)}
-
-
-@router.post("/increment_release_clause/{footballer_id}")
-def increment_release_clause(footballer_id: int, league_id: int, player_id: int, value: int):
-    """Increment the release clause of a footballer."""
-    try:
-        if value <= 0:
-            return {"status": "error", "message": "Increment must be a positive value."}
-
-        conn = pg_connect()
-        cursor = conn.cursor()
-
-        cursor.execute(
-            """
-            SELECT f.owner_id, f.release_clause, fd.value
-            FROM footballer AS f JOIN footballer_data AS fd ON f.id = fd.id
-            WHERE f.id = %s AND f.league_id = %s
-            """,
-            (footballer_id, league_id),
-        )
-        row = cursor.fetchone()
-
-        if not row:
-            return {"status": "error", "message": "Footballer not found."}
-
-        owner_id, current_release_clause, footballer_value = row
-
-        if owner_id != player_id:
-            return {"status": "error", "message": "You can only increment the release clause of your own footballer."}
-
-        has_enough_budget, _ = _player_has_enough_budget(player_id, league_id, value)
-        if not has_enough_budget:
-            return {"status": "error", "message": "You do not have enough budget to increment the release clause."}
-
-        new_release_clause = max(current_release_clause or 0, MIN_RELEASE_CLAUSE_VALUE, footballer_value) + value
-
-        cursor.execute(
-            """
-            UPDATE footballer
-            SET release_clause = %s
-            WHERE id = %s AND league_id = %s
-            """,
-            (new_release_clause, footballer_id, league_id),
-        )
-        debit_player_value(player_id, value)
-        
-        conn.commit()
-
-        logger.info(
-            f"Release clause incremented: Footballer {footballer_id} by Player {player_id} "
-            f"from {current_release_clause} to {new_release_clause}"
-        )
-        return {
-            "status": "success",
-            "message": f"Release clause updated to €{new_release_clause:,.0f}.",
-            "release_clause": new_release_clause,
-        }
-    except Exception as e:
-        logger.error(f"Error incrementing release clause: {e}")
-        if conn:
-            conn.rollback()
-        return {"status": "error", "message": "An error occurred while incrementing the release clause."}
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
