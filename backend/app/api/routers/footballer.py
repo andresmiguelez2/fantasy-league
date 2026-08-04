@@ -10,6 +10,7 @@ from backend.app.core.constants import (
     FANTASY_PLAYER_URL,
     FOOTBALLER_POSITIONS,
     LINEUP_POSITIONS,
+    MIN_RELEASE_CLAUSE_VALUE,
     PLACE_ON_MARKET_WITH_RELEASE_CLAUSE,
     RELEASE_CLAUSE_DAYS,
     UPDATE_DB_INTERVAL,
@@ -366,9 +367,22 @@ def update_footballer_info(footballer_id: int, update_threshold_seconds: int | N
                     """
                     UPDATE footballer_data
                     SET (last_updated, total_points, average_points, value, availability) = (SELECT NOW(), %s, %s, %s, CAST(%s AS AVAILABILITY_TYPE))
+                    WHERE id = %s;
+                    """,
+                    (
+                        fb.data['total_points'],
+                        fb.data['average_points'],
+                        fb.data['market_details'][-1]['value'],
+                        fb.availability, footballer_id,
+                    )
+                )
+                cursor.execute(
+                    """
+                    UPDATE footballer
+                    SET release_clause = GREATEST(release_clause, CAST(%s AS BIGINT), CAST(%s AS BIGINT))
                     WHERE id = %s
                     """,
-                    (fb.data['total_points'], fb.data['average_points'], fb.data['market_details'][-1]['value'], fb.availability, footballer_id)
+                    (fb.data['market_details'][-1]['value'], MIN_RELEASE_CLAUSE_VALUE, footballer_id)
                 )
 
                 client = mongo_client()
@@ -688,39 +702,4 @@ def get_release_clause_data(footballer_id: int, league_id: int):
         return {"status": "success", "rc_available": data[0], "release_clause": data[1]}
     except Exception as e:
         logger.error(f"Error getting footballer release clause data: {e}")
-        return {"status": "error", "message": str(e)}
-
-
-@router.post("/increment_release_clause_player/{footballer_id}")
-def increment_release_clause_player(footballer_id: int, league_id: int, player_id: int, value: int):
-    """Increment the release clause of a footballer."""
-    try:
-        conn = pg_connect()
-        cursor = conn.cursor()
-
-        cursor.execute(
-            """
-            UPDATE footballer
-            SET release_clause = release_clause + %s
-            WHERE id = %s AND league_id = %s AND owner_id = %s
-            RETURNING release_clause
-            """,
-            (value, footballer_id, league_id, player_id)
-        )
-
-        new_release_clause = cursor.fetchone()
-
-        if not new_release_clause:
-            cursor.close()
-            conn.close()
-            return {"status": "error", "message": "Footballer not found."}
-
-        conn.commit()
-        cursor.close()
-        conn.close()
-
-        logger.info(f"Footballer {footballer_id} release clause incremented by {value}. New value: {new_release_clause[0]}")
-        return {"status": "success", "new_release_clause": new_release_clause[0]}
-    except Exception as e:
-        logger.error(f"Error incrementing footballer release clause: {e}")
         return {"status": "error", "message": str(e)}

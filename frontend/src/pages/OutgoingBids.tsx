@@ -40,15 +40,15 @@ const OutgoingBids = () => {
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
-    return format(date, "dd-MM-yyyy HH:mm");
+    return format(date, "dd/MM/yy HH:mm");
   };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      notation: 'compact',
+      maximumFractionDigits: 1,
     }).format(value);
   };
 
@@ -107,9 +107,9 @@ const OutgoingBids = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Footballer</TableHead>
-                  <TableHead className="text-center hidden sm:table-cell">Owner</TableHead>
-                  <TableHead className="text-center hidden sm:table-cell">Timestamp</TableHead>
-                  <TableHead className="text-center">Bid Value</TableHead>
+                  <TableHead className="text-center">Owner</TableHead>
+                  <TableHead className="text-center">Timestamp</TableHead>
+                  <TableHead className="text-center">Value</TableHead>
                   <TableHead className="w-[80px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -120,23 +120,23 @@ const OutgoingBids = () => {
                     className="cursor-pointer"
                     onClick={() => handleRowClick(bid.footballerId)}
                   >
-                    <TableCell>
+                    <TableCell className="whitespace-normal break-words">
                       <div className="flex items-center gap-3">
                         <img
                           src={`${BACKEND_URL}/footballer/image/${bid.footballerId}`}
                           alt={bid.footballerName}
                           className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover flex-shrink-0"
                         />
-                        <span className="font-medium truncate">{bid.footballerName}</span>
+                        <span className="font-medium break-words">{bid.footballerName}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-center text-muted-foreground hidden sm:table-cell">
+                    <TableCell className="text-center text-muted-foreground whitespace-normal break-words">
                       {bid.ownerName ?? "-"}
                     </TableCell>
-                    <TableCell className="text-center text-muted-foreground hidden sm:table-cell">
+                    <TableCell className="text-center text-muted-foreground whitespace-normal break-words">
                       {formatTimestamp(bid.timestamp)}
                     </TableCell>
-                    <TableCell className="text-center font-semibold">
+                    <TableCell className="text-center font-semibold whitespace-normal break-words">
                       {formatCurrency(bid.amount)}
                     </TableCell>
                     <TableCell>

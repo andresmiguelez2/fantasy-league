@@ -839,6 +839,27 @@ export const scheduleReleaseClauseBid = async (
   }
 };
 
+export const incrementReleaseClause = async (
+  footballerId: number,
+  playerId: string,
+  increment: number,
+): Promise<{ status: string; message?: string; new_release_clause?: number }> => {
+  const leagueId = getActiveLeagueId();
+  if (!leagueId) {
+    throw new Error('No active league selected');
+  }
+  const params = new URLSearchParams({
+    league_id: leagueId,
+    player_id: playerId,
+    value: String(increment),
+  });
+  const res = await fetch(
+    `${BACKEND_URL}/market/increment_release_clause/${footballerId}?${params}`,
+    { method: 'POST' },
+  );
+  return res.json();
+};
+
 export const fetchLeagueInvite = async (leagueId: string): Promise<{ status: string; invite_code?: string; detail?: string }> => {
   const token = getAuthToken();
   if (!token) {
