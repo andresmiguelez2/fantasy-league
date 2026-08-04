@@ -55,6 +55,7 @@ export const FootballerInfoDialog = ({
   const [incrementReleaseClauseDialogOpen, setIncrementReleaseClauseDialogOpen] = useState(false);
   const [onMarket, setOnMarket] = useState<boolean | null>(null);
   const [releaseClause, setReleaseClause] = useState<number | null>(null);
+  const [brushRange, setBrushRange] = useState<{ startIndex: number; endIndex: number } | null>(null);
   const { toast } = useToast();
   const { playerId } = useParams();
 
@@ -97,6 +98,12 @@ export const FootballerInfoDialog = ({
         const latestFixture = Math.max(...info.fixture_breakdown.map(f => f.fixture));
         setSelectedFixture(latestFixture);
       }
+
+      const sorted = [...info.fixture_breakdown].sort((a, b) => a.fixture - b.fixture);
+      setBrushRange({
+        startIndex: Math.max(0, sorted.length - 5),
+        endIndex: Math.max(0, sorted.length - 1),
+      });
     }
   }, [info, defaultFixture]);
 
@@ -476,19 +483,31 @@ export const FootballerInfoDialog = ({
         <Card className="p-6 mb-6">
           <h3 className="text-lg font-semibold mb-4">Points by Fixture {selectedFixture && <span className="text-muted-foreground text-sm"></span>}</h3>
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={sortedFixtures} onClick={handleBarClick}>
+            <BarChart data={sortedFixtures} onClick={handleBarClick} margin={{ top: 5, right: 10, left: 0, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
                 dataKey="fixture" 
                 label={{ value: 'Fixture', position: 'insideBottom', offset: -5 }}
               />
               <YAxis 
-                label={{ value: 'Points', angle: -90, position: 'insideLeft' }}
                 domain={[0, 15]}
                 ticks={yTicks}
+                width={30}
               />
               <Tooltip />
-              <Brush dataKey="fixture" height={30} stroke="hsl(var(--primary))" startIndex={initialStartIndex} endIndex={initialEndIndex} travellerWidth={10} />
+              <Brush 
+                dataKey="fixture" 
+                height={30} 
+                stroke="hsl(var(--primary))" 
+                startIndex={brushRange?.startIndex} 
+                endIndex={brushRange?.endIndex}
+                travellerWidth={10}
+                onChange={(range) => {
+                  if (range.startIndex !== undefined && range.endIndex !== undefined) {
+                    setBrushRange({ startIndex: range.startIndex, endIndex: range.endIndex });
+                  }
+                }}
+              />
               <Bar dataKey="points" cursor="pointer">
                 {sortedFixtures.map((entry) => (
                   <Cell
@@ -578,7 +597,7 @@ export const FootballerInfoDialog = ({
         open={bidDialogOpen}
         onOpenChange={setBidDialogOpen}
         footballerName={info.name}
-        footballerValue={info.value}
+        footballerValue={info.market_value}
         onSubmit={handleBidSubmit}
       />
       
