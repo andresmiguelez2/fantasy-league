@@ -388,11 +388,11 @@ export const FootballerInfoDialog = ({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Points</p>
-                  <p className="text-2xl font-bold text-primary">{info.total_points}</p>
+                  <p className="text-2xl font-bold text-white">{info.total_points}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Average Points</p>
-                  <p className="text-2xl font-bold text-secondary">{info.average_points.toFixed(2)}</p>
+                  <p className="text-2xl font-bold text-white">{info.average_points.toFixed(2)}</p>
                 </div>
               </div>
             </Card>
@@ -429,12 +429,12 @@ export const FootballerInfoDialog = ({
                 <div className="flex-1 flex gap-6">
                   <div>
                     <p className="text-sm text-muted-foreground">Market Value</p>
-                    <p className="text-2xl font-bold text-accent">{formatValue(info.market_value)}</p>
+                    <p className="text-2xl font-bold text-primary">{formatValue(info.market_value)}</p>
                   </div>
                   {releaseClause !== null && (
                     <div>
                       <p className="text-sm text-muted-foreground">Release Clause</p>
-                      <p className="text-2xl font-bold text-destructive">{formatValue(releaseClause)}</p>
+                      <p className="text-2xl font-bold text-secondary">{formatValue(releaseClause)}</p>
                     </div>
                   )}
                 </div>
@@ -534,20 +534,29 @@ export const FootballerInfoDialog = ({
         )}
 
         {/* Market Value Line Chart */}
-        <Card className="p-6 mb-4">
-          <h3 className="text-lg font-semibold mb-4">Market Value History</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={info.market_details}>
+        <Card className="p-6 pl-2 pr-4 mb-4">
+          <h3 className="text-lg font-semibold mb-4 pl-4">Market Value History</h3>
+          <ResponsiveContainer width="100%" height={280}>
+            <LineChart data={info.market_details} margin={{ top: 5, right: 5, left: -15, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
-                dataKey="date" 
-                label={{ value: 'Date', position: 'insideBottom', offset: -5 }}
+                dataKey="date"
+                label={{ value: 'Date', position: 'insideBottom', offset: -15 }}
                 tick={{ fontSize: 12 }}
                 interval="preserveStartEnd"
+                angle={-30}
+                textAnchor="end"
+                height={50}
               />
               <YAxis 
-                label={{ value: 'Value (€)', angle: -90, position: 'insideLeft' }}
-                tickFormatter={(value) => `€${(value / 1000000).toFixed(1)} M`}
+                tick={{ fontSize: 12 }}
+                width={50}
+                tickFormatter={(value) =>
+                  new Intl.NumberFormat('en-ES', {
+                    notation: 'compact',
+                    maximumFractionDigits: 1,
+                  }).format(value)
+                }
               />
               <Tooltip 
                 formatter={(value: number) => formatValue(value)}
