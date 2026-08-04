@@ -166,6 +166,7 @@ const IncomingBids = () => {
           open={replyDialogOpen}
           onOpenChange={setReplyDialogOpen}
           footballerName={selectedBid.footballerName}
+          bidderName={selectedBid.bidderName}
           bidAmount={selectedBid.amount}
           onAccept={handleAccept}
           onDecline={handleDecline}
