@@ -16,8 +16,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { BidDialog } from "@/components/BidDialog";
 import { ReleaseClauseDialog } from "@/components/ReleaseClauseDialog";
+import { IncrementReleaseClauseDialog } from "@/components/IncrementReleaseClauseDialog";
 import { AvailabilityIcon } from "@/components/AvailabilityIcon";
-import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail, placeBid, payReleaseClause, scheduleReleaseClauseBid, fetchMarketStatus, changeMarketStatus, getActivePlayerId, BACKEND_URL } from "@/lib/api";
+import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail, placeBid, payReleaseClause, scheduleReleaseClauseBid, fetchMarketStatus, changeMarketStatus, getActivePlayerId, BACKEND_URL, incrementReleaseClause, fetchReleaseClauseData } from "@/lib/api";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, Cell } from "recharts";
 import { MoreVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -51,7 +52,10 @@ export const FootballerInfoDialog = ({
   const [fixtureDetail, setFixtureDetail] = useState<FixtureDetail | null>(null);
   const [bidDialogOpen, setBidDialogOpen] = useState(false);
   const [releaseClauseDialogOpen, setReleaseClauseDialogOpen] = useState(false);
+  const [incrementReleaseClauseDialogOpen, setIncrementReleaseClauseDialogOpen] = useState(false);
   const [onMarket, setOnMarket] = useState<boolean | null>(null);
+  const [releaseClause, setReleaseClause] = useState<number | null>(null);
+  const [brushRange, setBrushRange] = useState<{ startIndex: number; endIndex: number } | null>(null);
   const { toast } = useToast();
   const { playerId } = useParams();
 
@@ -77,6 +81,14 @@ export const FootballerInfoDialog = ({
     }
   }, [open, footballerId]);
 
+  useEffect(() => {
+    if (open && footballerId) {
+      fetchReleaseClauseData(footballerId)
+        .then((data) => setReleaseClause(data.release_clause ?? null))
+        .catch(console.error);
+    }
+  }, [open, footballerId]);
+
   // Set default fixture to provided value or latest when info loads
   useEffect(() => {
     if (info && info.fixture_breakdown.length > 0) {
@@ -86,6 +98,12 @@ export const FootballerInfoDialog = ({
         const latestFixture = Math.max(...info.fixture_breakdown.map(f => f.fixture));
         setSelectedFixture(latestFixture);
       }
+
+      const sorted = [...info.fixture_breakdown].sort((a, b) => a.fixture - b.fixture);
+      setBrushRange({
+        startIndex: Math.max(0, sorted.length - 5),
+        endIndex: Math.max(0, sorted.length - 1),
+      });
     }
   }, [info, defaultFixture]);
 
@@ -291,6 +309,25 @@ export const FootballerInfoDialog = ({
     }
   };
 
+  const handleIncrementReleaseClause = async (increment: number) => {
+    const id = getCurrentPlayerId();
+    if (!id) {
+      toast({
+        description: "Unable to increment release clause: player ID not found",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    const resp = await incrementReleaseClause(footballerId, id, increment);
+    const message = extractMessage(resp);
+    toast({
+      description: message || `Release clause updated for ${info?.name}.`,
+      variant: resp?.status === "success" ? "default" : "destructive",
+    });
+    return resp?.status === "success";
+  };
+
   if (loading || !info) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -358,11 +395,11 @@ export const FootballerInfoDialog = ({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Points</p>
-                  <p className="text-2xl font-bold text-primary">{info.total_points}</p>
+                  <p className="text-2xl font-bold text-white">{info.total_points}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Average Points</p>
-                  <p className="text-2xl font-bold text-secondary">{info.average_points.toFixed(2)}</p>
+                  <p className="text-2xl font-bold text-white">{info.average_points.toFixed(2)}</p>
                 </div>
               </div>
             </Card>
@@ -396,9 +433,17 @@ export const FootballerInfoDialog = ({
 
             <Card className="p-4">
               <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">Market Value</p>
-                  <p className="text-2xl font-bold text-accent">{formatValue(info.market_value)}</p>
+                <div className="flex-1 flex gap-6">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Market Value</p>
+                    <p className="text-2xl font-bold text-primary">{formatValue(info.market_value)}</p>
+                  </div>
+                  {releaseClause !== null && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Release Clause</p>
+                      <p className="text-2xl font-bold text-secondary">{formatValue(releaseClause)}</p>
+                    </div>
+                  )}
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -422,6 +467,11 @@ export const FootballerInfoDialog = ({
                         {onMarket ? "Remove from market" : "Place on market"}
                       </DropdownMenuItem>
                     )}
+                    {isOwner && (
+                      <DropdownMenuItem onClick={() => setIncrementReleaseClauseDialogOpen(true)}>
+                        Increment release clause
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -433,19 +483,31 @@ export const FootballerInfoDialog = ({
         <Card className="p-6 mb-6">
           <h3 className="text-lg font-semibold mb-4">Points by Fixture {selectedFixture && <span className="text-muted-foreground text-sm"></span>}</h3>
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={sortedFixtures} onClick={handleBarClick}>
+            <BarChart data={sortedFixtures} onClick={handleBarClick} margin={{ top: 5, right: 10, left: 0, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
                 dataKey="fixture" 
                 label={{ value: 'Fixture', position: 'insideBottom', offset: -5 }}
               />
               <YAxis 
-                label={{ value: 'Points', angle: -90, position: 'insideLeft' }}
                 domain={[0, 15]}
                 ticks={yTicks}
+                width={30}
               />
               <Tooltip />
-              <Brush dataKey="fixture" height={30} stroke="hsl(var(--primary))" startIndex={initialStartIndex} endIndex={initialEndIndex} travellerWidth={10} />
+              <Brush 
+                dataKey="fixture" 
+                height={30} 
+                stroke="hsl(var(--primary))" 
+                startIndex={brushRange?.startIndex} 
+                endIndex={brushRange?.endIndex}
+                travellerWidth={10}
+                onChange={(range) => {
+                  if (range.startIndex !== undefined && range.endIndex !== undefined) {
+                    setBrushRange({ startIndex: range.startIndex, endIndex: range.endIndex });
+                  }
+                }}
+              />
               <Bar dataKey="points" cursor="pointer">
                 {sortedFixtures.map((entry) => (
                   <Cell
@@ -491,20 +553,29 @@ export const FootballerInfoDialog = ({
         )}
 
         {/* Market Value Line Chart */}
-        <Card className="p-6 mb-4">
-          <h3 className="text-lg font-semibold mb-4">Market Value History</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={info.market_details}>
+        <Card className="p-6 pl-2 pr-4 mb-4">
+          <h3 className="text-lg font-semibold mb-4 pl-4">Market Value History</h3>
+          <ResponsiveContainer width="100%" height={280}>
+            <LineChart data={info.market_details} margin={{ top: 5, right: 5, left: -15, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
-                dataKey="date" 
-                label={{ value: 'Date', position: 'insideBottom', offset: -5 }}
+                dataKey="date"
+                label={{ value: 'Date', position: 'insideBottom', offset: -15 }}
                 tick={{ fontSize: 12 }}
                 interval="preserveStartEnd"
+                angle={-30}
+                textAnchor="end"
+                height={50}
               />
               <YAxis 
-                label={{ value: 'Value (€)', angle: -90, position: 'insideLeft' }}
-                tickFormatter={(value) => `€${(value / 1000000).toFixed(1)} M`}
+                tick={{ fontSize: 12 }}
+                width={50}
+                tickFormatter={(value) =>
+                  new Intl.NumberFormat('en-ES', {
+                    notation: 'compact',
+                    maximumFractionDigits: 1,
+                  }).format(value)
+                }
               />
               <Tooltip 
                 formatter={(value: number) => formatValue(value)}
@@ -526,7 +597,7 @@ export const FootballerInfoDialog = ({
         open={bidDialogOpen}
         onOpenChange={setBidDialogOpen}
         footballerName={info.name}
-        footballerValue={info.value}
+        footballerValue={info.market_value}
         onSubmit={handleBidSubmit}
       />
       
@@ -537,6 +608,14 @@ export const FootballerInfoDialog = ({
         footballerId={footballerId}
         onSubmit={handleReleaseClauseSubmit}
         onScheduleSubmit={handleScheduleReleaseClauseBidSubmit}
+      />
+
+      <IncrementReleaseClauseDialog
+        open={incrementReleaseClauseDialogOpen}
+        onOpenChange={setIncrementReleaseClauseDialogOpen}
+        footballerName={info.name}
+        footballerId={footballerId}
+        onSubmit={handleIncrementReleaseClause}
       />
     </Dialog>
   );
