@@ -52,7 +52,7 @@ export const IncrementReleaseClauseDialog = ({
   const isValid = Number.isInteger(parsedIncrement) && parsedIncrement > 0;
   const newReleaseClause =
     isValid && currentReleaseClause !== null
-      ? currentReleaseClause + parsedIncrement
+      ? currentReleaseClause + 2*parsedIncrement
       : null;
 
   const formatValue = (val: number) =>
