@@ -43,6 +43,7 @@ export const FootballerInfoDialog = ({
   onBid,
 }: FootballerInfoDialogProps) => {
   const [info, setInfo] = useState<FootballerInfo | null>(null);
+  const [releaseClauseRemainingSeconds, setReleaseClauseRemainingSeconds] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [imgError, setImgError] = useState(false);
   const [teamBadgeError, setTeamBadgeError] = useState(false);
@@ -97,6 +98,39 @@ export const FootballerInfoDialog = ({
     }
   }, [selectedFixture, footballerId]);
 
+  useEffect(() => {
+    if (!info) {
+      setReleaseClauseRemainingSeconds(null);
+      return;
+    }
+
+    // Backend sends negative seconds while release clause is still blocked.
+    if (info.time_to_release_clause === null || info.time_to_release_clause >= 0) {
+      setReleaseClauseRemainingSeconds(null);
+      return;
+    }
+
+    setReleaseClauseRemainingSeconds(Math.ceil(Math.abs(info.time_to_release_clause)));
+  }, [info]);
+
+  useEffect(() => {
+    if (releaseClauseRemainingSeconds === null) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setReleaseClauseRemainingSeconds((current) => {
+        if (current === null || current <= 1) {
+          return null;
+        }
+
+        return current - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [releaseClauseRemainingSeconds]);
+
   const formatValue = (val: number) => {
     return new Intl.NumberFormat('en-ES', {
       style: 'currency',
@@ -115,6 +149,20 @@ export const FootballerInfoDialog = ({
       .join("")
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  const formatReleaseClauseCountdown = (seconds: number) => {
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
+
+    const paddedDays = String(days).padStart(2, "0");
+    const paddedHours = String(hours).padStart(2, "0");
+    const paddedMinutes = String(minutes).padStart(2, "0");
+    const paddedSeconds = String(remainingSeconds).padStart(2, "0");
+
+    return `${paddedDays}d ${paddedHours}h ${paddedMinutes}m ${paddedSeconds}s`;
   };
 
   const handleBarClick = (data: any) => {
@@ -319,18 +367,29 @@ export const FootballerInfoDialog = ({
               </div>
             </Card>
 
-            {(info.position || info.availability) && (
+            {(info.position || info.availability || info.time_to_release_clause !== null) && (
               <Card className="p-4">
                 <div className="flex items-center justify-between">
                   {info.position && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Position</p>
-                      <p className="text-sm font-semibold uppercase">{info.position}</p>
+                    <div className="w-14 flex-shrink-0">
+                      <p className="text-sm font-semibold uppercase truncate">{info.position}</p>
                     </div>
                   )}
-                  {info.availability && (
-                    <AvailabilityIcon availability={info.availability} showText />
-                  )}
+                  <div className="flex items-center gap-6 ml-auto">
+                    {info.availability && (
+                      <div className="w-20 flex-shrink-0 flex justify-center">
+                        <AvailabilityIcon availability={info.availability} showText />
+                      </div>
+                    )}
+                    <div className="w-36 flex-shrink-0 text-right">
+                      <p className="text-sm text-muted-foreground">Release Clause</p>
+                      <p className="text-sm font-semibold truncate">
+                        {releaseClauseRemainingSeconds === null
+                          ? "Available"
+                          : formatReleaseClauseCountdown(releaseClauseRemainingSeconds)}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </Card>
             )}

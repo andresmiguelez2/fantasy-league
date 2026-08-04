@@ -22,14 +22,17 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def create_user(username: str, password: str):
+def create_user(username: str, password: str, cursor=None):
     """Create a new user"""
-    try:
+    close_conn = False
+    if cursor is None:
         conn = pg_connect()
         cursor = conn.cursor()
-        
+        close_conn = True
+
+    try:
         password_hash = get_password_hash(password)
-        
+
         cursor.execute(
             """
             INSERT INTO users (username, password_hash)
@@ -38,72 +41,22 @@ def create_user(username: str, password: str):
             """,
             (username, password_hash)
         )
-        
+
         user_id = cursor.fetchone()[0]
-        conn.commit()
-        
+        if close_conn:
+            conn.commit()
+
         logger.info(f"User created successfully: {username} (ID: {user_id})")
-        
-        cursor.close()
-        conn.close()
-        
+
+        if close_conn:
+            cursor.close()
+            conn.close()
+
         return user_id
     except Exception as e:
         logger.error(f"Error creating user: {e}")
         return None
-
-
-def create_league(league_name: str):
-    """Create a new league"""
-    try:
-        conn = pg_connect()
-        cursor = conn.cursor()
-        
-        cursor.execute(
-            """
-            INSERT INTO league (name)
-            VALUES (%s)
-            RETURNING id
-            """,
-            (league_name,)
-        )
-        
-        league_id = cursor.fetchone()[0]
-
-        cursor.execute(
-            '''
-            INSERT INTO footballer (id, url_name, on_market, on_lineup, league_id)
-            SELECT DISTINCT
-                id
-                , url_name
-                , false
-                , false
-                , %s
-            FROM footballer
-            ''',
-            (league_id,)
-        )
-	        
-        cursor.execute(
-            """
-            INSERT INTO market (closing_timestamp, league_id)
-            VALUES (now() + INTERVAL '-1 second', %s)
-            """, 
-            (league_id,)
-        )
-
-        conn.commit()
-        
-        logger.info(f"League and market created successfully: {league_name} (ID: {league_id})")
-        
-        cursor.close()
-        conn.close()
-        
-        return league_id
-    except Exception as e:
-        logger.error(f"Error creating league: {e}")
-        return None
-    
+ 
 
 def create_player(name: str, league_id: int, user_id: int, player_id: int):
     """Create a new player"""

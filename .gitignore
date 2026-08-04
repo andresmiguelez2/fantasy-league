@@ -1,6 +1,6 @@
 # Secrets
 secrets/
-.ssh/
+certs/
 
 # Devcontainer
 .devcontainer/devcontainer-lock.json

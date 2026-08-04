@@ -370,15 +370,14 @@ const League = () => {
         ) : selectedFixture === "total" ? (
           // Squad view for selected player
           <div className="max-w-4xl overflow-x-auto">
-            <Table>
+            <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Player</TableHead>
-                  <TableHead className="text-center">Pos</TableHead>
-                  <TableHead className="text-center">Avail</TableHead>
-                  <TableHead className="text-center">Total pts</TableHead>
-                  <TableHead className="text-center hidden sm:table-cell">Avg pts</TableHead>
-                  <TableHead className="text-center hidden sm:table-cell">Value</TableHead>
+                  <TableHead className="w-[40%]">Name</TableHead>
+                  <TableHead className="w-[10%] text-center"></TableHead>
+                  <TableHead className="w-[10%] text-center"></TableHead>
+                  <TableHead className="w-[18%] text-center">Points</TableHead>
+                  <TableHead className="w-[22%] text-center">Value</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
