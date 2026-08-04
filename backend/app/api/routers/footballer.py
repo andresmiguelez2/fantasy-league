@@ -10,6 +10,7 @@ from backend.app.core.constants import (
     FANTASY_PLAYER_URL,
     FOOTBALLER_POSITIONS,
     LINEUP_POSITIONS,
+    MIN_RELEASE_CLAUSE_VALUE,
     PLACE_ON_MARKET_WITH_RELEASE_CLAUSE,
     RELEASE_CLAUSE_DAYS,
     UPDATE_DB_INTERVAL,
@@ -378,10 +379,10 @@ def update_footballer_info(footballer_id: int, update_threshold_seconds: int | N
                 cursor.execute(
                     """
                     UPDATE footballer
-                    SET release_clause = GREATEST(release_clause, CAST(%s AS BIGINT))
+                    SET release_clause = GREATEST(release_clause, CAST(%s AS BIGINT), CAST(%s AS BIGINT))
                     WHERE id = %s
                     """,
-                    (fb.data['market_details'][-1]['value'], footballer_id)
+                    (fb.data['market_details'][-1]['value'], MIN_RELEASE_CLAUSE_VALUE, footballer_id)
                 )
 
                 client = mongo_client()
