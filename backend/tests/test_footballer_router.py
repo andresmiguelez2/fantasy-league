@@ -43,9 +43,13 @@ class FootballerRouterTests(unittest.TestCase):
 
         count_query_args = mock_cursor.execute.call_args_list[0].args
         self.assertIn("fd.team = ANY(%s)", count_query_args[0])
+        self.assertIn("fd.position = ANY(%s::position_type[])", count_query_args[0])
+        self.assertIn("fd.availability = ANY(%s::availability_type[])", count_query_args[0])
         self.assertEqual(count_query_args[1], [7, "%pla%", ["Team A", "Team B"], ["fw"], ["available"]])
 
         paged_query_args = mock_cursor.execute.call_args_list[1].args
+        self.assertIn("fd.position = ANY(%s::position_type[])", paged_query_args[0])
+        self.assertIn("fd.availability = ANY(%s::availability_type[])", paged_query_args[0])
         self.assertEqual(paged_query_args[1], [7, "%pla%", ["Team A", "Team B"], ["fw"], ["available"], 10, 10])
 
 

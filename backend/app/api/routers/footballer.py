@@ -260,10 +260,10 @@ def get_all_footballers(
             where_clauses.append("fd.team = ANY(%s)")
             query_params.append(team_filters)
         if position_filters:
-            where_clauses.append("fd.position = ANY(%s)")
+            where_clauses.append("fd.position = ANY(%s::position_type[])")
             query_params.append(position_filters)
         if availability_filters:
-            where_clauses.append("fd.availability = ANY(%s)")
+            where_clauses.append("fd.availability = ANY(%s::availability_type[])")
             query_params.append(availability_filters)
 
         where_sql = " AND ".join(where_clauses)
