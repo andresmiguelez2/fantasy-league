@@ -53,6 +53,23 @@ export interface FootballerFilterOptions {
   availabilities: string[];
 }
 
+type FootballerListResponse = {
+  footballers: [
+    number,
+    string,
+    string | null,
+    number,
+    string | null,
+    number | string,
+    number,
+    string | null,
+    string | null,
+  ][];
+  meta?: {
+    filter_options?: FootballerFilterOptions;
+  };
+};
+
 export interface MarketData {
   footballers: MarketFootballer[];
   marketClosingTimestamp: string | null;
@@ -526,10 +543,10 @@ export const fetchAllFootballers = async (
   const response = await fetch(
    `${BACKEND_URL}/footballers?${params}`
   );
-  const data = await response.json();
+  const data = await response.json() as FootballerListResponse;
   
   return {
-   footballers: data.footballers.map((footballer: any[]) => ({
+   footballers: data.footballers.map((footballer) => ({
      id: footballer[0],
      name: footballer[1],
      team: footballer[2] ?? null,
