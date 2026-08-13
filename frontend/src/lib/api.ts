@@ -29,6 +29,7 @@ export interface Footballer {
 export interface MarketFootballer {
   id: number;
   name: string;
+  team: string | null;
   value: number;
   ownerId: string;
   onMarketSince: string;
@@ -39,6 +40,35 @@ export interface MarketFootballer {
   position: string | null;
   availability: string | null;
 }
+
+export interface FootballerFilters {
+  teams: string[];
+  positions: string[];
+  availabilities: string[];
+}
+
+export interface FootballerFilterOptions {
+  teams: string[];
+  positions: string[];
+  availabilities: string[];
+}
+
+type FootballerListResponse = {
+  footballers: [
+    number,
+    string,
+    string | null,
+    number,
+    string | null,
+    number | string,
+    number,
+    string | null,
+    string | null,
+  ][];
+  meta?: {
+    filter_options?: FootballerFilterOptions;
+  };
+};
 
 export interface MarketData {
   footballers: MarketFootballer[];
@@ -487,8 +517,9 @@ export const fetchAllFootballers = async (
   limit: number = 25,
   sortBy: 'name' | 'points' | 'value' = 'name',
   sortOrder: 'asc' | 'desc' = 'asc',
-  search: string = ''
-): Promise<MarketFootballer[]> => {
+  search: string = '',
+  filters: FootballerFilters = { teams: [], positions: [], availabilities: [] },
+): Promise<{ footballers: MarketFootballer[]; filterOptions: FootballerFilterOptions }> => {
   const leagueId = getActiveLeagueId();
   if (!leagueId) {
     throw new Error('No active league selected');
@@ -501,23 +532,40 @@ export const fetchAllFootballers = async (
     search: search,
     league_id: leagueId,
   });
+
+  if (filters.teams.length > 0) {
+   params.set('teams', filters.teams.join(','));
+  }
+  if (filters.positions.length > 0) {
+   params.set('positions', filters.positions.join(','));
+  }
+  if (filters.availabilities.length > 0) {
+   params.set('availabilities', filters.availabilities.join(','));
+  }
   
   const response = await fetch(
-    `${BACKEND_URL}/footballers?${params}`
+   `${BACKEND_URL}/footballers?${params}`
   );
-  const data = await response.json();
+  const data = await response.json() as FootballerListResponse;
   
-  // Map to MarketFootballer format
-  return data.footballers.map((footballer: any[]) => ({
-    id: footballer[0],
-    name: footballer[1],
-    value: footballer[2],
-    ownerId: footballer[3] || '',
-    averagePoints: footballer[4],
-    totalPoints: footballer[5],
-    position: footballer[6] ?? null,
-    availability: footballer[7] ?? null,
-  }));
+  return {
+   footballers: data.footballers.map((footballer) => ({
+     id: footballer[0],
+     name: footballer[1],
+     team: footballer[2] ?? null,
+     value: footballer[3],
+     ownerId: footballer[4] || '',
+     averagePoints: footballer[5],
+     totalPoints: footballer[6],
+     position: footballer[7] ?? null,
+     availability: footballer[8] ?? null,
+   })),
+   filterOptions: {
+     teams: data.meta?.filter_options?.teams || [],
+     positions: data.meta?.filter_options?.positions || [],
+     availabilities: data.meta?.filter_options?.availabilities || [],
+   },
+  };
 };
 
 export interface LineupFormation {

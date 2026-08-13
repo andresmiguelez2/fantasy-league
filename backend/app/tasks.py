@@ -2,25 +2,27 @@ import asyncio
 import logging
 import time
 
-from backend.app.models.market import Market, load_market, load_last_market
+from backend.app.api.routers.footballer import (
+    _auto_increment_release_clause,
+    update_footballer_info,
+)
+from backend.app.api.routers.general import footballers_to_update
 from backend.app.core.constants import (
-    LOOP_TIME_SECONDS,
+    HANDLE_DANGLING_FIXTURES_INTERVAL,
     LOOP_TIME_BUFFER,
+    LOOP_TIME_SECONDS,
     N_REQUEST_BUFFER,
     UPDATE_DB_INTERVAL,
-    HANDLE_DANGLING_FIXTURES_INTERVAL,
     UPDATE_FIXTURES_INTERVAL,
 )
-from backend.app.api.routers.footballer import update_footballer_info
-from backend.app.api.routers.general import footballers_to_update
 from backend.app.models.fixture import get_current_fixture, update_fixture_times
 from backend.app.models.league import get_leagues
-
+from backend.app.models.market import Market, load_last_market, load_market
 
 logger = logging.getLogger(__name__)
 
 
-def _cache_data(start_time: float) -> None:
+def _cache_data(start_time: float, leagues: list[int]) -> None:
     target_footballers = footballers_to_update(time_threshold=UPDATE_DB_INTERVAL)["footballer_ids"]
 
     if time.time() - start_time > LOOP_TIME_SECONDS - LOOP_TIME_BUFFER:
@@ -28,7 +30,8 @@ def _cache_data(start_time: float) -> None:
         return
 
     for fid in target_footballers:
-        elapsed_time = update_footballer_info(fid)['elapsed_time']
+        elapsed_time = update_footballer_info(fid).get('elapsed_time')
+        elapsed_time += _auto_increment_release_clause(fid, leagues)
         if time.time() - start_time > LOOP_TIME_SECONDS - elapsed_time * N_REQUEST_BUFFER:
             break
 
@@ -65,7 +68,7 @@ def _run_iteration(active_markets: dict[int, Market | None], n_iteration: int, s
     if active_fixture:
         active_fixture.fulfill_fixture()
 
-    _cache_data(start_time)
+    _cache_data(start_time, leagues)
     _update_data(n_iteration)
 
 

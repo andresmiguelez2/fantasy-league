@@ -198,8 +198,23 @@ def get_fixture_points(footballer_id: int, fixture: int):
         return {"status": "error", "message": str(e)}
 
 
+def _parse_csv_filter(raw_value: str) -> list[str]:
+    return [value.strip() for value in raw_value.split(",") if value.strip()]
+
+
 @router.get("s")
-def get_all_footballers(league_id: int, limit: int = 20, offset: int = 0, page: int | None = None, sort: str = 'name', invert: str = "false", search: str = ""):
+def get_all_footballers(
+    league_id: int,
+    limit: int = 20,
+    offset: int = 0,
+    page: int | None = None,
+    sort: str = 'name',
+    invert: str = "false",
+    search: str = "",
+    teams: str = "",
+    positions: str = "",
+    availabilities: str = "",
+):
     """Get all footballers with pagination and total count.
 
     Supports either `offset` or `page` (1-based). If `page` is provided it takes precedence and offset is computed as (page-1)*limit.
@@ -227,21 +242,42 @@ def get_all_footballers(league_id: int, limit: int = 20, offset: int = 0, page: 
     elif sort_col == 'name':
         direction = 'DESC' if invert == 'true' else 'ASC'
 
+    team_filters = _parse_csv_filter(teams)
+    position_filters = _parse_csv_filter(positions)
+    availability_filters = _parse_csv_filter(availabilities)
+
     try:
         conn = pg_connect()
         cursor = conn.cursor()
 
+        where_clauses = [
+            "f.league_id = %s",
+            "unaccent(fd.full_name) ILIKE unaccent(%s)",
+        ]
+        query_params = [league_id, f"%{search}%"]
+
+        if team_filters:
+            where_clauses.append("fd.team = ANY(%s)")
+            query_params.append(team_filters)
+        if position_filters:
+            where_clauses.append("fd.position = ANY(%s::position_type[])")
+            query_params.append(position_filters)
+        if availability_filters:
+            where_clauses.append("fd.availability = ANY(%s::availability_type[])")
+            query_params.append(availability_filters)
+
+        where_sql = " AND ".join(where_clauses)
+
         # total count for pagination meta (respect search filter)
         # Use unaccent() so searches are accent-insensitive (e -> é matches)
         cursor.execute(
-            """
+            f"""
             SELECT COUNT(*)
             FROM footballer f
             JOIN footballer_data fd ON fd.id = f.id
-            WHERE f.league_id = %s
-                AND unaccent(fd.full_name) ILIKE unaccent(%s)
+            WHERE {where_sql}
             """,
-            (league_id, f"%{search}%")
+            query_params,
         )
         total = cursor.fetchone()[0]
 
@@ -249,24 +285,43 @@ def get_all_footballers(league_id: int, limit: int = 20, offset: int = 0, page: 
             SELECT
                 f.id
                 , fd.name
+                , fd.team
                 , fd.value
                 , p.name AS owner_name
                 , fd.average_points
                 , fd.total_points
                 , fd.position
-	            , fd.availability
+                , fd.availability
             FROM footballer f
             JOIN footballer_data fd ON fd.id = f.id
             LEFT JOIN player p on f.owner_id = p.id AND f.league_id = p.league_id
-            WHERE f.league_id = %s
-                AND unaccent(fd.full_name) ILIKE unaccent(%s)
+            WHERE {where_sql}
             ORDER BY {sort_col} {direction}
             LIMIT %s
             OFFSET %s
             """
 
-        cursor.execute(query, (league_id, f"%{search}%", limit, offset,))
+        cursor.execute(query, [*query_params, limit, offset])
         footballers = cursor.fetchall()
+
+        cursor.execute(
+            """
+            SELECT
+                fd.team,
+                fd.position,
+                fd.availability
+            FROM footballer f
+            JOIN footballer_data fd ON fd.id = f.id
+            WHERE f.league_id = %s
+            """,
+            (league_id,),
+        )
+        filter_rows = cursor.fetchall()
+        filter_options = {
+            "teams": sorted({row[0] for row in filter_rows if row[0]}),
+            "positions": sorted({row[1] for row in filter_rows if row[1]}),
+            "availabilities": sorted({row[2] for row in filter_rows if row[2]}),
+        }
 
         cursor.close()
         conn.close()
@@ -278,11 +333,13 @@ def get_all_footballers(league_id: int, limit: int = 20, offset: int = 0, page: 
                 "total": total,
                 "limit": limit,
                 "offset": offset,
-                "page": page if page is not None else None
+                "page": page if page is not None else None,
+                "filter_options": filter_options,
             },
             "columns": [
                 "id",
                 "name",
+                "team",
                 "value",
                 "owner_name",
                 "average_points",
@@ -703,3 +760,48 @@ def get_release_clause_data(footballer_id: int, league_id: int):
     except Exception as e:
         logger.error(f"Error getting footballer release clause data: {e}")
         return {"status": "error", "message": str(e)}
+
+
+def _auto_increment_release_clause(footballer_id: int, leagues: list[int]):
+    """Automatically increment the release clause of a footballer if it is below market."""
+    init_time = time.time()
+
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        for league_id in leagues:
+            cursor.execute(
+                """
+                SELECT f.release_clause, fd.value
+                FROM footballer AS f JOIN footballer_data AS fd ON f.id = fd.id
+                WHERE f.id = %s AND f.league_id = %s
+                """,
+                (footballer_id, league_id)
+            )
+
+            row = cursor.fetchone()
+
+            if row:
+                current_release_clause = row[0]
+                new_release_clause = max(current_release_clause, MIN_RELEASE_CLAUSE_VALUE, row[1])
+                if current_release_clause < new_release_clause:
+                    cursor.execute(
+                        """
+                        UPDATE footballer
+                        SET release_clause = %s
+                        WHERE id = %s AND league_id = %s
+                        """,
+                        (new_release_clause, footballer_id, league_id)
+                    )
+                    logger.info(f"Release clause for footballer {footballer_id} in league {league_id} updated to {new_release_clause}.")
+
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Error auto-incrementing release clause for footballer {footballer_id}: {e}")
+    finally:
+        elapsed_time = time.time() - init_time
+        return elapsed_time
