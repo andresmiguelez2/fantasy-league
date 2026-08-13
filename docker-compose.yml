@@ -34,21 +34,19 @@ services:
       - MONGO_HOST=mongodb
       - MONGO_PORT=27017
       - PYTHONPATH=/workspace
+      - CORS_ALLOW_ORIGINS=https://fantasytato.mooo.com
     volumes:
       - ./:/workspace
-      - ./certs:/workspace/frontend/certs:ro
     working_dir: /workspace/backend
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "1"
-    ports:
-      - "0.0.0.0:8000:8000"
     depends_on:
       - db
       - mongodb
-    command: uvicorn main:server_app --host 0.0.0.0 --port 8000 --reload --ssl-keyfile /workspace/certs/localhost-key.pem --ssl-certfile /workspace/certs/localhost.pem
+    command: uvicorn main:server_app --host 0.0.0.0 --port 8000 --proxy-headers
 
   frontend:
     build:
@@ -58,12 +56,24 @@ services:
     working_dir: /workspace/frontend
     volumes:
       - ./frontend:/workspace/frontend
-      - ./certs:/workspace/frontend/certs:ro
       - frontend_node_modules:/workspace/frontend/node_modules
-    ports:
-      - "0.0.0.0:80:8080"
     depends_on:
       - app
+
+  caddy:
+    image: caddy:2.10-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+      - frontend
 
   pgadmin:
     image: dpage/pgadmin4
@@ -79,3 +89,5 @@ volumes:
   pgdata:
   mongo_data:
   frontend_node_modules:
+  caddy_data:
+  caddy_config:
