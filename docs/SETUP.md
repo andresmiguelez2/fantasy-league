@@ -1,112 +1,133 @@
-# Quick start Guide
+# Production Setup
 
-This guide explains how to set up everything to use the app. The prerequisite to this giude is being in possesion of a machine connected to the internet with Docker installed.
+This guide deploys the application with Docker Compose and HTTPS at `https://fantasytato.mooo.com`.
 
-## 1. Environment setup
+## 1. Server prerequisites
 
-There are several environmental variables needed to make the app work. These are stores in the `📁secrets` folder:
-```
+Use a server connected to the internet with Docker Engine and Docker Compose installed. Before starting the containers:
+
+1. Point the DNS `A` record for `fantasytato.mooo.com` to the server's public IPv4 address. Remove any stale `AAAA` record unless the server also has a publicly reachable IPv6 address.
+2. Allow inbound TCP ports `80` and `443` in the host and cloud firewalls. Caddy uses port `80` to complete Let's Encrypt validation and redirects requests for the hostname to HTTPS.
+3. Ensure no other service is using ports `80` or `443`.
+
+The configured hostname is in the repository-root `Caddyfile`. Update it there before deployment if the production hostname changes.
+
+## 2. Configure secrets
+
+Create the `secrets/` directory with these files:
+
+```text
 secrets/
-├── db.env
-├── mongo.env
-└── pgadmin.env
+|- db.env
+|- mongo.env
+`- pgadmin.env
 ```
 
-Here you can find sample files:
-  * `db.env`:
-  ```
-  DB_NAME=main_db
-  DB_HOST=db
-  DB_USER=postgres
-  DB_PASSWORD=123!
-  DATABASE_URL=postgresql://postgres:123!@db:5432/main_db # be consistent
-  POSTGRES_PASSWORD=123!
-  POSTGRES_DB=main_db # consistent with DB_NAME
-  ```
-  * `mongo.env`:
-  ```
-  MONGO_INITDB_ROOT_USERNAME=mongoadmin
-  MONGO_INITDB_ROOT_PASSWORD=123!
-  MONGO_INITDB_DATABASE=fantasy_mongo_db
-  ```
-  * `pgadmin.env`:
-  ```
-  PGADMIN_DEFAULT_EMAIL=admin@admin.com
-  PGADMIN_DEFAULT_PASSWORD=admin123
-  ```
+Use strong, unique passwords and do not commit these files. Example values:
 
-## 2. Contaniner setp
+`secrets/db.env`:
 
-
-### HTTPS certificates (required for local HTTPS)
-
-Create a `certs/` folder in the repository root with:
-
-- `certs/localhost.pem`
-- `certs/localhost-key.pem`
-
-You can generate self-signed certs for local use, for example:
-```
-mkdir -p certs
-openssl req -x509 -newkey rsa:2048 -sha256 -days 365 -nodes \
-  -keyout certs/localhost-key.pem \
-  -out certs/localhost.pem \
-  -subj "/CN=localhost"
+```dotenv
+DB_NAME=main_db
+DB_HOST=db
+DB_USER=postgres
+DB_PASSWORD=replace-with-a-strong-password
+DATABASE_URL=postgresql://postgres:replace-with-a-strong-password@db:5432/main_db
+POSTGRES_PASSWORD=replace-with-a-strong-password
+POSTGRES_DB=main_db
+JWT_SECRET_KEY=replace-with-a-long-random-secret
 ```
 
+Generate a JWT secret with:
 
-The app is comprised of 5 Docker containers:
-  1. `backend_app`: runs the game logic.
-  2. `frontend_app`: visualises the game and interacts with the user.
-  3. `postgres_db`: hosts part of the game's data in the form of an SQL database.
-  4. `mongo_db`: hosts the rest of the game's data in the form of a no-SQL database.
-  5. `pgadmin`: enables interaction with the Postgres database.
-
-In order to run these containers (and thus the app), you can execute the following command in the project's root directory:
-```
-docker compose -f 'docker-compose.yml' up -d --build
+```bash
+openssl rand -hex 32
 ```
 
-## 3. Database setup
+`secrets/mongo.env`:
 
-  1. Log into the PGAdmin console via https://localhost:5050, using the credentials specified in `secrets/pgadmin.env`.
-  2. Register a server with the envirnonmental variables (as per the example):
-  - hostname: db
-  - port: 5432
-  - maintenance database: main_db
-  - username: postgres
-  - password: 123!
-  3. Load the database schema provided in the `resources/database_schema` via the following command (change the variables accordingly):
-  ```
-  chmod 777 resources/database_schema
-  docker exec pgadmin mkdir /var/lib/pgadmin/storage/admin_admin.com/
-  docker cp resources/database_schema pgadmin:/var/lib/pgadmin/storage/admin_admin.com/
-  ```
-  4. Restore the database. Right click on the databse in PGAdmin ➡️ restore. Choose the file you just copied to the container. Check `pre-data` and `post-data` in Data Options, and `Clean before restore` and `Include IF EXISTS clause` in Query Options.
-  5. Install `unaccent` extension:
-  ```
-  docker exec -it postgres_db psql -U postgres -d main_db -c 'CREATE EXTENSION IF NOT EXISTS unaccent;'
-  ```
-
-## 4. Set up JWT security token
-
-Set up a strong JWT secret key. You do not need to remeber it.
-```
-docker exec -it backend_app bash
-export JWT_SECRET_KEY=any_string
-exit
+```dotenv
+MONGO_INITDB_ROOT_USERNAME=mongoadmin
+MONGO_INITDB_ROOT_PASSWORD=replace-with-a-strong-password
+MONGO_INITDB_DATABASE=fantasy_mongo_db
 ```
 
-## 5. Create a default user and league
+`secrets/pgadmin.env`:
 
-Go to https://localhost:5173 and create a user and a league, following the on-screen instructions.
-
-## 6. Download footballer and fixture data
-
-When the containers are created for the first time we need to populate the database with both footballer and games data. Run the following commands:
+```dotenv
+PGADMIN_DEFAULT_EMAIL=admin@example.com
+PGADMIN_DEFAULT_PASSWORD=replace-with-a-strong-password
 ```
+
+## 3. Start the application
+
+From the repository root, build and start the services:
+
+```bash
+docker compose up -d --build
+```
+
+Caddy automatically obtains and renews the Let's Encrypt certificate. Confirm that certificate provisioning succeeds:
+
+```bash
+docker compose logs -f caddy
+```
+
+Once the certificate is issued, access the application at:
+
+```text
+https://fantasytato.mooo.com
+```
+
+The server's changing public IP can also be used directly over HTTP:
+
+```text
+http://<server-public-ip>
+```
+
+This IP fallback is not encrypted. Do not use it for normal access because passwords and authentication tokens can be intercepted; use the HTTPS hostname instead.
+
+## 4. Database setup
+
+PGAdmin is available at `http://<server-public-ip>:5050`. Log in with the credentials in `secrets/pgadmin.env`, then register the Postgres server using:
+
+- Hostname: `db`
+- Port: `5432`
+- Maintenance database: `main_db`
+- Username: `postgres`
+- Password: the `POSTGRES_PASSWORD` from `secrets/db.env`
+
+Load the schema from `resources/database_schema`:
+
+```bash
+docker exec pgadmin mkdir -p /var/lib/pgadmin/storage/admin_example.com/
+docker cp resources/database_schema pgadmin:/var/lib/pgadmin/storage/admin_example.com/
+```
+
+In PGAdmin, right-click the database and choose **Restore**. Select the copied file, enable `pre-data` and `post-data` under Data Options, and enable `Clean before restore` and `Include IF EXISTS clause` under Query Options.
+
+Install the required Postgres extension:
+
+```bash
+docker exec -it postgres_db psql -U postgres -d main_db -c 'CREATE EXTENSION IF NOT EXISTS unaccent;'
+```
+
+## 5. Create the initial user and league
+
+Open `https://fantasytato.mooo.com` and create a user and league through the application.
+
+## 6. Import footballer and fixture data
+
+Populate a new database with the initial footballer, fixture, and team-crest data:
+
+```bash
 docker exec backend_app python scripts/insert_fixtures.py
 docker exec backend_app python scripts/insert_team_crests.py
 docker exec backend_app python scripts/insert_footballers.py
 ```
-From this point onwards, any new league you create will contain the footballers by default.
+
+New leagues created afterward include the footballers by default.
+
+## Security note
+
+The current Compose file also publishes PostgreSQL on port `5432`, MongoDB on port `27017`, and PGAdmin on port `5050`. Restrict these ports in the server or cloud firewall to trusted administrator IP addresses; they do not need to be publicly reachable for the application or Caddy to work.
