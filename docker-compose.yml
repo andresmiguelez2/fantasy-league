@@ -59,7 +59,7 @@ services:
       - ./frontend:/workspace/frontend
       - frontend_node_modules:/workspace/frontend/node_modules
     ports:
-      - "0.0.0.0:5173:8080"
+      - "0.0.0.0:80:8080"
     depends_on:
       - app
 
