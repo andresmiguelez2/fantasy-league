@@ -760,3 +760,48 @@ def get_release_clause_data(footballer_id: int, league_id: int):
     except Exception as e:
         logger.error(f"Error getting footballer release clause data: {e}")
         return {"status": "error", "message": str(e)}
+
+
+def _auto_increment_release_clause(footballer_id: int, leagues: list[int]):
+    """Automatically increment the release clause of a footballer if it is below market."""
+    init_time = time.time()
+
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        for league_id in leagues:
+            cursor.execute(
+                """
+                SELECT f.release_clause, fd.value
+                FROM footballer AS f JOIN footballer_data AS fd ON f.id = fd.id
+                WHERE f.id = %s AND f.league_id = %s
+                """,
+                (footballer_id, league_id)
+            )
+
+            row = cursor.fetchone()
+
+            if row:
+                current_release_clause = row[0]
+                new_release_clause = max(current_release_clause, MIN_RELEASE_CLAUSE_VALUE, row[1])
+                if current_release_clause < new_release_clause:
+                    cursor.execute(
+                        """
+                        UPDATE footballer
+                        SET release_clause = %s
+                        WHERE id = %s AND league_id = %s
+                        """,
+                        (new_release_clause, footballer_id, league_id)
+                    )
+                    logger.info(f"Release clause for footballer {footballer_id} in league {league_id} updated to {new_release_clause}.")
+
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Error auto-incrementing release clause for footballer {footballer_id}: {e}")
+    finally:
+        elapsed_time = time.time() - init_time
+        return elapsed_time
