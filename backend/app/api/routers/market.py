@@ -13,6 +13,7 @@ from backend.app.core.constants import (
     MAX_DEBT_AS_VALUE_UNIT,
     MIN_RELEASE_CLAUSE_VALUE,
     RELEASE_CLAUSE_DAYS,
+    BID_EXPIRATION_DAYS,
 )
 from backend.app.db.database import mongo_client, pg_connect
 from backend.app.models.footballer import Footballer
@@ -22,6 +23,37 @@ from backend.app.models.player import debit_player_value
 from .logger import logger
 
 router = APIRouter(prefix="/market", tags=["market"])
+
+
+def mark_expired_bids_inactive(league_id: int):
+    """Mark bids as inactive if they have expired based on BID_EXPIRATION_DAYS."""
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+
+        expiration_threshold = datetime.now(tz=timezone.utc) - timedelta(days=BID_EXPIRATION_DAYS)
+        cursor.execute(
+            """
+            UPDATE bid
+            SET active = FALSE
+            WHERE
+                league_id = %s
+                AND active = TRUE
+                AND timestamp <= %s
+            """,
+            (league_id, expiration_threshold)
+        )
+        expired_count = cursor.rowcount
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        if expired_count > 0:
+            logger.info(f"Marked {expired_count} expired bids as inactive. League {league_id}.")
+        return expired_count
+    except Exception as e:
+        logger.error(f"Error marking expired bids as inactive: {e}")
+        return 0
 
 
 @router.get("")
@@ -448,12 +480,13 @@ def reply_to_bid(bid_id: int, league_id: int, accept: bool):
 @router.get("/incoming_bids/{player_id}")
 def get_player_incoming_bids(player_id: int, league_id: int):
     """Get all incoming bids for a player's footballers.
-    
+
     Args:
         player_id (int): The ID of the player to get incoming bids for.
         league_id (int): The league ID to filter by.
     """
     try:
+        mark_expired_bids_inactive(league_id)
         conn = pg_connect()
 
         cursor = conn.cursor()
@@ -492,12 +525,13 @@ def get_player_incoming_bids(player_id: int, league_id: int):
 @router.get("/outgoing_bids/{player_id}")
 def get_player_outgoing_bids(player_id: int, league_id: int):
     """Get all outgoing bids made by a player.
-    
+
     Args:
         player_id (int): The ID of the player to get outgoing bids for.
         league_id (int): The league ID to filter by.
     """
     try:
+        mark_expired_bids_inactive(league_id)
         conn = pg_connect()
 
         cursor = conn.cursor()
