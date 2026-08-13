@@ -36,6 +36,7 @@ services:
       - PYTHONPATH=/workspace
     volumes:
       - ./:/workspace
+      - ./certs:/workspace/frontend/certs:ro
     working_dir: /workspace/backend
     logging:
       driver: "json-file"
@@ -47,7 +48,7 @@ services:
     depends_on:
       - db
       - mongodb
-    command: uvicorn main:server_app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn main:server_app --host 0.0.0.0 --port 8000 --reload --ssl-keyfile /workspace/certs/localhost-key.pem --ssl-certfile /workspace/certs/localhost.pem
 
   frontend:
     build:
@@ -57,6 +58,7 @@ services:
     working_dir: /workspace/frontend
     volumes:
       - ./frontend:/workspace/frontend
+      - ./certs:/workspace/frontend/certs:ro
       - frontend_node_modules:/workspace/frontend/node_modules
     ports:
       - "0.0.0.0:80:8080"

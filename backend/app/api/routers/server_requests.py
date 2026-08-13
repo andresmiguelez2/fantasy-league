@@ -55,18 +55,13 @@ def _get_allowed_origins() -> list[str]:
         return origins
 
     return [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://0.0.0.0:5173",
-        "http://localhost:8080",
-        "http://127.0.0.1:8080",
         "http://0.0.0.0:8080",
+        "https://0.0.0.0:8080",
     ]
 
 server_app.add_middleware(
     CORSMiddleware,
     allow_origins=_get_allowed_origins(),
-    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|0\.0\.0\.0|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
