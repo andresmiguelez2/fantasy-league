@@ -1,0 +1,23 @@
+fantasytato.mooo.com {
+    encode zstd gzip
+
+    handle_path /api/* {
+        reverse_proxy app:8000
+    }
+
+    handle {
+        reverse_proxy frontend:8080
+    }
+}
+
+http:// {
+    encode zstd gzip
+
+    handle_path /api/* {
+        reverse_proxy app:8000
+    }
+
+    handle {
+        reverse_proxy frontend:8080
+    }
+}
