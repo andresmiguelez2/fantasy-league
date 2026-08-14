@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
@@ -6,6 +6,7 @@ import { PlayerInfoRibbon } from "@/components/PlayerInfoRibbon";
 import { BidReplyDialog } from "@/components/BidReplyDialog";
 import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
 import { fetchIncomingBids, replyToBid, IncomingBid, BACKEND_URL } from "@/lib/api";
+import { calculateRemainingTime, formatRemainingTime } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -16,7 +17,6 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { MessageCircle } from "lucide-react";
-import { format } from "date-fns";
 import { toast } from "sonner";
 import { getActiveLeagueId, getActivePlayerId } from "@/lib/api";
 
@@ -24,6 +24,7 @@ const IncomingBids = () => {
   const [selectedBid, setSelectedBid] = useState<IncomingBid | null>(null);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
+  const [, setUpdateTrigger] = useState(0);
   const queryClient = useQueryClient();
   const playerId = getActivePlayerId();
   const leagueId = getActiveLeagueId();
@@ -38,10 +39,12 @@ const IncomingBids = () => {
     },
   });
 
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return format(date, "dd/MM/yy HH:mm");
-  };
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setUpdateTrigger(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -98,7 +101,7 @@ const IncomingBids = () => {
     <div className="min-h-screen bg-background pb-20">
       <Header />
       <NavigationTabs leagueId={leagueId} />
-      
+
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {isLoading ? (
           <p className="text-muted-foreground">Loading bids...</p>
@@ -111,14 +114,14 @@ const IncomingBids = () => {
                 <TableRow>
                   <TableHead>Footballer</TableHead>
                   <TableHead className="text-center">Bidder</TableHead>
-                  <TableHead className="text-center">Timestamp</TableHead>
+                  <TableHead className="text-center">Remaining Time</TableHead>
                   <TableHead className="text-center">Value</TableHead>
                   <TableHead className="w-[80px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {bids.map((bid) => (
-                  <TableRow 
+                  <TableRow
                     key={bid.bidId}
                     className="cursor-pointer"
                     onClick={() => handleRowClick(bid.footballerId)}
@@ -137,7 +140,7 @@ const IncomingBids = () => {
                       {bid.bidderName}
                     </TableCell>
                     <TableCell className="text-center text-muted-foreground whitespace-normal break-words">
-                      {formatTimestamp(bid.timestamp)}
+                      {formatRemainingTime(calculateRemainingTime(bid.timestamp))}
                     </TableCell>
                     <TableCell className="text-center font-semibold whitespace-normal break-words">
                       {formatCurrency(bid.amount)}
