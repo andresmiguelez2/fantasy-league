@@ -985,7 +985,7 @@ export const fetchMyProfiles = async (): Promise<PlayerProfile[]> => {
     return [];
   }
   const response = await fetch(`${BACKEND_URL}/leagues/my-profiles`, {
-    headers: { Authorization: `****** },
+    headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) {
     return [];
@@ -1006,7 +1006,7 @@ export const updatePlayerProfile = async (
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `******
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(updates),
   });
@@ -1028,7 +1028,7 @@ export const updateAllPlayerPictures = async (
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `******
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ picture_url: pictureUrl }),
   });
