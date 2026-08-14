@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,10 +15,12 @@ import {
   fetchMyProfiles,
   updatePlayerProfile,
   updateAllPlayerPictures,
+  uploadPlayerPicture,
   getDefaultAvatarUrl,
+  resolvePictureUrl,
   PlayerProfile,
 } from "@/lib/api";
-import { Pencil, Check, X, Images } from "lucide-react";
+import { Pencil, Check, X, Images, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const AVATAR_SEEDS = [
@@ -39,9 +41,8 @@ function getInitials(name?: string | null) {
 
 interface EditState {
   name: string;
-  pictureUrl: string;
-  customUrl: string;
-  useCustomUrl: boolean;
+  pendingFile: File | null;
+  previewUrl: string | null;
 }
 
 interface ProfileCardProps {
@@ -55,66 +56,69 @@ const ProfileCard = ({ profile, onSaved }: ProfileCardProps) => {
   const [saving, setSaving] = useState(false);
   const [editState, setEditState] = useState<EditState>({
     name: profile.player_name,
-    pictureUrl: profile.picture_url || getDefaultAvatarUrl(profile.player_name),
-    customUrl: "",
-    useCustomUrl: false,
+    pendingFile: null,
+    previewUrl: null,
   });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentAvatarUrl =
-    profile.picture_url || getDefaultAvatarUrl(profile.player_name);
+    resolvePictureUrl(profile.picture_url) || getDefaultAvatarUrl(profile.player_name);
 
   const handleEdit = () => {
-    setEditState({
-      name: profile.player_name,
-      pictureUrl: profile.picture_url || getDefaultAvatarUrl(profile.player_name),
-      customUrl: "",
-      useCustomUrl: false,
-    });
+    setEditState({ name: profile.player_name, pendingFile: null, previewUrl: null });
     setEditing(true);
   };
 
   const handleCancel = () => {
+    if (editState.previewUrl) URL.revokeObjectURL(editState.previewUrl);
     setEditing(false);
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setEditState((s) => {
+      if (s.previewUrl) URL.revokeObjectURL(s.previewUrl);
+      return { ...s, pendingFile: file, previewUrl: url };
+    });
+  };
+
   const handleSave = async () => {
-    if (editState.useCustomUrl && !editState.customUrl.trim()) return;
-
-    const finalPictureUrl = editState.useCustomUrl
-      ? editState.customUrl.trim()
-      : editState.pictureUrl;
-
     setSaving(true);
     try {
-      const updates: { name?: string; picture_url?: string } = {};
-      if (editState.name.trim() !== profile.player_name) {
-        updates.name = editState.name.trim();
-      }
-      if (finalPictureUrl !== (profile.picture_url || "")) {
-        updates.picture_url = finalPictureUrl;
+      let newPictureUrl: string | undefined;
+
+      if (editState.pendingFile) {
+        const result = await uploadPlayerPicture(editState.pendingFile);
+        if (result.status !== "success") {
+          toast({ title: "Failed to upload picture", description: result.detail, variant: "destructive" });
+          return;
+        }
+        newPictureUrl = result.picture_url;
       }
 
-      if (Object.keys(updates).length === 0) {
+      if (editState.name.trim() !== profile.player_name) {
+        const result = await updatePlayerProfile(profile.player_id, { name: editState.name.trim() });
+        if (result.status !== "success") {
+          toast({ title: "Failed to update name", description: result.detail, variant: "destructive" });
+          return;
+        }
+      }
+
+      if (!editState.pendingFile && editState.name.trim() === profile.player_name) {
         setEditing(false);
         return;
       }
 
-      const result = await updatePlayerProfile(profile.player_id, updates);
-      if (result.status === "success") {
-        onSaved({
-          ...profile,
-          player_name: updates.name ?? profile.player_name,
-          picture_url: updates.picture_url ?? profile.picture_url,
-        });
-        setEditing(false);
-        toast({ title: "Profile updated" });
-      } else {
-        toast({
-          title: "Failed to update profile",
-          description: result.detail,
-          variant: "destructive",
-        });
-      }
+      onSaved({
+        ...profile,
+        player_name: editState.name.trim() || profile.player_name,
+        picture_url: newPictureUrl ?? profile.picture_url,
+      });
+      if (editState.previewUrl) URL.revokeObjectURL(editState.previewUrl);
+      setEditing(false);
+      toast({ title: "Profile updated" });
     } finally {
       setSaving(false);
     }
@@ -159,64 +163,32 @@ const ProfileCard = ({ profile, onSaved }: ProfileCardProps) => {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Avatar</Label>
-            <div className="flex flex-wrap gap-2">
-              {AVATAR_SEEDS.map((seed) => {
-                const url = getDefaultAvatarUrl(seed);
-                const selected =
-                  !editState.useCustomUrl && editState.pictureUrl === url;
-                return (
-                  <button
-                    key={seed}
-                    type="button"
-                    onClick={() =>
-                      setEditState((s) => ({
-                        ...s,
-                        pictureUrl: url,
-                        useCustomUrl: false,
-                      }))
-                    }
-                    className={`rounded-full border-2 transition-colors ${
-                      selected
-                        ? "border-primary"
-                        : "border-transparent hover:border-secondary"
-                    }`}
-                  >
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage src={url} />
-                      <AvatarFallback>{seed[0]}</AvatarFallback>
-                    </Avatar>
-                  </button>
-                );
-              })}
+            <Label>Profile picture</Label>
+            <div className="flex items-center gap-3">
+              <Avatar className="h-12 w-12 border border-border">
+                <AvatarImage src={editState.previewUrl ?? currentAvatarUrl} />
+                <AvatarFallback>{getInitials(profile.player_name)}</AvatarFallback>
+              </Avatar>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="h-3.5 w-3.5 mr-1" />
+                Upload from device
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+              />
             </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor={`custom-url-${profile.player_id}`}>
-              Or enter a custom image URL
-            </Label>
-            <Input
-              id={`custom-url-${profile.player_id}`}
-              value={editState.customUrl}
-              onChange={(e) =>
-                setEditState((s) => ({
-                  ...s,
-                  customUrl: e.target.value,
-                  useCustomUrl: e.target.value.trim().length > 0,
-                }))
-              }
-              placeholder="https://example.com/my-avatar.png"
-            />
-            {editState.useCustomUrl && editState.customUrl.trim() && (
-              <div className="flex items-center gap-2 mt-1">
-                <Avatar className="h-9 w-9 border border-border">
-                  <AvatarImage src={editState.customUrl.trim()} />
-                  <AvatarFallback>?</AvatarFallback>
-                </Avatar>
-                <span className="text-xs text-muted-foreground">Preview</span>
-              </div>
-            )}
+            <p className="text-xs text-muted-foreground">
+              Uploading a picture will update your avatar across all leagues.
+            </p>
           </div>
 
           <div className="flex gap-2 justify-end">
@@ -251,9 +223,10 @@ export const ProfileDialog = ({ open, onOpenChange }: ProfileDialogProps) => {
   const [loading, setLoading] = useState(false);
   const [allPictureOpen, setAllPictureOpen] = useState(false);
   const [allPictureSeed, setAllPictureSeed] = useState<string>(AVATAR_SEEDS[0]);
-  const [allPictureCustomUrl, setAllPictureCustomUrl] = useState("");
-  const [allPictureUseCustom, setAllPictureUseCustom] = useState(false);
+  const [allPictureFile, setAllPictureFile] = useState<File | null>(null);
+  const [allPicturePreviewUrl, setAllPicturePreviewUrl] = useState<string | null>(null);
   const [savingAll, setSavingAll] = useState(false);
+  const allFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -270,29 +243,43 @@ export const ProfileDialog = ({ open, onOpenChange }: ProfileDialogProps) => {
     );
   };
 
+  const handleAllFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setAllPictureFile(file);
+    if (allPicturePreviewUrl) URL.revokeObjectURL(allPicturePreviewUrl);
+    setAllPicturePreviewUrl(url);
+  };
+
   const handleApplyToAll = async () => {
-    const finalUrl = allPictureUseCustom
-      ? allPictureCustomUrl.trim()
-      : getDefaultAvatarUrl(allPictureSeed);
-
-    if (!finalUrl) return;
-
     setSavingAll(true);
     try {
-      const result = await updateAllPlayerPictures(finalUrl);
-      if (result.status === "success") {
-        setProfiles((prev) =>
-          prev.map((p) => ({ ...p, picture_url: finalUrl }))
-        );
-        setAllPictureOpen(false);
-        toast({ title: "Picture updated for all leagues" });
+      let newPictureUrl: string;
+
+      if (allPictureFile) {
+        const result = await uploadPlayerPicture(allPictureFile);
+        if (result.status !== "success" || !result.picture_url) {
+          toast({ title: "Failed to upload picture", description: result.detail, variant: "destructive" });
+          return;
+        }
+        newPictureUrl = result.picture_url;
       } else {
-        toast({
-          title: "Failed to update pictures",
-          description: result.detail,
-          variant: "destructive",
-        });
+        const finalUrl = getDefaultAvatarUrl(allPictureSeed);
+        const result = await updateAllPlayerPictures(finalUrl);
+        if (result.status !== "success") {
+          toast({ title: "Failed to update pictures", description: result.detail, variant: "destructive" });
+          return;
+        }
+        newPictureUrl = finalUrl;
       }
+
+      setProfiles((prev) => prev.map((p) => ({ ...p, picture_url: newPictureUrl })));
+      if (allPicturePreviewUrl) URL.revokeObjectURL(allPicturePreviewUrl);
+      setAllPictureFile(null);
+      setAllPicturePreviewUrl(null);
+      setAllPictureOpen(false);
+      toast({ title: "Picture updated for all leagues" });
     } finally {
       setSavingAll(false);
     }
@@ -348,15 +335,16 @@ export const ProfileDialog = ({ open, onOpenChange }: ProfileDialogProps) => {
                   <div className="flex flex-wrap gap-2">
                     {AVATAR_SEEDS.map((seed) => {
                       const url = getDefaultAvatarUrl(seed);
-                      const selected =
-                        !allPictureUseCustom && allPictureSeed === seed;
+                      const selected = !allPictureFile && allPictureSeed === seed;
                       return (
                         <button
                           key={seed}
                           type="button"
                           onClick={() => {
                             setAllPictureSeed(seed);
-                            setAllPictureUseCustom(false);
+                            setAllPictureFile(null);
+                            if (allPicturePreviewUrl) URL.revokeObjectURL(allPicturePreviewUrl);
+                            setAllPicturePreviewUrl(null);
                           }}
                           className={`rounded-full border-2 transition-colors ${
                             selected
@@ -375,36 +363,43 @@ export const ProfileDialog = ({ open, onOpenChange }: ProfileDialogProps) => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="all-custom-url">
-                    Or enter a custom image URL
-                  </Label>
-                  <Input
-                    id="all-custom-url"
-                    value={allPictureCustomUrl}
-                    onChange={(e) => {
-                      setAllPictureCustomUrl(e.target.value);
-                      setAllPictureUseCustom(e.target.value.trim().length > 0);
-                    }}
-                    placeholder="https://example.com/my-avatar.png"
-                  />
-                  {allPictureUseCustom && allPictureCustomUrl.trim() && (
-                    <div className="flex items-center gap-2 mt-1">
+                  <Label>Or upload from device</Label>
+                  <div className="flex items-center gap-3">
+                    {allPicturePreviewUrl && (
                       <Avatar className="h-9 w-9 border border-border">
-                        <AvatarImage src={allPictureCustomUrl.trim()} />
+                        <AvatarImage src={allPicturePreviewUrl} />
                         <AvatarFallback>?</AvatarFallback>
                       </Avatar>
-                      <span className="text-xs text-muted-foreground">
-                        Preview
-                      </span>
-                    </div>
-                  )}
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => allFileInputRef.current?.click()}
+                    >
+                      <Upload className="h-3.5 w-3.5 mr-1" />
+                      {allPictureFile ? allPictureFile.name : "Choose file"}
+                    </Button>
+                    <input
+                      ref={allFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAllFileChange}
+                    />
+                  </div>
                 </div>
 
                 <div className="flex gap-2 justify-end">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setAllPictureOpen(false)}
+                    onClick={() => {
+                      if (allPicturePreviewUrl) URL.revokeObjectURL(allPicturePreviewUrl);
+                      setAllPictureFile(null);
+                      setAllPicturePreviewUrl(null);
+                      setAllPictureOpen(false);
+                    }}
                     disabled={savingAll}
                   >
                     <X className="h-3.5 w-3.5 mr-1" />
