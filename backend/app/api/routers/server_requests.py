@@ -18,11 +18,32 @@ from . import general
 from . import team
 
 
+def _run_startup_migrations():
+    """Apply any schema migrations that should run on startup."""
+    from backend.app.db.database import pg_connect
+
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            ALTER TABLE player ADD COLUMN IF NOT EXISTS picture_url TEXT
+            """
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+    except Exception as exc:
+        logger.error(f"Startup migration failed: {exc}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Deferred import avoids a circular dependency: tasks.py imports from
     # server_requests modules, so importing it at module level here would
     # create a cycle.
+    _run_startup_migrations()
+
     task = None
     background_tasks_enabled = os.getenv("ENABLE_BACKGROUND_TASKS", "true").lower() in {
         "1",

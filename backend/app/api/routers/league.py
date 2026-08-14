@@ -343,6 +343,98 @@ def create_league(
         raise HTTPException(status_code=500, detail="Failed to create league. The league name may already be taken.")
 
 
+class UpdatePlayerPictureAllRequest(BaseModel):
+    picture_url: str
+
+    @field_validator("picture_url")
+    @classmethod
+    def not_empty(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("picture_url must not be empty")
+        if len(v) > 2048:
+            raise ValueError("picture_url must not exceed 2048 characters")
+        return v
+
+
+@router.get("/my-profiles")
+def get_my_profiles(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """Return all player profiles (name, picture) for the authenticated user, one per league."""
+    user_id = _get_user_id_from_token(credentials)
+
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                SELECT
+                    p.id,
+                    p.name,
+                    p.picture_url,
+                    l.id,
+                    l.name
+                FROM player p
+                JOIN league l ON p.league_id = l.id
+                WHERE p.user_id = %s
+                ORDER BY l.id
+                """,
+                (user_id,),
+            )
+            rows = cursor.fetchall()
+        finally:
+            cursor.close()
+            conn.close()
+
+        profiles = [
+            {
+                "player_id": row[0],
+                "player_name": row[1],
+                "picture_url": row[2],
+                "league_id": row[3],
+                "league_name": row[4],
+            }
+            for row in rows
+        ]
+        return {"status": "success", "profiles": profiles}
+    except Exception as e:
+        logger.error(f"Error retrieving profiles for user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve profiles")
+
+
+@router.patch("/player-picture")
+def update_all_player_pictures(
+    request: UpdatePlayerPictureAllRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """Update the picture_url for all players belonging to the authenticated user."""
+    user_id = _get_user_id_from_token(credentials)
+
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                UPDATE player
+                SET picture_url = %s
+                WHERE user_id = %s
+                """,
+                (request.picture_url, user_id),
+            )
+            conn.commit()
+        finally:
+            cursor.close()
+            conn.close()
+
+        return {"status": "success"}
+    except Exception as e:
+        logger.error(f"Error updating picture for all players of user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update picture")
+
+
 @router.get("/player-names")
 def get_player_names(
     credentials: HTTPAuthorizationCredentials = Depends(security),

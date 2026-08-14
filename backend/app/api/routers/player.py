@@ -1,11 +1,103 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel, field_validator
 from backend.app.db.database import pg_connect, mongo_client
 from backend.app.core.constants import POSITION_ORDER, LINEUP_POSITIONS
+from backend.app.core.auth import verify_token
 from .footballer import get_footballer_image, set_footballer_on_lineup
 from .logger import logger
 
 
 router = APIRouter(prefix="/player", tags=["player"])
+security = HTTPBearer()
+
+
+def _get_user_id_from_token(credentials: HTTPAuthorizationCredentials) -> int:
+    payload = verify_token(credentials.credentials)
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+        )
+    return int(payload.get("sub"))
+
+
+class UpdatePlayerProfileRequest(BaseModel):
+    name: str | None = None
+    picture_url: str | None = None
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip()
+        if not v:
+            raise ValueError("name must not be empty")
+        if len(v) > 255:
+            raise ValueError("name must not exceed 255 characters")
+        return v
+
+    @field_validator("picture_url")
+    @classmethod
+    def validate_picture_url(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip()
+        if len(v) > 2048:
+            raise ValueError("picture_url must not exceed 2048 characters")
+        return v
+
+
+@router.patch("/profile/{player_id}")
+def update_player_profile(
+    player_id: int,
+    request: UpdatePlayerProfileRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """Update the name and/or picture_url for a specific player (must belong to authenticated user)."""
+    user_id = _get_user_id_from_token(credentials)
+
+    if request.name is None and request.picture_url is None:
+        raise HTTPException(status_code=400, detail="At least one of name or picture_url must be provided")
+
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+        try:
+            # Verify ownership
+            cursor.execute(
+                "SELECT id FROM player WHERE id = %s AND user_id = %s",
+                (player_id, user_id),
+            )
+            if not cursor.fetchone():
+                raise HTTPException(status_code=403, detail="Not authorized to update this player")
+
+            fields = []
+            values = []
+            if request.name is not None:
+                fields.append("name = %s")
+                values.append(request.name)
+            if request.picture_url is not None:
+                fields.append("picture_url = %s")
+                values.append(request.picture_url)
+
+            values.extend([player_id, user_id])
+            cursor.execute(
+                f"UPDATE player SET {', '.join(fields)} WHERE id = %s AND user_id = %s",
+                values,
+            )
+            conn.commit()
+        finally:
+            cursor.close()
+            conn.close()
+
+        return {"status": "success"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating profile for player {player_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update player profile")
 
 
 @router.get('/{player_id}')

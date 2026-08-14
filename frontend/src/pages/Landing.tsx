@@ -4,9 +4,10 @@ import { LeagueCard } from "@/components/LeagueCard";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { CreateLeagueDialog } from "@/components/CreateLeagueDialog";
 import { JoinLeagueDialog } from "@/components/JoinLeagueDialog";
+import { ProfileDialog } from "@/components/ProfileDialog";
 import { fetchLeagues, League } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Plus, UserPlus } from "lucide-react";
+import { Plus, UserPlus, UserCircle } from "lucide-react";
 
 const PENDING_INVITE_KEY = "pendingInviteCode";
 
@@ -15,6 +16,7 @@ const Landing = () => {
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [joinDialogOpen, setJoinDialogOpen] = useState(false);
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [pendingInviteCode, setPendingInviteCode] = useState("");
 
   const loadLeagues = async () => {
@@ -44,6 +46,15 @@ const Landing = () => {
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-xl font-semibold">Leagues</h2>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <Button
+              variant="outline"
+              onClick={() => setProfileDialogOpen(true)}
+              size="sm"
+              className="w-full sm:w-auto"
+            >
+              <UserCircle className="w-4 h-4 mr-2" />
+              My Profiles
+            </Button>
             <Button
               variant="outline"
               onClick={() => { setPendingInviteCode(""); setJoinDialogOpen(true); }}
@@ -81,6 +92,11 @@ const Landing = () => {
           onOpenChange={setJoinDialogOpen}
           onJoined={loadLeagues}
           initialInviteCode={pendingInviteCode}
+        />
+
+        <ProfileDialog
+          open={profileDialogOpen}
+          onOpenChange={setProfileDialogOpen}
         />
       </main>
     </div>

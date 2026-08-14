@@ -361,6 +361,7 @@ const League = () => {
                     name={player.name}
                     points={player.points}
                     team_value={player.team_value}
+                    picture_url={player.picture_url}
                     onPlayerClick={handlePlayerClick}
                   />
                 ))}

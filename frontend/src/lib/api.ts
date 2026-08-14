@@ -11,6 +11,7 @@ export interface Player {
   budget: number;
   points: number;
   team_value: number;
+  picture_url?: string | null;
 }
 
 export interface Footballer {
@@ -83,6 +84,10 @@ export interface MarketHistoryBid {
   amount: number;
   timestamp: string;
 }
+
+export const DICEBEAR_BASE_URL = 'https://api.dicebear.com/7.x/avataaars/svg';
+export const getDefaultAvatarUrl = (seed: string) =>
+  `${DICEBEAR_BASE_URL}?seed=${encodeURIComponent(seed)}`;
 
 export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || `${window.location.protocol}//${window.location.hostname}:8000`;
 
@@ -268,6 +273,7 @@ export const fetchLeaderboard = async (fixtureId: string = 'total'): Promise<Pla
     name: player[1],
     points: player[2],
     team_value: player[3],
+    picture_url: player[4] ?? null,
   }));
 };
 
@@ -961,6 +967,74 @@ export const deleteLeague = async (leagueId: string): Promise<{ status: string; 
   const data = await response.json();
   if (!response.ok) {
     return { status: 'error', detail: data.detail || 'Failed to delete league' };
+  }
+  return data;
+};
+
+export interface PlayerProfile {
+  player_id: number;
+  player_name: string;
+  picture_url: string | null;
+  league_id: number;
+  league_name: string;
+}
+
+export const fetchMyProfiles = async (): Promise<PlayerProfile[]> => {
+  const token = getAuthToken();
+  if (!token) {
+    return [];
+  }
+  const response = await fetch(`${BACKEND_URL}/leagues/my-profiles`, {
+    headers: { Authorization: `****** },
+  });
+  if (!response.ok) {
+    return [];
+  }
+  const data = await response.json();
+  return data.status === 'success' ? (data.profiles as PlayerProfile[]) : [];
+};
+
+export const updatePlayerProfile = async (
+  playerId: number,
+  updates: { name?: string; picture_url?: string },
+): Promise<{ status: string; detail?: string }> => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+  const response = await fetch(`${BACKEND_URL}/player/profile/${playerId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `******
+    },
+    body: JSON.stringify(updates),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    return { status: 'error', detail: data.detail || 'Failed to update profile' };
+  }
+  return data;
+};
+
+export const updateAllPlayerPictures = async (
+  pictureUrl: string,
+): Promise<{ status: string; detail?: string }> => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+  const response = await fetch(`${BACKEND_URL}/leagues/player-picture`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `******
+    },
+    body: JSON.stringify({ picture_url: pictureUrl }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    return { status: 'error', detail: data.detail || 'Failed to update pictures' };
   }
   return data;
 };
