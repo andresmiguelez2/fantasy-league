@@ -8,6 +8,7 @@ from backend.app.db.database import pg_connect, mongo_client
 import logging
 import pandas as pd
 from tqdm import tqdm
+import time
 
 
 logging.basicConfig(
@@ -127,6 +128,8 @@ if __name__ == "__main__":
 
                 conn.commit()
                 db.footballer.insert_one(document)
+
+                time.sleep(1)
 
         except Exception as e:
             print(f"Error processing {row['name']}: {e}")
