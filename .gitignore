@@ -61,3 +61,6 @@ frontend/yarn-error.log*
 frontend/.DS_Store
 frontend/.idea/
 frontend/.vscode/
+
+# other files
+backend/scripts/create_user_environment.py
