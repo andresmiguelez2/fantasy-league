@@ -22,7 +22,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def create_user(username: str, password: str, cursor=None):
+def create_user(username: str, password: str, cursor=None) -> int | None:
     """Create a new user"""
     close_conn = False
     if cursor is None:

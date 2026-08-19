@@ -252,29 +252,27 @@ class JoinLeagueRequest(BaseModel):
         return _validate_name_field(v)
 
 
-@router.post("")
-def create_league(
-    request: CreateLeagueRequest,
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-):
-    """Create a new league and a player entry for the authenticated user."""
-    user_id = _get_user_id_from_token(credentials)
-
+def _create_league_impl(
+    league_name: str,
+    player_name: str,
+    user_id: int,
+) -> dict:
+    """Actual league-creation logic. Callable from anywhere in source code
+    without going through the API/auth layer."""
     try:
         conn = pg_connect()
         cursor = conn.cursor()
         try:
             invite_code = str(uuid.uuid4())
 
-            # Create the league
             cursor.execute(
                 "INSERT INTO league (name, invite_code, created_by) VALUES (%s, %s, %s) RETURNING id",
-                (request.league_name, invite_code, user_id),
+                (league_name, invite_code, user_id),
             )
             league_id = cursor.fetchone()[0]
 
             cursor.execute(
-            '''
+                '''
                 INSERT INTO footballer (id, url_name, on_market, on_lineup, league_id)
                 SELECT DISTINCT
                     id
@@ -286,17 +284,20 @@ def create_league(
                 ''',
                 (league_id,)
             )
-                
+
             cursor.execute(
                 """
                 INSERT INTO market (closing_timestamp, league_id)
                 VALUES (now() + INTERVAL '-1 second', %s)
-                """, 
+                """,
                 (league_id,)
             )
 
-            # Create legaue user
-            league_user_id = create_user(f'league_user_{league_id}', ''.join(random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=20)), cursor=cursor)
+            league_user_id = create_user(
+                f'league_user_{league_id}',
+                ''.join(random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=20)),
+                cursor=cursor,
+            )
             cursor.execute(
                 """
                 INSERT INTO player (name, league_id, user_id, budget, lineup, points)
@@ -305,17 +306,15 @@ def create_league(
                 """,
                 (league_id, league_user_id),
             )
-
             league_player_id = cursor.fetchone()[0]
 
-            # Create a player for this user in the new league (always auto-generate the player ID)
             cursor.execute(
                 """
                 INSERT INTO player (name, league_id, user_id, budget)
                 VALUES (%s, %s, %s, %s)
                 RETURNING id
                 """,
-                (request.player_name, league_id, user_id, INITIAL_PLAYER_BUDGET),
+                (player_name, league_id, user_id, INITIAL_PLAYER_BUDGET),
             )
             player_id = cursor.fetchone()[0]
 
@@ -328,20 +327,27 @@ def create_league(
             conn.close()
 
         logger.info(
-            f"Created league '{request.league_name}' (ID: {league_id}) "
-            f"with player '{request.player_name}' (ID: {player_id}) "
+            f"Created league '{league_name}' (ID: {league_id}) "
+            f"with player '{player_name}' (ID: {player_id}) "
             f"for user {user_id}"
         )
         return {
             "status": "success",
-            "league": {"id": league_id, "name": request.league_name},
+            "league": {"id": league_id, "name": league_name},
         }
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"Error creating league for user {user_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to create league. The league name may already be taken.")
 
+
+@router.post("")
+def create_league(
+    request: CreateLeagueRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """Create a new league and a player entry for the authenticated user."""
+    user_id = _get_user_id_from_token(credentials)
+    return _create_league_impl(request.league_name, request.player_name, user_id)
 
 class UpdatePlayerPictureAllRequest(BaseModel):
     picture_url: str
@@ -680,16 +686,15 @@ def get_league_player_id(cursor, league_id: int) -> int:
     return result[0]
 
 
-@router.post("/join")
-def join_league(
-    request: JoinLeagueRequest,
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-):
-    """Join a league using an invite code."""
-    user_id = _get_user_id_from_token(credentials)
-
+def _join_league_impl(
+    invite_code: str,
+    player_name: str,
+    user_id: int,
+) -> dict:
+    """Actual join-league logic. Callable from anywhere in source code
+    without going through the API/auth layer."""
     try:
-        uuid.UUID(request.invite_code)
+        uuid.UUID(invite_code)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid invite code format")
 
@@ -699,7 +704,7 @@ def join_league(
         try:
             cursor.execute(
                 "SELECT id, name FROM league WHERE invite_code = %s",
-                (request.invite_code,),
+                (invite_code,),
             )
             league_row = cursor.fetchone()
 
@@ -726,7 +731,7 @@ def join_league(
                 VALUES (%s, %s, %s, %s)
                 RETURNING id
                 """,
-                (request.player_name, league_id, user_id, INITIAL_PLAYER_BUDGET),
+                (player_name, league_id, user_id, INITIAL_PLAYER_BUDGET),
             )
             player_id = cursor.fetchone()[0]
 
@@ -741,7 +746,7 @@ def join_league(
 
         logger.info(
             f"User {user_id} joined league '{league_name}' (ID: {league_id}) "
-            f"with player '{request.player_name}' (ID: {player_id})"
+            f"with player '{player_name}' (ID: {player_id})"
         )
         return {
             "status": "success",
@@ -752,3 +757,13 @@ def join_league(
     except Exception as e:
         logger.error(f"Error joining league for user {user_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to join league")
+
+
+@router.post("/join")
+def join_league(
+    request: JoinLeagueRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """Join a league using an invite code."""
+    user_id = _get_user_id_from_token(credentials)
+    return _join_league_impl(request.invite_code, request.player_name, user_id)
