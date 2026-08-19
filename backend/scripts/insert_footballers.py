@@ -23,6 +23,9 @@ def get_all_players(soup):
     elements = soup.find_all(attrs={"data-nombre": True})
     for el in elements:
         nombre = FOOTBALLER_NAME_DICT.get(el["data-nombre"], el["data-nombre"])
+        position = el["data-posicion"]
+
+        if position == 'Entrenador': continue
         
         # Get full_name and displayable_name from anchor tag with class "player-name"
         a_tag = el.find_next("a", class_="player-name")
