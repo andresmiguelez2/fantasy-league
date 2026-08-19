@@ -11,6 +11,7 @@ export interface Player {
   budget: number;
   points: number;
   team_value: number;
+  picture_url?: string | null;
 }
 
 export interface Footballer {
@@ -88,6 +89,13 @@ const envBackendUrl = import.meta.env.VITE_BACKEND_URL?.trim();
 export const BACKEND_URL = envBackendUrl
   ? envBackendUrl.replace(/\/$/, '')
   : '/api';
+
+/** Resolves a picture_url that may be a backend-relative path to an absolute URL. */
+export const resolvePictureUrl = (url: string | null | undefined): string | undefined => {
+  if (!url) return undefined;
+  if (url.startsWith('/')) return `${BACKEND_URL}${url}`;
+  return url;
+};
 
 const ACTIVE_LEAGUE_KEY = 'activeLeagueId';
 const ACTIVE_LEAGUE_NAME_KEY = 'activeLeagueName';
@@ -271,6 +279,7 @@ export const fetchLeaderboard = async (fixtureId: string = 'total'): Promise<Pla
     name: player[1],
     points: player[2],
     team_value: player[3],
+    picture_url: player[4] ?? null,
   }));
 };
 
@@ -964,6 +973,98 @@ export const deleteLeague = async (leagueId: string): Promise<{ status: string; 
   const data = await response.json();
   if (!response.ok) {
     return { status: 'error', detail: data.detail || 'Failed to delete league' };
+  }
+  return data;
+};
+
+export interface PlayerProfile {
+  player_id: number;
+  player_name: string;
+  picture_url: string | null;
+  league_id: number;
+  league_name: string;
+}
+
+export const fetchMyProfiles = async (): Promise<PlayerProfile[]> => {
+  const token = getAuthToken();
+  if (!token) {
+    return [];
+  }
+  const response = await fetch(`${BACKEND_URL}/leagues/my-profiles`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    return [];
+  }
+  const data = await response.json();
+  return data.status === 'success' ? (data.profiles as PlayerProfile[]) : [];
+};
+
+export const updatePlayerProfile = async (
+  playerId: number,
+  updates: { name?: string },
+): Promise<{ status: string; detail?: string }> => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+  const response = await fetch(`${BACKEND_URL}/player/profile/${playerId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(updates),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    return { status: 'error', detail: data.detail || 'Failed to update profile' };
+  }
+  return data;
+};
+
+export const updateAllPlayerPictures = async (
+  pictureUrl: string,
+): Promise<{ status: string; detail?: string }> => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+  const response = await fetch(`${BACKEND_URL}/leagues/player-picture`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ picture_url: pictureUrl }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    return { status: 'error', detail: data.detail || 'Failed to update pictures' };
+  }
+  return data;
+};
+
+
+export const uploadPlayerPicture = async (
+  file: File,
+): Promise<{ status: string; picture_url?: string; detail?: string }> => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await fetch(`${BACKEND_URL}/player/profile-picture`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    return { status: 'error', detail: data.detail || 'Failed to upload picture' };
   }
   return data;
 };

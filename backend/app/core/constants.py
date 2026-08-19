@@ -13,7 +13,7 @@ BANK_NAME = "LaLiga"
 
 
 ### Scraper ###
-FANTASY_MAIN_URL = "https://www.futbolfantasy.com/analytics/laliga-fantasy/puntos"
+FANTASY_MAIN_URL = "https://www.futbolfantasy.com/analytics/laliga-fantasy/mercado"
 FANTASY_PLAYER_URL = "https://www.futbolfantasy.com/jugadores/"
 FANTASY_PLAYER_MARKET_URL = "https://www.futbolfantasy.com/analytics/laliga-fantasy/mercado/detalle/"
 FANTASY_FIXTURE_URL = "https://www.futbolfantasy.com/laliga/posibles-alineaciones/"
@@ -25,7 +25,6 @@ FOOTBALLER_NAME_DICT = {
     'angel ortiz': 'ngel ortiz',
     'chimy avila': 'ezequiel avila',
     'oscar mingueza': 'scar mingueza',
-    'alex sancris': 'lex sancris',
     'mihailo ristic': 'mihailo risti',
     'oscar ureña': 'scar urena',
     'ionut radu': 'andrei radu',
@@ -55,10 +54,22 @@ FOOTBALLER_NAME_DICT = {
     'carlos alvarez': 'carlos lvarez',
     'karl etta eyong': 'etta-eyong',
     'alvaro fidalgo': 'lvaro fidalgo',
-    'justin kalumba': 'jastin-kalumba',
-    'zito luvumbo': 'zito-luvumbo-1',
+    'justin kalumba': 'jastin kalumba',
+    'zito luvumbo': 'zito luvumbo 1',
     "etienne eto'o": "etienne-etoo",
-    'fran gonzalez': 'fran-gonzalez-2',
+    'fran gonzalez': 'fran gonzalez 2',
+    'alex calatrava': 'lex calatrava',
+    'kang-in lee': 'lee kang in',
+    'alex pastor': 'lex pastor',
+    'carlos basllestero': 'carlos basllestero 1',
+    'alex sanchez': 'alex sanchez 2',
+    'aleksa puric': 'aleksa puric 1',
+    'alvaro djalo': 'lvaro djalo',
+    'christantus uche': 'chrisantus uche',
+    'iñigo sainz-maza': 'nigo sainz maza',
+    'alvaro mantilla': 'lvaro mantilla',
+
+
 }
 TEAM_NAME_DICT = {
     1: 'Athletic',
