@@ -13,7 +13,7 @@ BANK_NAME = "LaLiga"
 
 
 ### Scraper ###
-FANTASY_MAIN_URL = "https://www.futbolfantasy.com/analytics/laliga-fantasy/puntos"
+FANTASY_MAIN_URL = "https://www.futbolfantasy.com/analytics/laliga-fantasy/mercado"
 FANTASY_PLAYER_URL = "https://www.futbolfantasy.com/jugadores/"
 FANTASY_PLAYER_MARKET_URL = "https://www.futbolfantasy.com/analytics/laliga-fantasy/mercado/detalle/"
 FANTASY_FIXTURE_URL = "https://www.futbolfantasy.com/laliga/posibles-alineaciones/"
@@ -25,7 +25,6 @@ FOOTBALLER_NAME_DICT = {
     'angel ortiz': 'ngel ortiz',
     'chimy avila': 'ezequiel avila',
     'oscar mingueza': 'scar mingueza',
-    'alex sancris': 'lex sancris',
     'mihailo ristic': 'mihailo risti',
     'oscar ureña': 'scar urena',
     'ionut radu': 'andrei radu',
