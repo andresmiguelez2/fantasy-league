@@ -97,6 +97,11 @@ export const resolvePictureUrl = (url: string | null | undefined): string | unde
   return url;
 };
 
+/** Returns a default DiceBear avatar URL based on a seed string (typically the player name). */
+export const getDefaultAvatarUrl = (seed: string): string => {
+  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}`;
+};
+
 const ACTIVE_LEAGUE_KEY = 'activeLeagueId';
 const ACTIVE_LEAGUE_NAME_KEY = 'activeLeagueName';
 const ACTIVE_PLAYER_KEY = 'activePlayerId';
