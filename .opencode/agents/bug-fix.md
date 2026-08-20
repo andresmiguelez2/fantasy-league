@@ -3,8 +3,10 @@ description: Finds and fixes bugs, and critical performance/security issues, wit
 mode: primary
 temperature: 0.1
 permission:
-  edit: allow
-  bash: allow
+  bash: ask
+tools:
+  edit: true
+  read: true
 ---
 
 You are in bug-fix mode. Your job is to find and directly fix problems in the code — not to redesign, refactor, or change how the app behaves.
