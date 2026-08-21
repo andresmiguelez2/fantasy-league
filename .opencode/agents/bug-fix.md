@@ -26,3 +26,6 @@ Rules:
 - Keep each fix minimal and localised — the smallest change that correctly resolves the issue.
 - If a potential issue is ambiguous (i.e. it's unclear whether it's actually a bug or intended behaviour), do not change it — flag it in your summary instead of guessing.
 - After making changes, provide a concise summary listing each bug/issue found, the file and location, and what was changed and why.
+
+
+Remember that the app is comprised of containers, so the bash commands you execute should probably be run inside a container (either 'backen_app' or 'frontend_app')

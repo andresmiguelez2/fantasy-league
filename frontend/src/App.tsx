@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { LeagueGuard } from "@/components/LeagueGuard";
+import { NotificationsListener } from "@/components/NotificationsListener";
 import Login from "./pages/Login";
 import Landing from "./pages/Landing";
 import League from "./pages/League";
@@ -30,6 +31,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <NotificationsListener />
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/join/:inviteCode" element={<JoinLeague />} />
