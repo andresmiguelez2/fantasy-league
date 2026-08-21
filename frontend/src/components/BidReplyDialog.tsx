@@ -11,6 +11,7 @@ interface BidReplyDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   footballerName: string;
+  bidderName: string;
   bidAmount: number;
   onAccept: () => void;
   onDecline: () => void;
@@ -20,6 +21,7 @@ export const BidReplyDialog = ({
   open,
   onOpenChange,
   footballerName,
+  bidderName,
   bidAmount,
   onAccept,
   onDecline,
@@ -42,7 +44,7 @@ export const BidReplyDialog = ({
         
         <div className="py-4">
           <p className="text-muted-foreground mb-2">
-            Bid for <span className="font-semibold text-foreground">{footballerName}</span>
+            Bid for <span className="font-semibold text-foreground">{footballerName}</span> from <span className="font-semibold text-foreground">{bidderName}</span>
           </p>
           <p className="text-2xl font-bold text-primary">
             {formatCurrency(bidAmount)}

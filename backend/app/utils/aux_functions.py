@@ -18,7 +18,7 @@ def scrape_page(url, logger):
         logger.debug(f"Fetching {url}")
 
     last_error = None
-    for attempt in range(4):
+    for attempt in range(2):
         try:
             response = requests.get(url, headers=REQUEST_HEADERS, timeout=30)
             if response.status_code == 429 or 500 <= response.status_code < 600:

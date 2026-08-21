@@ -1,6 +1,7 @@
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BACKEND_URL } from "@/lib/api";
+import { AvailabilityIcon } from "@/components/AvailabilityIcon";
 
 interface SquadRowProps {
   id: number;
@@ -9,6 +10,7 @@ interface SquadRowProps {
   totalPoints: number;
   averagePoints: number | string;
   position?: string | null;
+  availability?: string | null;
   onClick?: () => void;
 }
 
@@ -19,13 +21,13 @@ const POSITION_STYLES: Record<string, { label: string; className: string }> = {
   fw: { label: "FW", className: "bg-red-500 text-white" },
 };
 
-export const SquadRow = ({ id, name, value, totalPoints, averagePoints, position, onClick }: SquadRowProps) => {
+export const SquadRow = ({ id, name, value, totalPoints, averagePoints, position, availability, onClick }: SquadRowProps) => {
   const formatValue = (val: number) => {
     return new Intl.NumberFormat('en-ES', {
       style: 'currency',
       currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      notation: 'compact',
+      maximumFractionDigits: 2,
     }).format(val);
   };
   
@@ -64,12 +66,17 @@ export const SquadRow = ({ id, name, value, totalPoints, averagePoints, position
         )}
       </TableCell>
       <TableCell className="text-center">
-        <span className="font-semibold text-green-600">{totalPoints}</span>
+        <AvailabilityIcon availability={availability} />
       </TableCell>
-      <TableCell className="text-center hidden sm:table-cell">
-        <span className="font-semibold">{averagePoints}</span>
+      <TableCell className="text-center">
+        <div className="text-sm font-semibold text-foreground">
+          {totalPoints ?? 0}
+        </div>
+        <div className="text-xs text-muted-foreground">
+          {averagePoints ?? '0'}
+        </div>
       </TableCell>
-      <TableCell className="text-center hidden sm:table-cell">
+      <TableCell className="text-center">
         <span className="text-secondary font-semibold">{formatValue(value)}</span>
       </TableCell>
     </TableRow>

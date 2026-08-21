@@ -23,6 +23,9 @@ def get_all_players(soup):
     elements = soup.find_all(attrs={"data-nombre": True})
     for el in elements:
         nombre = FOOTBALLER_NAME_DICT.get(el["data-nombre"], el["data-nombre"])
+        position = el["data-posicion"]
+
+        if position == 'Entrenador': continue
         
         # Get full_name and displayable_name from anchor tag with class "player-name"
         a_tag = el.find_next("a", class_="player-name")
@@ -87,17 +90,25 @@ if __name__ == "__main__":
             footballer.name = row['displayable_name'] if row['displayable_name'] else row['name']
 
             if footballer.data['market_details']:
-                for league_id in league_ids:
-                    cursor.execute(
-                        """
-                        INSERT INTO footballer (url_name, league_id)
-                        VALUES (%s, %s)
-                        RETURNING id
-                        """,
-                        (footballer.url_name, league_id)
-                    )
-                
-                footballer.id = cursor.fetchone()[0]
+                for i, league_id in enumerate(league_ids):
+                    if i == 0:
+                        cursor.execute(
+                            """
+                            INSERT INTO footballer (url_name, league_id)
+                            VALUES (%s, %s)
+                            RETURNING id
+                            """,
+                            (footballer.url_name, league_id)
+                        )
+                        footballer.id = cursor.fetchone()[0]
+                    else:
+                        cursor.execute(
+                            """
+                            INSERT INTO footballer (id, url_name, league_id)
+                            VALUES (%s, %s, %s)
+                            """,
+                            (footballer.id, footballer.url_name, league_id)
+                        )
 
                 cursor.execute(
                     """

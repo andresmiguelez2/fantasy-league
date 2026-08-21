@@ -13,7 +13,7 @@ BANK_NAME = "LaLiga"
 
 
 ### Scraper ###
-FANTASY_MAIN_URL = "https://www.futbolfantasy.com/analytics/laliga-fantasy/puntos"
+FANTASY_MAIN_URL = "https://www.futbolfantasy.com/analytics/laliga-fantasy/mercado"
 FANTASY_PLAYER_URL = "https://www.futbolfantasy.com/jugadores/"
 FANTASY_PLAYER_MARKET_URL = "https://www.futbolfantasy.com/analytics/laliga-fantasy/mercado/detalle/"
 FANTASY_FIXTURE_URL = "https://www.futbolfantasy.com/laliga/posibles-alineaciones/"
@@ -25,7 +25,6 @@ FOOTBALLER_NAME_DICT = {
     'angel ortiz': 'ngel ortiz',
     'chimy avila': 'ezequiel avila',
     'oscar mingueza': 'scar mingueza',
-    'alex sancris': 'lex sancris',
     'mihailo ristic': 'mihailo risti',
     'oscar ureña': 'scar urena',
     'ionut radu': 'andrei radu',
@@ -56,10 +55,22 @@ FOOTBALLER_NAME_DICT = {
     'carlos alvarez': 'carlos lvarez',
     'karl etta eyong': 'etta-eyong',
     'alvaro fidalgo': 'lvaro fidalgo',
-    'justin kalumba': 'jastin-kalumba',
-    'zito luvumbo': 'zito-luvumbo-1',
+    'justin kalumba': 'jastin kalumba',
+    'zito luvumbo': 'zito luvumbo 1',
     "etienne eto'o": "etienne-etoo",
-    'fran gonzalez': 'fran-gonzalez-2',
+    'fran gonzalez': 'fran gonzalez 2',
+    'alex calatrava': 'lex calatrava',
+    'kang-in lee': 'lee kang in',
+    'alex pastor': 'lex pastor',
+    'carlos basllestero': 'carlos basllestero 1',
+    'alex sanchez': 'alex sanchez 2',
+    'aleksa puric': 'aleksa puric 1',
+    'alvaro djalo': 'lvaro djalo',
+    'christantus uche': 'chrisantus uche',
+    'iñigo sainz-maza': 'nigo sainz maza',
+    'alvaro mantilla': 'lvaro mantilla',
+
+
 }
 TEAM_NAME_DICT = {
     1: 'Athletic',
@@ -99,7 +110,7 @@ TEAM_NAME_DICT = {
     43: 'Real Oviedo',
     45: 'Castellón',
 }
-COMPETITION_NAME = 'LaLiga 2025/26'
+COMPETITION_NAME = 'LaLiga 2026/27'
 FOOTBALLER_POSITIONS = {
     'def': 'DF',
     'med': 'MD',
@@ -128,4 +139,7 @@ INITIAL_SQUAD_TOTAL_VALUE_TOLERANCE = 0.10  # squad value must be within ±10% o
 ### Market ####
 N_NEW_FOOTBALLERS_INTO_MARKET = 5 # number of new players to be added into new market
 RELEASE_CLAUSE_DAYS = 14 # number of days until a footballer can be released again after being bought
+BID_EXPIRATION_DAYS = 3 # number of days until a bid expires
 MAX_DEBT_AS_VALUE_UNIT = 0.2 # maximum debt allowed as a percentage of the player's budget
+PLACE_ON_MARKET_WITH_RELEASE_CLAUSE = False # True if a footballer can be placed on the market with a release clause
+MIN_RELEASE_CLAUSE_VALUE = 500_000

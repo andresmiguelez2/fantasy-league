@@ -298,7 +298,7 @@ const League = () => {
             </Button>
           )}
           <Select value={selectedFixture} onValueChange={setSelectedFixture}>
-            <SelectTrigger className="w-[140px] sm:w-[180px]">
+            <SelectTrigger className="w-[100px] sm:w-[180px]">
               <SelectValue placeholder="Select fixture" />
             </SelectTrigger>
             <SelectContent>
@@ -321,7 +321,7 @@ const League = () => {
                 onClick={() => setInviteDialogOpen(true)}
                 className="flex items-center gap-2"
               >
-                <Link className="h-4 w-4" />
+                <Link className="h-4 w-3" />
                 Invite
               </Button>
               <Button
@@ -330,7 +330,7 @@ const League = () => {
                 onClick={() => setDeleteDialogOpen(true)}
                 className="flex items-center gap-2"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-4 w-3" />
                 Delete League
               </Button>
             </div>
@@ -350,7 +350,7 @@ const League = () => {
                 <TableRow>
                   <TableHead>Player</TableHead>
                   <TableHead className="text-center">Points</TableHead>
-                  <TableHead className="text-center hidden sm:table-cell">Team Value</TableHead>
+                  <TableHead className="text-center">Team Value</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -361,6 +361,7 @@ const League = () => {
                     name={player.name}
                     points={player.points}
                     team_value={player.team_value}
+                    picture_url={player.picture_url}
                     onPlayerClick={handlePlayerClick}
                   />
                 ))}
@@ -370,14 +371,14 @@ const League = () => {
         ) : selectedFixture === "total" ? (
           // Squad view for selected player
           <div className="max-w-4xl overflow-x-auto">
-            <Table>
+            <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Player</TableHead>
-                  <TableHead className="text-center">Pos</TableHead>
-                  <TableHead className="text-center">Total pts</TableHead>
-                  <TableHead className="text-center hidden sm:table-cell">Avg pts</TableHead>
-                  <TableHead className="text-center hidden sm:table-cell">Value</TableHead>
+                  <TableHead className="w-[40%]">Name</TableHead>
+                  <TableHead className="w-[10%] text-center"></TableHead>
+                  <TableHead className="w-[10%] text-center"></TableHead>
+                  <TableHead className="w-[18%] text-center">Points</TableHead>
+                  <TableHead className="w-[22%] text-center">Value</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -390,6 +391,7 @@ const League = () => {
                     totalPoints={footballer.totalPoints}
                     averagePoints={footballer.averagePoints}
                     position={footballer.position}
+                    availability={footballer.availability}
                     onClick={() => handleFootballerClick(footballer)}
                   />
                 ))}

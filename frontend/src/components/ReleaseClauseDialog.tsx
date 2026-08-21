@@ -8,6 +8,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { fetchReleaseClauseData } from "@/lib/api";
 
 interface ReleaseClauseDialogProps {
@@ -15,14 +17,14 @@ interface ReleaseClauseDialogProps {
   onOpenChange: (open: boolean) => void;
   footballerName: string;
   footballerId: number;
-  onSubmit: () => void;
+  onSubmit: () => Promise<boolean>;
+  onScheduleSubmit: (amount: number) => Promise<boolean>;
 }
 
 interface ReleaseClauseData {
   status: string;
   rc_available: boolean;
   release_clause: number;
-  time_until_rc?: number;
 }
 
 export const ReleaseClauseDialog = ({
@@ -31,9 +33,11 @@ export const ReleaseClauseDialog = ({
   footballerName,
   footballerId,
   onSubmit,
+  onScheduleSubmit,
 }: ReleaseClauseDialogProps) => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<ReleaseClauseData | null>(null);
+  const [bidAmountInput, setBidAmountInput] = useState("");
   
   useEffect(() => {
     if (open && footballerId) {
@@ -41,6 +45,7 @@ export const ReleaseClauseDialog = ({
       fetchReleaseClauseData(footballerId)
         .then(data => {
           setData(data);
+          setBidAmountInput(data?.release_clause ? data.release_clause.toString() : "");
           setLoading(false);
         })
         .catch(err => {
@@ -50,9 +55,15 @@ export const ReleaseClauseDialog = ({
     }
   }, [open, footballerId]);
   
-  const handleSubmit = () => {
-    onSubmit();
-    onOpenChange(false);
+  const handleSubmit = async () => {
+    if (!data) return;
+
+    const submitted = data.rc_available
+      ? await onSubmit()
+      : await onScheduleSubmit(Number(bidAmountInput));
+    if (submitted) {
+      onOpenChange(false);
+    }
   };
   
   const formatValue = (val: number) => {
@@ -80,6 +91,9 @@ export const ReleaseClauseDialog = ({
     
     return `${days} ${hh}:${mm}:${ss}`;
   };
+
+  const parsedScheduledBidAmount = Number(bidAmountInput);
+  const isValidScheduledBid = Number.isInteger(parsedScheduledBidAmount) && parsedScheduledBidAmount >= 1;
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -109,12 +123,23 @@ export const ReleaseClauseDialog = ({
                 <div className="text-sm text-destructive">
                   Release clause is not available for this footballer.
                 </div>
-                {data.time_until_rc !== undefined && data.time_until_rc > 0 && (
+                {/* {data.time_until_rc !== undefined && data.time_until_rc > 0 && (
                   <div className="text-sm text-muted-foreground">
                     Time remaining: <span className="font-semibold" aria-label="Days hours minutes seconds">{formatTimeRemaining(data.time_until_rc)}</span>
                     <div className="text-xs mt-1 opacity-75">(days hh:mm:ss)</div>
                   </div>
-                )}
+                )} */}
+                <div className="space-y-2">
+                  <Label htmlFor="scheduled-release-clause-bid">Bid amount for release clause (€)</Label>
+                  <Input
+                    id="scheduled-release-clause-bid"
+                    type="number"
+                    value={bidAmountInput}
+                    onChange={(e) => setBidAmountInput(e.target.value)}
+                    min={1}
+                    step={1}
+                  />
+                </div>
               </div>
             )}
           </div>
@@ -130,9 +155,9 @@ export const ReleaseClauseDialog = ({
           </Button>
           <Button 
             onClick={handleSubmit}
-            disabled={loading || !data || !data.rc_available}
+            disabled={loading || !data || (!data.rc_available && !isValidScheduledBid)}
           >
-            Pay Release Clause
+            {data?.rc_available ? "Pay Release Clause" : "Schedule Release Clause Bid"}
           </Button>
         </DialogFooter>
       </DialogContent>

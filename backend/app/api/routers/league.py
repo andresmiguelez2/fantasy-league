@@ -4,6 +4,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, field_validator
+from backend.app.api.routers.footballer import update_footballer_info
 from backend.app.utils.setup_auth_db import create_user
 from backend.app.db.database import pg_connect
 from backend.app.core.auth import verify_token
@@ -16,6 +17,7 @@ from backend.app.core.constants import (
     INITIAL_SQUAD_TOTAL_VALUE_LIMIT,
     INITIAL_SQUAD_PLAYER_VALUE_LIMIT,
     INITIAL_SQUAD_TOTAL_VALUE_TOLERANCE,
+    UPDATE_DB_INTERVAL,
 )
 from .logger import logger
 
@@ -142,6 +144,9 @@ def _assign_initial_squad(cursor, player_id: int, league_id: int) -> list[int]:
         selected_ids.extend(f_id for f_id, _ in chosen)
 
     if selected_ids:
+        for footballer_id in selected_ids:
+            update_footballer_info(footballer_id, UPDATE_DB_INTERVAL)
+
         cursor.execute(
             """
             UPDATE footballer
@@ -158,33 +163,22 @@ def _assign_initial_squad(cursor, player_id: int, league_id: int) -> list[int]:
     return selected_ids
 
 
-def _ensure_league_columns():
-    """Add invite_code and created_by columns to league table if they do not already exist."""
-    try:
-        conn = pg_connect()
-        cursor = conn.cursor()
-        try:
-            cursor.execute(
-                """
-                ALTER TABLE league
-                ADD COLUMN IF NOT EXISTS invite_code UUID UNIQUE DEFAULT NULL
-                """
-            )
-            cursor.execute(
-                """
-                ALTER TABLE league
-                ADD COLUMN IF NOT EXISTS created_by INT REFERENCES users(id) DEFAULT NULL
-                """
-            )
-            conn.commit()
-        finally:
-            cursor.close()
-            conn.close()
-    except Exception as e:
-        logger.error(f"Error ensuring league columns: {e}")
+def _bid_for_initial_footballers(cursor, player_id: int, league_id: int, league_player_id: int):
+    cursor.execute('''
+        SELECT f.id, fd.value
+        FROM footballer AS f JOIN footballer_data AS fd on f.id = fd.id
+        WHERE league_id = %s AND owner_id = %s
+        ''', 
+        (league_id, player_id))
 
+    footballers = cursor.fetchall()
 
-_ensure_league_columns()
+    for footballer_id, value in footballers:
+        cursor.execute('''
+            INSERT INTO bid (amount, timestamp, bidder_id, footballer_id, league_id, active)
+            VALUES (%s, now(), %s, %s, %s, true)
+            ''', 
+            (value, league_player_id, footballer_id, league_id))
 
 
 def _get_user_leagues(user_id: int):
@@ -258,29 +252,27 @@ class JoinLeagueRequest(BaseModel):
         return _validate_name_field(v)
 
 
-@router.post("")
-def create_league(
-    request: CreateLeagueRequest,
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-):
-    """Create a new league and a player entry for the authenticated user."""
-    user_id = _get_user_id_from_token(credentials)
-
+def _create_league_impl(
+    league_name: str,
+    player_name: str,
+    user_id: int,
+) -> dict:
+    """Actual league-creation logic. Callable from anywhere in source code
+    without going through the API/auth layer."""
     try:
         conn = pg_connect()
         cursor = conn.cursor()
         try:
             invite_code = str(uuid.uuid4())
 
-            # Create the league
             cursor.execute(
                 "INSERT INTO league (name, invite_code, created_by) VALUES (%s, %s, %s) RETURNING id",
-                (request.league_name, invite_code, user_id),
+                (league_name, invite_code, user_id),
             )
             league_id = cursor.fetchone()[0]
 
             cursor.execute(
-            '''
+                '''
                 INSERT INTO footballer (id, url_name, on_market, on_lineup, league_id)
                 SELECT DISTINCT
                     id
@@ -292,37 +284,42 @@ def create_league(
                 ''',
                 (league_id,)
             )
-                
+
             cursor.execute(
                 """
                 INSERT INTO market (closing_timestamp, league_id)
                 VALUES (now() + INTERVAL '-1 second', %s)
-                """, 
+                """,
                 (league_id,)
             )
 
-            # Create legaue user
-            league_user_id = create_user(f'league_user_{league_id}', ''.join(random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=20)))
+            league_user_id = create_user(
+                f'league_user_{league_id}',
+                ''.join(random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=20)),
+                cursor=cursor,
+            )
             cursor.execute(
                 """
                 INSERT INTO player (name, league_id, user_id, budget, lineup, points)
                 VALUES ('League', %s, %s, NULL, NULL, NULL)
+                RETURNING id
                 """,
                 (league_id, league_user_id),
             )
+            league_player_id = cursor.fetchone()[0]
 
-            # Create a player for this user in the new league (always auto-generate the player ID)
             cursor.execute(
                 """
                 INSERT INTO player (name, league_id, user_id, budget)
                 VALUES (%s, %s, %s, %s)
                 RETURNING id
                 """,
-                (request.player_name, league_id, user_id, INITIAL_PLAYER_BUDGET),
+                (player_name, league_id, user_id, INITIAL_PLAYER_BUDGET),
             )
             player_id = cursor.fetchone()[0]
 
             _assign_initial_squad(cursor, player_id, league_id)
+            _bid_for_initial_footballers(cursor, player_id, league_id, league_player_id)
 
             conn.commit()
         finally:
@@ -330,19 +327,118 @@ def create_league(
             conn.close()
 
         logger.info(
-            f"Created league '{request.league_name}' (ID: {league_id}) "
-            f"with player '{request.player_name}' (ID: {player_id}) "
+            f"Created league '{league_name}' (ID: {league_id}) "
+            f"with player '{player_name}' (ID: {player_id}) "
             f"for user {user_id}"
         )
         return {
             "status": "success",
-            "league": {"id": league_id, "name": request.league_name},
+            "league": {"id": league_id, "name": league_name},
         }
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"Error creating league for user {user_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to create league. The league name may already be taken.")
+
+
+@router.post("")
+def create_league(
+    request: CreateLeagueRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """Create a new league and a player entry for the authenticated user."""
+    user_id = _get_user_id_from_token(credentials)
+    return _create_league_impl(request.league_name, request.player_name, user_id)
+
+class UpdatePlayerPictureAllRequest(BaseModel):
+    picture_url: str
+
+    @field_validator("picture_url")
+    @classmethod
+    def not_empty(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("picture_url must not be empty")
+        if len(v) > 2048:
+            raise ValueError("picture_url must not exceed 2048 characters")
+        return v
+
+
+@router.get("/my-profiles")
+def get_my_profiles(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """Return all player profiles (name, picture) for the authenticated user, one per league."""
+    user_id = _get_user_id_from_token(credentials)
+
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                SELECT
+                    p.id,
+                    p.name,
+                    p.picture_url,
+                    l.id,
+                    l.name
+                FROM player p
+                JOIN league l ON p.league_id = l.id
+                WHERE p.user_id = %s
+                ORDER BY l.id
+                """,
+                (user_id,),
+            )
+            rows = cursor.fetchall()
+        finally:
+            cursor.close()
+            conn.close()
+
+        profiles = [
+            {
+                "player_id": row[0],
+                "player_name": row[1],
+                "picture_url": row[2],
+                "league_id": row[3],
+                "league_name": row[4],
+            }
+            for row in rows
+        ]
+        return {"status": "success", "profiles": profiles}
+    except Exception as e:
+        logger.error(f"Error retrieving profiles for user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve profiles")
+
+
+@router.patch("/player-picture")
+def update_all_player_pictures(
+    request: UpdatePlayerPictureAllRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """Update the picture_url for all players belonging to the authenticated user."""
+    user_id = _get_user_id_from_token(credentials)
+
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                UPDATE player
+                SET picture_url = %s
+                WHERE user_id = %s
+                """,
+                (request.picture_url, user_id),
+            )
+            conn.commit()
+        finally:
+            cursor.close()
+            conn.close()
+
+        return {"status": "success"}
+    except Exception as e:
+        logger.error(f"Error updating picture for all players of user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update picture")
 
 
 @router.get("/player-names")
@@ -570,16 +666,35 @@ def delete_league(
         raise HTTPException(status_code=500, detail="Failed to delete league")
 
 
-@router.post("/join")
-def join_league(
-    request: JoinLeagueRequest,
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-):
-    """Join a league using an invite code."""
-    user_id = _get_user_id_from_token(credentials)
+def get_league_player_id(cursor, league_id: int) -> int:
+    """Get the player ID for the 'League' user in a given league."""
+    cursor.execute(
+        """SELECT id 
+        FROM player
+        WHERE
+            league_id = %s
+            -- AND name = 'League'
+            AND budget IS NULL
+            AND points IS NULL
+            AND lineup IS NULL
+        """,
+        (league_id,),
+    )
+    result = cursor.fetchone()
+    if not result:
+        raise ValueError(f"No 'League' player found for league {league_id}")
+    return result[0]
 
+
+def _join_league_impl(
+    invite_code: str,
+    player_name: str,
+    user_id: int,
+) -> dict:
+    """Actual join-league logic. Callable from anywhere in source code
+    without going through the API/auth layer."""
     try:
-        uuid.UUID(request.invite_code)
+        uuid.UUID(invite_code)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid invite code format")
 
@@ -589,7 +704,7 @@ def join_league(
         try:
             cursor.execute(
                 "SELECT id, name FROM league WHERE invite_code = %s",
-                (request.invite_code,),
+                (invite_code,),
             )
             league_row = cursor.fetchone()
 
@@ -616,11 +731,13 @@ def join_league(
                 VALUES (%s, %s, %s, %s)
                 RETURNING id
                 """,
-                (request.player_name, league_id, user_id, INITIAL_PLAYER_BUDGET),
+                (player_name, league_id, user_id, INITIAL_PLAYER_BUDGET),
             )
             player_id = cursor.fetchone()[0]
 
             _assign_initial_squad(cursor, player_id, league_id)
+            league_player_id = get_league_player_id(cursor, league_id)
+            _bid_for_initial_footballers(cursor, player_id, league_id, league_player_id)
 
             conn.commit()
         finally:
@@ -629,7 +746,7 @@ def join_league(
 
         logger.info(
             f"User {user_id} joined league '{league_name}' (ID: {league_id}) "
-            f"with player '{request.player_name}' (ID: {player_id})"
+            f"with player '{player_name}' (ID: {player_id})"
         )
         return {
             "status": "success",
@@ -640,3 +757,13 @@ def join_league(
     except Exception as e:
         logger.error(f"Error joining league for user {user_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to join league")
+
+
+@router.post("/join")
+def join_league(
+    request: JoinLeagueRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """Join a league using an invite code."""
+    user_id = _get_user_id_from_token(credentials)
+    return _join_league_impl(request.invite_code, request.player_name, user_id)

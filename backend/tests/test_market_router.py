@@ -2,12 +2,13 @@ import sys
 import os
 import unittest
 from unittest.mock import MagicMock, patch
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from backend.app.api.routers.market import (
     BidRequest,
+    ScheduleReleaseClauseBidRequest,
     _player_has_enough_budget,
     get_player_future_bids,
     get_player_incoming_bids,
@@ -15,7 +16,9 @@ from backend.app.api.routers.market import (
     place_bid,
     player_market,
     reply_to_bid,
+    schedule_release_clause_bid,
 )
+from backend.app.core.constants import RELEASE_CLAUSE_DAYS
 
 
 class PlayerMarketTests(unittest.TestCase):
@@ -24,7 +27,7 @@ class PlayerMarketTests(unittest.TestCase):
     def test_player_market_returns_market_closing_timestamp(self, mock_pg_connect, mock_load_market):
         mock_cursor = MagicMock()
         mock_cursor.fetchall.return_value = [
-            (1, "Player A", 100, None, "2025-01-01 12:00:00", None, 1.2, 10, False, "FW")
+            (1, "Player A", 100, None, "2025-01-01 12:00:00", None, 1.2, 10, False, "FW", "available")
         ]
         mock_conn = MagicMock()
         mock_conn.cursor.return_value = mock_cursor
@@ -150,7 +153,7 @@ class PlayerMarketTests(unittest.TestCase):
 
         self.assertEqual(response["status"], "success")
         insert_call = mock_cursor.execute.call_args_list[2]
-        self.assertEqual(insert_call.args[1], (2, 1, 150, future_timestamp, 10))
+        self.assertEqual(insert_call.args[1], (2, 1, 150, future_timestamp, 10, False))
 
     @patch("backend.app.api.routers.market.get_team_value", return_value=200)
     @patch("backend.app.api.routers.market.get_player_info", return_value={"player": [1, "Player", 100]})
@@ -230,7 +233,7 @@ class PlayerMarketTests(unittest.TestCase):
         self.assertEqual(response["status"], "success")
         update_call = mock_cursor.execute.call_args_list[2]
         self.assertIn("UPDATE bid", update_call.args[0])
-        self.assertEqual(update_call.args[1], (150, future_timestamp, 9))
+        self.assertEqual(update_call.args[1], (150, future_timestamp, False, 9))
         executed_sql = " ".join(call.args[0] for call in mock_cursor.execute.call_args_list)
         self.assertNotIn("DELETE FROM bid", executed_sql)
         self.assertNotIn("INSERT INTO bid", executed_sql)
@@ -279,7 +282,7 @@ class PlayerMarketTests(unittest.TestCase):
         self.assertIn("id = %s", lookup_call.args[0])
         self.assertEqual(lookup_call.args[1], (5, 2, 1, 10))
         update_call = mock_cursor.execute.call_args_list[2]
-        self.assertEqual(update_call.args[1], (150, future_timestamp, 5))
+        self.assertEqual(update_call.args[1], (150, future_timestamp, False, 5))
 
     @patch("backend.app.api.routers.market.debit_player_value")
     @patch("backend.app.api.routers.market.get_team_value", return_value=100)
@@ -306,6 +309,67 @@ class PlayerMarketTests(unittest.TestCase):
         self.assertIn("greater debt", response["message"])
         self.assertEqual(len(mock_cursor.execute.call_args_list), 1)
         mock_debit_player_value.assert_not_called()
+
+    @patch("backend.app.api.routers.market.place_bid")
+    @patch("backend.app.api.routers.market.pg_connect")
+    def test_schedule_release_clause_bid_schedules_one_second_after_expiry_with_release_clause_flag(
+        self,
+        mock_pg_connect,
+        mock_place_bid,
+    ):
+        mock_cursor = MagicMock()
+        acquisition_ts = datetime(2030, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+        mock_cursor.fetchone.return_value = (2, 500, acquisition_ts, False)
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value = mock_cursor
+        mock_pg_connect.return_value = mock_conn
+        mock_place_bid.return_value = {"status": "success", "message": "Bid placed successfully."}
+
+        response = schedule_release_clause_bid(
+            ScheduleReleaseClauseBidRequest(
+                player_id=1,
+                footballer_id=3,
+                bid_amount=999,
+                league_id=10,
+            )
+        )
+
+        self.assertEqual(response["status"], "success")
+        bid_request = mock_place_bid.call_args.args[0]
+        self.assertIsInstance(bid_request, BidRequest)
+        self.assertEqual(bid_request.bid_amount, 999)
+        self.assertTrue(bid_request.release_clause)
+        self.assertEqual(
+            bid_request.timestamp,
+            acquisition_ts + timedelta(days=RELEASE_CLAUSE_DAYS, seconds=1),
+        )
+
+    @patch("backend.app.api.routers.market.place_bid")
+    @patch("backend.app.api.routers.market.pg_connect")
+    def test_schedule_release_clause_bid_rejects_when_release_clause_is_already_available(
+        self,
+        mock_pg_connect,
+        mock_place_bid,
+    ):
+        mock_cursor = MagicMock()
+        acquisition_ts = datetime(2030, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+        mock_cursor.fetchone.return_value = (2, 500, acquisition_ts, True)
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value = mock_cursor
+        mock_pg_connect.return_value = mock_conn
+
+        response = schedule_release_clause_bid(
+            ScheduleReleaseClauseBidRequest(
+                player_id=1,
+                footballer_id=3,
+                bid_amount=999,
+                league_id=10,
+            )
+        )
+
+        self.assertEqual(response["status"], "error")
+        self.assertIn("already available", response["message"])
+        mock_place_bid.assert_not_called()
 
 
 if __name__ == "__main__":

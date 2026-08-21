@@ -11,6 +11,7 @@ export interface Player {
   budget: number;
   points: number;
   team_value: number;
+  picture_url?: string | null;
 }
 
 export interface Footballer {
@@ -23,11 +24,13 @@ export interface Footballer {
   onMarket: boolean;
   onMarketSince: string | null;
   position: string | null;
+  availability: string | null;
 }
 
 export interface MarketFootballer {
   id: number;
   name: string;
+  team: string | null;
   value: number;
   ownerId: string;
   onMarketSince: string;
@@ -36,7 +39,37 @@ export interface MarketFootballer {
   totalPoints: number;
   isOwn: boolean;
   position: string | null;
+  availability: string | null;
 }
+
+export interface FootballerFilters {
+  teams: string[];
+  positions: string[];
+  availabilities: string[];
+}
+
+export interface FootballerFilterOptions {
+  teams: string[];
+  positions: string[];
+  availabilities: string[];
+}
+
+type FootballerListResponse = {
+  footballers: [
+    number,
+    string,
+    string | null,
+    number,
+    string | null,
+    number | string,
+    number,
+    string | null,
+    string | null,
+  ][];
+  meta?: {
+    filter_options?: FootballerFilterOptions;
+  };
+};
 
 export interface MarketData {
   footballers: MarketFootballer[];
@@ -52,7 +85,18 @@ export interface MarketHistoryBid {
   timestamp: string;
 }
 
+export const DICEBEAR_BASE_URL = 'https://api.dicebear.com/7.x/avataaars/svg';
+export const getDefaultAvatarUrl = (seed: string) =>
+  `${DICEBEAR_BASE_URL}?seed=${encodeURIComponent(seed)}`;
+
 export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || `${window.location.protocol}//${window.location.hostname}:8000`;
+
+/** Resolves a picture_url that may be a backend-relative path to an absolute URL. */
+export const resolvePictureUrl = (url: string | null | undefined): string | undefined => {
+  if (!url) return undefined;
+  if (url.startsWith('/')) return `${BACKEND_URL}${url}`;
+  return url;
+};
 
 const ACTIVE_LEAGUE_KEY = 'activeLeagueId';
 const ACTIVE_LEAGUE_NAME_KEY = 'activeLeagueName';
@@ -236,6 +280,7 @@ export const fetchLeaderboard = async (fixtureId: string = 'total'): Promise<Pla
     name: player[1],
     points: player[2],
     team_value: player[3],
+    picture_url: player[4] ?? null,
   }));
 };
 
@@ -259,6 +304,7 @@ export const fetchSquadFootballers = async (playerId?: string): Promise<Football
     onMarket: footballer[6],
     onMarketSince: footballer[7],
     position: footballer[8] ?? null,
+    availability: footballer[9] ?? null,
   }));
 };
 
@@ -284,6 +330,7 @@ export const fetchMarketFootballers = async (playerId?: string): Promise<MarketD
       totalPoints: footballer[7],
       isOwn: footballer[8] === true,
       position: footballer[9] ?? null,
+      availability: footballer[10] ?? null,
     })),
     marketClosingTimestamp: data.market_closing_timestamp ?? null,
   };
@@ -366,7 +413,8 @@ export const placeBid = async (
   footballerId: number,
   playerId: string,
   amount: number,
-  timestamp?: string | null
+  timestamp?: string | null,
+  releaseClause?: boolean,
 ): Promise<any> => {
   const leagueId = getActiveLeagueId();
   if (!leagueId) {
@@ -383,6 +431,7 @@ export const placeBid = async (
       bid_amount: amount,
       league_id: parseInt(leagueId),
       timestamp: timestamp ?? undefined,
+      release_clause: releaseClause ?? undefined,
     }),
   });
 
@@ -411,6 +460,8 @@ export interface FootballerInfo {
   owner_id: number | null;
   owner_name: string | null;
   position: string | null;
+  availability: string | null;
+  time_to_release_clause: number | null;
 }
 
 export interface FixtureDetail {
@@ -476,8 +527,9 @@ export const fetchAllFootballers = async (
   limit: number = 25,
   sortBy: 'name' | 'points' | 'value' = 'name',
   sortOrder: 'asc' | 'desc' = 'asc',
-  search: string = ''
-): Promise<MarketFootballer[]> => {
+  search: string = '',
+  filters: FootballerFilters = { teams: [], positions: [], availabilities: [] },
+): Promise<{ footballers: MarketFootballer[]; filterOptions: FootballerFilterOptions }> => {
   const leagueId = getActiveLeagueId();
   if (!leagueId) {
     throw new Error('No active league selected');
@@ -490,23 +542,40 @@ export const fetchAllFootballers = async (
     search: search,
     league_id: leagueId,
   });
+
+  if (filters.teams.length > 0) {
+   params.set('teams', filters.teams.join(','));
+  }
+  if (filters.positions.length > 0) {
+   params.set('positions', filters.positions.join(','));
+  }
+  if (filters.availabilities.length > 0) {
+   params.set('availabilities', filters.availabilities.join(','));
+  }
   
   const response = await fetch(
-    `${BACKEND_URL}/footballers?${params}`
+   `${BACKEND_URL}/footballers?${params}`
   );
-  const data = await response.json();
+  const data = await response.json() as FootballerListResponse;
   
-  // Map to MarketFootballer format
-  return data.footballers.map((footballer: any[]) => ({
-    id: footballer[0],
-    name: footballer[1],
-    value: footballer[2],
-    ownerId: footballer[3] || '',
-    onMarketSince: footballer[4] || '',
-    bidAmount: footballer[5] || 0,
-    averagePoints: footballer[6],
-    totalPoints: footballer[7],
-  }));
+  return {
+   footballers: data.footballers.map((footballer) => ({
+     id: footballer[0],
+     name: footballer[1],
+     team: footballer[2] ?? null,
+     value: footballer[3],
+     ownerId: footballer[4] || '',
+     averagePoints: footballer[5],
+     totalPoints: footballer[6],
+     position: footballer[7] ?? null,
+     availability: footballer[8] ?? null,
+   })),
+   filterOptions: {
+     teams: data.meta?.filter_options?.teams || [],
+     positions: data.meta?.filter_options?.positions || [],
+     availabilities: data.meta?.filter_options?.availabilities || [],
+   },
+  };
 };
 
 export interface LineupFormation {
@@ -799,6 +868,14 @@ export interface PayReleaseClauseResponse {
   text?: string;
 }
 
+export interface ScheduleReleaseClauseBidResponse {
+  status: string;
+  message?: string;
+  scheduled_timestamp?: string;
+  ok?: boolean;
+  text?: string;
+}
+
 export const fetchReleaseClauseData = async (footballerId: number): Promise<ReleaseClauseData> => {
   const response = await fetch(
     `${BACKEND_URL}/footballer/release_clause_data/${footballerId}?${withLeagueId({})}`
@@ -831,7 +908,6 @@ export const payReleaseClause = async (footballerId: number, playerId: string): 
   if (!leagueId) {
     throw new Error('No active league selected');
   }
-
   const res = await fetch(`${BACKEND_URL}/market/pay_release_clause`, {
     method: 'POST',
     headers: {
@@ -854,6 +930,61 @@ export const payReleaseClause = async (footballerId: number, playerId: string): 
   } catch {
     return { status: res.status.toString(), ok: res.ok, text };
   }
+};
+
+export const scheduleReleaseClauseBid = async (
+  footballerId: number,
+  playerId: string,
+  amount: number,
+): Promise<ScheduleReleaseClauseBidResponse> => {
+  const leagueId = getActiveLeagueId();
+  if (!leagueId) {
+    throw new Error('No active league selected');
+  }
+  const res = await fetch(`${BACKEND_URL}/market/schedule_release_clause_bid`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      footballer_id: footballerId,
+      player_id: Number(playerId),
+      bid_amount: amount,
+      league_id: parseInt(leagueId),
+    }),
+  });
+
+  const text = await res.text();
+  if (!text) {
+    return { status: res.status.toString(), ok: res.ok };
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { status: res.status.toString(), ok: res.ok, text };
+  }
+};
+
+export const incrementReleaseClause = async (
+  footballerId: number,
+  playerId: string,
+  increment: number,
+): Promise<{ status: string; message?: string; new_release_clause?: number }> => {
+  const leagueId = getActiveLeagueId();
+  if (!leagueId) {
+    throw new Error('No active league selected');
+  }
+  const params = new URLSearchParams({
+    league_id: leagueId,
+    player_id: playerId,
+    value: String(increment),
+  });
+  const res = await fetch(
+    `${BACKEND_URL}/market/increment_release_clause/${footballerId}?${params}`,
+    { method: 'POST' },
+  );
+  return res.json();
 };
 
 export const fetchLeagueInvite = async (leagueId: string): Promise<{ status: string; invite_code?: string; detail?: string }> => {
@@ -912,6 +1043,98 @@ export const deleteLeague = async (leagueId: string): Promise<{ status: string; 
   const data = await response.json();
   if (!response.ok) {
     return { status: 'error', detail: data.detail || 'Failed to delete league' };
+  }
+  return data;
+};
+
+export interface PlayerProfile {
+  player_id: number;
+  player_name: string;
+  picture_url: string | null;
+  league_id: number;
+  league_name: string;
+}
+
+export const fetchMyProfiles = async (): Promise<PlayerProfile[]> => {
+  const token = getAuthToken();
+  if (!token) {
+    return [];
+  }
+  const response = await fetch(`${BACKEND_URL}/leagues/my-profiles`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    return [];
+  }
+  const data = await response.json();
+  return data.status === 'success' ? (data.profiles as PlayerProfile[]) : [];
+};
+
+export const updatePlayerProfile = async (
+  playerId: number,
+  updates: { name?: string },
+): Promise<{ status: string; detail?: string }> => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+  const response = await fetch(`${BACKEND_URL}/player/profile/${playerId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(updates),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    return { status: 'error', detail: data.detail || 'Failed to update profile' };
+  }
+  return data;
+};
+
+export const updateAllPlayerPictures = async (
+  pictureUrl: string,
+): Promise<{ status: string; detail?: string }> => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+  const response = await fetch(`${BACKEND_URL}/leagues/player-picture`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ picture_url: pictureUrl }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    return { status: 'error', detail: data.detail || 'Failed to update pictures' };
+  }
+  return data;
+};
+
+
+export const uploadPlayerPicture = async (
+  file: File,
+): Promise<{ status: string; picture_url?: string; detail?: string }> => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await fetch(`${BACKEND_URL}/player/profile-picture`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    return { status: 'error', detail: data.detail || 'Failed to upload picture' };
   }
   return data;
 };

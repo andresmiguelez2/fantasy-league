@@ -4,18 +4,83 @@ import { NavigationTabs } from "@/components/NavigationTabs";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FootballerInfoRow } from "@/components/FootballerInfoRow";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
-import { fetchAllFootballers, MarketFootballer } from "@/lib/api";
+import { fetchAllFootballers, FootballerFilterOptions, FootballerFilters, MarketFootballer } from "@/lib/api";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ArrowUpDown } from "lucide-react";
 import { getActiveLeagueId } from "@/lib/api";
 import { PlayerInfoRibbon } from "@/components/PlayerInfoRibbon";
 
+const DEFAULT_FILTERS: FootballerFilters = {
+  teams: [],
+  positions: [],
+  availabilities: [],
+};
+
+const DEFAULT_FILTER_OPTIONS: FootballerFilterOptions = {
+  teams: [],
+  positions: [],
+  availabilities: [],
+};
+
+const POSITION_LABELS: Record<string, string> = {
+  gk: "GK",
+  df: "DF",
+  md: "MD",
+  fw: "FW",
+};
+
+const formatAvailability = (value: string) =>
+  value
+    .split(" ")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+
+interface FilterDropdownProps {
+  label: string;
+  options: string[];
+  selected: string[];
+  onToggle: (value: string) => void;
+  formatOption?: (value: string) => string;
+}
+
+const FilterDropdown = ({ label, options, selected, onToggle, formatOption = (value) => value }: FilterDropdownProps) => (
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <Button variant="outline" className="min-w-[180px] justify-between">
+        <span className="truncate">
+          {selected.length > 0 ? `${label} (${selected.length})` : label}
+        </span>
+      </Button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="start" className="w-56">
+      {options.map((option) => (
+        <DropdownMenuCheckboxItem
+          key={option}
+          checked={selected.includes(option)}
+          onCheckedChange={() => onToggle(option)}
+          onSelect={(event) => event.preventDefault()}
+        >
+          {formatOption(option)}
+        </DropdownMenuCheckboxItem>
+      ))}
+    </DropdownMenuContent>
+  </DropdownMenu>
+);
+
 const FootballerInfo = () => {
   const leagueId = getActiveLeagueId();
   const [footballers, setFootballers] = useState<MarketFootballer[]>([]);
+  const [filterOptions, setFilterOptions] = useState<FootballerFilterOptions>(DEFAULT_FILTER_OPTIONS);
+  const [filters, setFilters] = useState<FootballerFilters>(DEFAULT_FILTERS);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
@@ -31,6 +96,7 @@ const FootballerInfo = () => {
     sort: 'name' | 'points' | 'value', 
     order: 'asc' | 'desc',
     searchTerm: string,
+    selectedFilters: FootballerFilters,
     reset = false
   ) => {
     try {
@@ -40,13 +106,14 @@ const FootballerInfo = () => {
         setLoadingMore(true);
       }
 
-      const data = await fetchAllFootballers(pageNum, 30, sort, order, searchTerm);
+      const data = await fetchAllFootballers(pageNum, 30, sort, order, searchTerm, selectedFilters);
       
-      if (data.length < 30) {
+      if (data.footballers.length < 30) {
         setHasMore(false);
       }
 
-      setFootballers(prev => reset ? data : [...prev, ...data]);
+      setFilterOptions(data.filterOptions);
+      setFootballers(prev => reset ? data.footballers : [...prev, ...data.footballers]);
     } catch (error) {
       console.error('Error loading footballers:', error);
     } finally {
@@ -59,8 +126,8 @@ const FootballerInfo = () => {
     setFootballers([]);
     setPage(1);
     setHasMore(true);
-    loadFootballers(1, sortBy, sortOrder, search, true);
-  }, [sortBy, sortOrder, search, loadFootballers]);
+    loadFootballers(1, sortBy, sortOrder, search, filters, true);
+  }, [sortBy, sortOrder, search, filters, loadFootballers]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -86,16 +153,29 @@ const FootballerInfo = () => {
 
   useEffect(() => {
     if (page > 1) {
-      loadFootballers(page, sortBy, sortOrder, search);
+      loadFootballers(page, sortBy, sortOrder, search, filters);
     }
-  }, [page, sortBy, sortOrder, search, loadFootballers]);
+  }, [page, sortBy, sortOrder, search, filters, loadFootballers]);
+
+  const toggleFilter = (key: keyof FootballerFilters, value: string) => {
+    setFilters((prev) => {
+      const nextValues = prev[key].includes(value)
+        ? prev[key].filter((entry) => entry !== value)
+        : [...prev[key], value];
+
+      return {
+        ...prev,
+        [key]: nextValues,
+      };
+    });
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-20">
+    <div className="min-h-screen bg-background pb-20">
       <Header />
       <NavigationTabs leagueId={leagueId} />
       
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="container mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="flex flex-col gap-4 mb-6">
           <h1 className="text-3xl font-bold text-foreground">All Footballers</h1>
           <div className="flex gap-2 items-center flex-wrap">
@@ -104,6 +184,26 @@ const FootballerInfo = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="max-w-xs"
+            />
+            <FilterDropdown
+              label="Team"
+              options={filterOptions.teams}
+              selected={filters.teams}
+              onToggle={(value) => toggleFilter("teams", value)}
+            />
+            <FilterDropdown
+              label="Position"
+              options={filterOptions.positions}
+              selected={filters.positions}
+              onToggle={(value) => toggleFilter("positions", value)}
+              formatOption={(value) => POSITION_LABELS[value.toLowerCase()] ?? value.toUpperCase()}
+            />
+            <FilterDropdown
+              label="Availability"
+              options={filterOptions.availabilities}
+              selected={filters.availabilities}
+              onToggle={(value) => toggleFilter("availabilities", value)}
+              formatOption={formatAvailability}
             />
             <Select value={sortBy} onValueChange={(value: 'name' | 'points' | 'value') => setSortBy(value)}>
               <SelectTrigger className="w-[180px]">
@@ -129,14 +229,15 @@ const FootballerInfo = () => {
           <LoadingSkeleton type="footballers" />
         ) : (
           <>
-            <div className="rounded-xl border border-border bg-card shadow-lg overflow-x-auto">
-              <Table>
+            <div className="max-w-4xl overflow-x-auto">
+              <Table className="table-fixed w-full">
                 <TableHeader>
-                  <TableRow className="hover:bg-transparent border-border/50">
-                    <TableHead className="text-muted-foreground font-semibold">Player</TableHead>
-                    <TableHead className="text-center text-muted-foreground font-semibold">Value</TableHead>
-                    <TableHead className="text-center text-muted-foreground font-semibold">Total Points</TableHead>
-                    <TableHead className="text-center text-muted-foreground font-semibold hidden sm:table-cell">Average Points</TableHead>
+                  <TableRow>
+                    <TableHead className="w-[40%]">Name</TableHead>
+                    <TableHead className="w-[10%] text-center"></TableHead>
+                    <TableHead className="w-[10%] text-center"></TableHead>
+                    <TableHead className="w-[18%] text-center">Points</TableHead>
+                    <TableHead className="w-[22%] text-center">Value</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -149,6 +250,8 @@ const FootballerInfo = () => {
                       ownerId={footballer.ownerId}
                       averagePoints={footballer.averagePoints}
                       totalPoints={footballer.totalPoints}
+                      position={footballer.position}
+                      availability={footballer.availability}
                       onClick={() => setSelectedFootballerId(footballer.id)}
                     />
                   ))}
@@ -169,7 +272,7 @@ const FootballerInfo = () => {
             )}
           </>
         )}
-      </div>
+      </main>
 
       {selectedFootballerId && (
         <FootballerInfoDialog

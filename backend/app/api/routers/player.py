@@ -1,11 +1,161 @@
-from fastapi import APIRouter
+import imghdr
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import Response
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel, field_validator
 from backend.app.db.database import pg_connect, mongo_client
 from backend.app.core.constants import POSITION_ORDER, LINEUP_POSITIONS
+from backend.app.core.auth import verify_token
 from .footballer import get_footballer_image, set_footballer_on_lineup
 from .logger import logger
 
 
 router = APIRouter(prefix="/player", tags=["player"])
+security = HTTPBearer()
+
+
+def _get_user_id_from_token(credentials: HTTPAuthorizationCredentials) -> int:
+    payload = verify_token(credentials.credentials)
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+        )
+    return int(payload.get("sub"))
+
+
+class UpdatePlayerProfileRequest(BaseModel):
+    name: str | None = None
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip()
+        if not v:
+            raise ValueError("name must not be empty")
+        if len(v) > 255:
+            raise ValueError("name must not exceed 255 characters")
+        return v
+
+
+@router.patch("/profile/{player_id}")
+def update_player_profile(
+    player_id: int,
+    request: UpdatePlayerProfileRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """Update the name for a specific player (must belong to authenticated user)."""
+    user_id = _get_user_id_from_token(credentials)
+
+    if request.name is None:
+        raise HTTPException(status_code=400, detail="name must be provided")
+
+    try:
+        conn = pg_connect()
+        cursor = conn.cursor()
+        try:
+            # Verify ownership
+            cursor.execute(
+                "SELECT id FROM player WHERE id = %s AND user_id = %s",
+                (player_id, user_id),
+            )
+            if not cursor.fetchone():
+                raise HTTPException(status_code=403, detail="Not authorized to update this player")
+
+            cursor.execute(
+                "UPDATE player SET name = %s WHERE id = %s AND user_id = %s",
+                (request.name, player_id, user_id),
+            )
+            conn.commit()
+        finally:
+            cursor.close()
+            conn.close()
+
+        return {"status": "success"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating profile for player {player_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update player profile")
+
+
+@router.get("/profile-picture/{user_id}")
+def get_player_profile_picture(user_id: int):
+    """Return the player's profile picture as raw bytes from MongoDB."""
+    try:
+        client = mongo_client()
+        db = client["FantasyMDB"]
+
+        doc = db.player_picture.find_one({"user_id": user_id})
+        if doc is None:
+            client.close()
+            raise HTTPException(status_code=404, detail="No profile picture found.")
+
+        img_field = doc.get("image_binary")
+        if img_field is None:
+            client.close()
+            raise HTTPException(status_code=404, detail="No profile picture found.")
+
+        img_bytes = bytes(img_field)
+        fmt = imghdr.what(None, img_bytes)
+        content_type = f"image/{fmt}" if fmt else "application/octet-stream"
+
+        client.close()
+        return Response(content=img_bytes, media_type=content_type)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving profile picture for user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve profile picture")
+
+
+@router.post("/profile-picture")
+def upload_player_profile_picture(
+    file: UploadFile = File(...),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """Upload a profile picture for the authenticated user. Stores the image in MongoDB
+    and updates picture_url for all of the user's player rows in Postgres."""
+    user_id = _get_user_id_from_token(credentials)
+
+    try:
+        img_bytes = file.file.read()
+        if not img_bytes:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+
+        # Store in MongoDB (upsert so only one picture per user)
+        client = mongo_client()
+        db = client["FantasyMDB"]
+        db.player_picture.update_one(
+            {"user_id": user_id},
+            {"$set": {"user_id": user_id, "image_binary": img_bytes}},
+            upsert=True,
+        )
+        client.close()
+
+        # Update picture_url for all of this user's players to the backend endpoint
+        picture_url = f"/player/profile-picture/{user_id}"
+        conn = pg_connect()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "UPDATE player SET picture_url = %s WHERE user_id = %s",
+                (picture_url, user_id),
+            )
+            conn.commit()
+        finally:
+            cursor.close()
+            conn.close()
+
+        return {"status": "success", "picture_url": picture_url}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error uploading profile picture for user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to upload profile picture")
 
 
 @router.get('/{player_id}')

@@ -1,6 +1,14 @@
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BACKEND_URL } from "@/lib/api";
+import { AvailabilityIcon } from "@/components/AvailabilityIcon";
+
+const POSITION_STYLES: Record<string, { label: string; className: string }> = {
+  gk:  { label: "GK",  className: "bg-yellow-400 text-yellow-900" },
+  df: { label: "DF", className: "bg-blue-500 text-white" },
+  md: { label: "MD", className: "bg-green-500 text-white" },
+  fw: { label: "FW", className: "bg-red-500 text-white" },
+};
 
 interface FootballerInfoRowProps {
   id: number;
@@ -9,6 +17,8 @@ interface FootballerInfoRowProps {
   ownerId: string;
   averagePoints: number | string;
   totalPoints: number;
+  position?: string | null;
+  availability?: string | null;
   onClick?: () => void;
 }
 
@@ -19,14 +29,16 @@ export const FootballerInfoRow = ({
   ownerId,
   averagePoints,
   totalPoints,
+  position,
+  availability,
   onClick 
 }: FootballerInfoRowProps) => {
   const formatValue = (val: number) => {
     return new Intl.NumberFormat('en-ES', {
       style: 'currency',
       currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      notation: 'compact',
+      maximumFractionDigits: 2,
     }).format(val);
   };
   
@@ -40,6 +52,9 @@ export const FootballerInfoRow = ({
       .toUpperCase()
       .slice(0, 2);
   };
+
+  const positionKey = position?.toLowerCase() ?? "";
+  const positionStyle = POSITION_STYLES[positionKey];
   
   return (
     <TableRow className="fade-in cursor-pointer hover:bg-accent/50" onClick={onClick}>
@@ -56,13 +71,27 @@ export const FootballerInfoRow = ({
         </div>
       </TableCell>
       <TableCell className="text-center">
-        <span className="text-secondary font-semibold">{formatValue(value)}</span>
+        {positionStyle ? (
+          <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold uppercase ${positionStyle.className}`}>
+            {positionStyle.label}
+          </span>
+        ) : (
+          <span className="text-muted-foreground text-xs">{position ?? "—"}</span>
+        )}
       </TableCell>
       <TableCell className="text-center">
-        <span className="font-semibold">{totalPoints}</span>
+        <AvailabilityIcon availability={availability} />
       </TableCell>
-      <TableCell className="text-center hidden sm:table-cell">
-        <span className="font-semibold">{averagePoints}</span>
+      <TableCell className="text-center">
+        <div className="text-sm font-semibold text-foreground">
+          {totalPoints ?? 0}
+        </div>
+        <div className="text-xs text-muted-foreground">
+          {averagePoints ?? '0'}
+        </div>
+      </TableCell>
+      <TableCell className="text-center">
+        <span className="text-secondary font-semibold">{formatValue(value)}</span>
       </TableCell>
     </TableRow>
   );

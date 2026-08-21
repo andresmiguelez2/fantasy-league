@@ -4,7 +4,8 @@ import logging
 import psycopg2
 import random
 
-from backend.app.core.constants import N_NEW_FOOTBALLERS_INTO_MARKET
+from backend.app.api.routers.footballer import update_footballer_info
+from backend.app.core.constants import N_NEW_FOOTBALLERS_INTO_MARKET, UPDATE_DB_INTERVAL, BID_EXPIRATION_DAYS
 from pymongo import MongoClient
 from backend.app.db.database import pg_connect, mongo_client
 
@@ -128,6 +129,9 @@ class Market:
         free_agents = cursor.fetchall()
         chosen_free_agents = random.sample(free_agents, min(n_agents, len(free_agents)))
 
+        for footballer_id in chosen_free_agents:
+            update_footballer_info(footballer_id, UPDATE_DB_INTERVAL)
+
         cursor.execute(
             """
             UPDATE footballer
@@ -141,6 +145,24 @@ class Market:
             (tuple([fa[0] for fa in chosen_free_agents]), self.league_id)
         )
         logger.info(f"Placed players {chosen_free_agents} into the market. League {self.league_id}.")
+
+    def _mark_expired_bids_inactive(self, cursor):
+        """Mark bids as inactive if they have expired based on BID_EXPIRATION_DAYS."""
+        expiration_threshold = datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(days=BID_EXPIRATION_DAYS)
+        cursor.execute(
+            """
+            UPDATE bid
+            SET active = FALSE
+            WHERE
+                league_id = %s
+                AND active = TRUE
+                AND timestamp <= %s
+            """,
+            (self.league_id, expiration_threshold)
+        )
+        expired_count = cursor.rowcount
+        if expired_count > 0:
+            logger.info(f"Marked {expired_count} expired bids as inactive. League {self.league_id}.")
 
     def _assign_bids(self, cursor):
         """Assign bids placed on league players."""
@@ -242,6 +264,7 @@ class Market:
                 )
                 logger.info(f"Database updated: Market {self._id} marked as closed")
 
+                self._mark_expired_bids_inactive(cursor)
                 self._assign_bids(cursor)
                 self._open_new_market(cursor)
                 removed_from_market = self._cleanup_market(cursor)
@@ -251,7 +274,7 @@ class Market:
                 conn.commit()
                 cursor.close()
                 conn.close()
-                
+
             except psycopg2.Error as e:
                 logger.error(f"Database error while fulfilling market {self._id}: {e}")
                 self._has_been_closed = False# Rollback the local state change if database update failed
