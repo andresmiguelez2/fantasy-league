@@ -14,3 +14,4 @@ bcrypt==4.3.0
 passlib[bcrypt]
 python-multipart
 pandas
+pywebpush

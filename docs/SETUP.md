@@ -36,12 +36,20 @@ DATABASE_URL=postgresql://postgres:replace-with-a-strong-password@db:5432/main_d
 POSTGRES_PASSWORD=replace-with-a-strong-password
 POSTGRES_DB=main_db
 JWT_SECRET_KEY=replace-with-a-long-random-secret
+VAPID_PUBLIC_KEY=replace-with-a-generated-vapid-public-key
+VAPID_PRIVATE_KEY=replace-with-a-generated-vapid-private-key
 ```
 
 Generate a JWT secret with:
 
 ```bash
 openssl rand -hex 32
+```
+
+Generate the Web Push VAPID keys once with (keep them stable across deployments; regenerating them silently invalidates every existing push subscription):
+
+```bash
+docker exec backend_app python scripts/generate_vapid_keys.py
 ```
 
 `secrets/mongo.env`:

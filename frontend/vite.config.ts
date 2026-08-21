@@ -17,6 +17,13 @@ export default defineConfig(({ mode }) => ({
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
+      devOptions: {
+        enabled: true,
+        type: "module",
+      },
       includeAssets: ["favicon.ico", "favicon.svg", "apple-touch-icon.png"],
       manifest: {
         name: "Fantasy League",

@@ -830,6 +830,41 @@ export const markNotificationsRead = async (
   });
 };
 
+export const getVapidPublicKey = async (): Promise<string | null> => {
+  const response = await fetch(`${BACKEND_URL}/notifications/vapid-public-key`);
+  if (!response.ok) {
+    return null;
+  }
+  const data = await response.json();
+  return data.public_key ?? null;
+};
+
+export interface PushSubscriptionPayload {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+}
+
+export const subscribePush = async (
+  playerId: string,
+  leagueId: string,
+  subscription: PushSubscriptionPayload,
+): Promise<boolean> => {
+  const response = await fetch(`${BACKEND_URL}/notifications/subscribe`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      player_id: Number(playerId),
+      league_id: Number(leagueId),
+      endpoint: subscription.endpoint,
+      keys: subscription.keys,
+    }),
+  });
+  const data = await response.json();
+  return data.status === "success";
+};
+
 export const submitBid = async (
   footballerId: number,
   playerId: string,
