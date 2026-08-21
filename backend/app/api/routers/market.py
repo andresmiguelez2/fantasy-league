@@ -19,6 +19,7 @@ from backend.app.db.database import mongo_client, pg_connect
 from backend.app.models.footballer import Footballer
 from backend.app.models.market import load_market
 from backend.app.models.player import debit_player_value
+from backend.app.api.routers.notifications import create_player_notification
 
 from .logger import logger
 
@@ -427,9 +428,11 @@ def reply_to_bid(bid_id: int, league_id: int, accept: bool):
                     , b.amount
                     , f.owner_id
                     , p.budget
+                    , fd.name AS footballer_name
                 FROM 
                     bid AS b LEFT JOIN footballer AS f ON b.footballer_id = f.id 
                     LEFT JOIN player AS p on b.bidder_id = p.id AND b.league_id = p.league_id
+                    LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
                 WHERE b.id = %s AND f.league_id = %s
             """,
             (bid_id, league_id)
@@ -440,7 +443,8 @@ def reply_to_bid(bid_id: int, league_id: int, accept: bool):
             conn.close()
             return {"status": "error", "message": "Bid not found."}
         
-        footballer_id, bidder_id, amount, owner_id, budget = bid
+        footballer_id, bidder_id, amount, owner_id, budget = bid[:5]
+        footballer_name = bid[5] if len(bid) > 5 and bid[5] else f"footballer {footballer_id}"
 
         if accept:
             if budget is not None:

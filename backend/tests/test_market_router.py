@@ -298,7 +298,7 @@ class PlayerMarketTests(unittest.TestCase):
         mock_debit_player_value,
     ):
         mock_cursor = MagicMock()
-        mock_cursor.fetchone.return_value = (9, 2, 80, 4)
+        mock_cursor.fetchone.return_value = (9, 2, 80, 4, 100, "Test Footballer")
         mock_conn = MagicMock()
         mock_conn.cursor.return_value = mock_cursor
         mock_pg_connect.return_value = mock_conn
