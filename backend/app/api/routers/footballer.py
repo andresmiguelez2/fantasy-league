@@ -398,7 +398,7 @@ def update_footballer_info(footballer_id: int, update_threshold_seconds: int | N
 
         cursor.execute(
             """
-            SELECT f.url_name, EXTRACT('seconds' from now() - fd.last_updated)
+            SELECT f.url_name, COALESCE(EXTRACT('seconds' from now() - fd.last_updated), 99999)
             FROM footballer AS f JOIN footballer_data as fd on f.id = fd.id
             WHERE f.id = %s
             LIMIT 1
@@ -773,7 +773,7 @@ def _auto_increment_release_clause(footballer_id: int, leagues: list[int]):
         for league_id in leagues:
             cursor.execute(
                 """
-                SELECT f.release_clause, fd.value
+                SELECT COALESCE(f.release_clause, 0), fd.value
                 FROM footballer AS f JOIN footballer_data AS fd ON f.id = fd.id
                 WHERE f.id = %s AND f.league_id = %s
                 """,
