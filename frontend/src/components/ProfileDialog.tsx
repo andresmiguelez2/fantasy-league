@@ -77,6 +77,8 @@ const ProfileCard = ({ profile, onSaved }: ProfileCardProps) => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
+    // Reset the input so re-selecting the same file fires onChange again
+    e.target.value = "";
     if (!file) return;
     const url = URL.createObjectURL(file);
     setEditState((s) => {
@@ -103,6 +105,11 @@ const ProfileCard = ({ profile, onSaved }: ProfileCardProps) => {
         const result = await updatePlayerProfile(profile.player_id, { name: editState.name.trim() });
         if (result.status !== "success") {
           toast({ title: "Failed to update name", description: result.detail, variant: "destructive" });
+          // The picture may already have been saved — keep the card in sync with it
+          if (newPictureUrl) {
+            onSaved({ ...profile, picture_url: newPictureUrl });
+            if (editState.previewUrl) URL.revokeObjectURL(editState.previewUrl);
+          }
           return;
         }
       }
@@ -203,7 +210,11 @@ const ProfileCard = ({ profile, onSaved }: ProfileCardProps) => {
               <X className="h-3.5 w-3.5 mr-1" />
               Cancel
             </Button>
-            <Button size="sm" onClick={handleSave} disabled={saving}>
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={saving || !editState.name.trim()}
+            >
               <Check className="h-3.5 w-3.5 mr-1" />
               {saving ? "Saving…" : "Save"}
             </Button>
@@ -247,6 +258,8 @@ export const ProfileDialog = ({ open, onOpenChange }: ProfileDialogProps) => {
 
   const handleAllFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
+    // Reset the input so re-selecting the same file fires onChange again
+    e.target.value = "";
     if (!file) return;
     const url = URL.createObjectURL(file);
     setAllPictureFile(file);
@@ -342,13 +355,14 @@ export const ProfileDialog = ({ open, onOpenChange }: ProfileDialogProps) => {
                         <button
                           key={seed}
                           type="button"
+                          aria-label={`Use the ${seed} avatar`}
                           onClick={() => {
                             setAllPictureSeed(seed);
                             setAllPictureFile(null);
                             if (allPicturePreviewUrl) URL.revokeObjectURL(allPicturePreviewUrl);
                             setAllPicturePreviewUrl(null);
                           }}
-                          className={`rounded-full border-2 transition-colors ${
+                          className={`rounded-full border-2 p-0.5 transition-colors ${
                             selected
                               ? "border-primary"
                               : "border-transparent hover:border-secondary"
@@ -377,10 +391,15 @@ export const ProfileDialog = ({ open, onOpenChange }: ProfileDialogProps) => {
                       type="button"
                       variant="outline"
                       size="sm"
+                      className="max-w-full min-w-0"
                       onClick={() => allFileInputRef.current?.click()}
                     >
                       <Upload className="h-3.5 w-3.5 mr-1" />
-                      {allPictureFile ? allPictureFile.name : "Choose file"}
+                      {allPictureFile ? (
+                        <span className="truncate min-w-0">{allPictureFile.name}</span>
+                      ) : (
+                        "Choose file"
+                      )}
                     </Button>
                     <input
                       ref={allFileInputRef}
