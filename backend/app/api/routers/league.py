@@ -6,7 +6,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, field_validator
 from backend.app.api.routers.footballer import update_footballer_info
 from backend.app.utils.setup_auth_db import create_user
-from backend.app.db.database import pg_connect
+from backend.app.db.database import pg_connect, mongo_client
 from backend.app.core.auth import verify_token
 from backend.app.core.constants import (
     INITIAL_PLAYER_BUDGET,
@@ -643,6 +643,13 @@ def delete_league(
                     detail="Only the league creator can delete this league",
                 )
 
+            # Collect player ids before deletion so their per-league pictures can be removed
+            cursor.execute(
+                "SELECT id FROM player WHERE league_id = %s",
+                (league_id,),
+            )
+            player_ids = [row[0] for row in cursor.fetchall()]
+
             # Delete in dependency order to avoid FK constraint violations
             cursor.execute("DELETE FROM bid WHERE league_id = %s", (league_id,))
             cursor.execute("DELETE FROM fixture_details WHERE league_id = %s", (league_id,))
@@ -656,6 +663,13 @@ def delete_league(
         finally:
             cursor.close()
             conn.close()
+
+        # Remove any per-league pictures stored for the deleted players
+        if player_ids:
+            client = mongo_client()
+            db = client["FantasyMDB"]
+            db.league_player_picture.delete_many({"player_id": {"$in": player_ids}})
+            client.close()
 
         logger.info(f"League {league_id} deleted by user {user_id}")
         return {"status": "success"}

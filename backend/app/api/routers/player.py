@@ -27,6 +27,7 @@ def _get_user_id_from_token(credentials: HTTPAuthorizationCredentials) -> int:
 
 class UpdatePlayerProfileRequest(BaseModel):
     name: str | None = None
+    picture_url: str | None = None
 
     @field_validator("name")
     @classmethod
@@ -40,6 +41,18 @@ class UpdatePlayerProfileRequest(BaseModel):
             raise ValueError("name must not exceed 255 characters")
         return v
 
+    @field_validator("picture_url")
+    @classmethod
+    def validate_picture_url(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip()
+        if not v:
+            raise ValueError("picture_url must not be empty")
+        if len(v) > 2048:
+            raise ValueError("picture_url must not exceed 2048 characters")
+        return v
+
 
 @router.patch("/profile/{player_id}")
 def update_player_profile(
@@ -47,11 +60,11 @@ def update_player_profile(
     request: UpdatePlayerProfileRequest,
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ):
-    """Update the name for a specific player (must belong to authenticated user)."""
+    """Update the name and/or picture for a specific player (must belong to authenticated user)."""
     user_id = _get_user_id_from_token(credentials)
 
-    if request.name is None:
-        raise HTTPException(status_code=400, detail="name must be provided")
+    if request.name is None and request.picture_url is None:
+        raise HTTPException(status_code=400, detail="name or picture_url must be provided")
 
     try:
         conn = pg_connect()
@@ -65,10 +78,16 @@ def update_player_profile(
             if not cursor.fetchone():
                 raise HTTPException(status_code=403, detail="Not authorized to update this player")
 
-            cursor.execute(
-                "UPDATE player SET name = %s WHERE id = %s AND user_id = %s",
-                (request.name, player_id, user_id),
-            )
+            if request.name is not None:
+                cursor.execute(
+                    "UPDATE player SET name = %s WHERE id = %s AND user_id = %s",
+                    (request.name, player_id, user_id),
+                )
+            if request.picture_url is not None:
+                cursor.execute(
+                    "UPDATE player SET picture_url = %s WHERE id = %s AND user_id = %s",
+                    (request.picture_url, player_id, user_id),
+                )
             conn.commit()
         finally:
             cursor.close()
