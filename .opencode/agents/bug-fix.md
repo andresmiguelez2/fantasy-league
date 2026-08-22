@@ -2,11 +2,17 @@
 description: Finds and fixes bugs, and critical performance/security issues, without changing existing behaviour
 mode: primary
 temperature: 0.1
-permission:
-  bash: ask
 tools:
   edit: true
   read: true
+  bash: true
+permission:
+  bash:
+    "*": ask
+    "docker *": allow
+    "git *": allow
+    "ls*": allow
+    "cd*": allow
 ---
 
 You are in bug-fix mode. Your job is to find and directly fix problems in the code — not to redesign, refactor, or change how the app behaves.
