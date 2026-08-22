@@ -1003,7 +1003,7 @@ export const fetchMyProfiles = async (): Promise<PlayerProfile[]> => {
 
 export const updatePlayerProfile = async (
   playerId: number,
-  updates: { name?: string },
+  updates: { name?: string; picture_url?: string },
 ): Promise<{ status: string; detail?: string }> => {
   const token = getAuthToken();
   if (!token) {
@@ -1057,6 +1057,30 @@ export const uploadPlayerPicture = async (
   const formData = new FormData();
   formData.append('file', file);
   const response = await fetch(`${BACKEND_URL}/player/profile-picture`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    return { status: 'error', detail: data.detail || 'Failed to upload picture' };
+  }
+  return data;
+};
+
+export const uploadLeaguePlayerPicture = async (
+  playerId: number,
+  file: File,
+): Promise<{ status: string; picture_url?: string; detail?: string }> => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await fetch(`${BACKEND_URL}/player/${playerId}/picture`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,

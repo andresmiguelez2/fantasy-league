@@ -16,6 +16,7 @@ import {
   updatePlayerProfile,
   updateAllPlayerPictures,
   uploadPlayerPicture,
+  uploadLeaguePlayerPicture,
   getDefaultAvatarUrl,
   resolvePictureUrl,
   PlayerProfile,
@@ -90,7 +91,7 @@ const ProfileCard = ({ profile, onSaved }: ProfileCardProps) => {
       let newPictureUrl: string | undefined;
 
       if (editState.pendingFile) {
-        const result = await uploadPlayerPicture(editState.pendingFile);
+        const result = await uploadLeaguePlayerPicture(profile.player_id, editState.pendingFile);
         if (result.status !== "success") {
           toast({ title: "Failed to upload picture", description: result.detail, variant: "destructive" });
           return;
@@ -187,7 +188,8 @@ const ProfileCard = ({ profile, onSaved }: ProfileCardProps) => {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Uploading a picture will update your avatar across all leagues.
+              This picture applies only to this league. Use &quot;Change picture for all
+              leagues&quot; below to update every league at once.
             </p>
           </div>
 
