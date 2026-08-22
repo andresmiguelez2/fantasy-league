@@ -158,6 +158,93 @@ def upload_player_profile_picture(
         raise HTTPException(status_code=500, detail="Failed to upload profile picture")
 
 
+@router.get("/picture/{player_id}")
+def get_league_player_picture(player_id: int):
+    """Return the per-league picture for a specific player row as raw bytes from MongoDB."""
+    try:
+        client = mongo_client()
+        db = client["FantasyMDB"]
+
+        doc = db.league_player_picture.find_one({"player_id": player_id})
+        if doc is None:
+            client.close()
+            raise HTTPException(status_code=404, detail="No picture found for this league.")
+
+        img_field = doc.get("image_binary")
+        if img_field is None:
+            client.close()
+            raise HTTPException(status_code=404, detail="No picture found for this league.")
+
+        img_bytes = bytes(img_field)
+        fmt = imghdr.what(None, img_bytes)
+        content_type = f"image/{fmt}" if fmt else "application/octet-stream"
+
+        client.close()
+        return Response(content=img_bytes, media_type=content_type)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving league picture for player {player_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve league picture")
+
+
+@router.post("/{player_id}/picture")
+def upload_league_player_picture(
+    player_id: int,
+    file: UploadFile = File(...),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """Upload a picture for a single league membership (player row).
+
+    Stores the image in MongoDB keyed by player_id and updates picture_url only
+    for that player row, leaving the user's other leagues untouched."""
+    user_id = _get_user_id_from_token(credentials)
+
+    try:
+        img_bytes = file.file.read()
+        if not img_bytes:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+
+        conn = pg_connect()
+        cursor = conn.cursor()
+        try:
+            # Verify ownership of the player row
+            cursor.execute(
+                "SELECT id FROM player WHERE id = %s AND user_id = %s",
+                (player_id, user_id),
+            )
+            if not cursor.fetchone():
+                raise HTTPException(status_code=403, detail="Not authorized to update this player")
+
+            # Store in MongoDB (upsert so only one picture per league membership)
+            client = mongo_client()
+            db = client["FantasyMDB"]
+            db.league_player_picture.update_one(
+                {"player_id": player_id},
+                {"$set": {"player_id": player_id, "image_binary": img_bytes}},
+                upsert=True,
+            )
+            client.close()
+
+            # Point only this player row at its own picture
+            picture_url = f"/player/picture/{player_id}"
+            cursor.execute(
+                "UPDATE player SET picture_url = %s WHERE id = %s AND user_id = %s",
+                (picture_url, player_id, user_id),
+            )
+            conn.commit()
+        finally:
+            cursor.close()
+            conn.close()
+
+        return {"status": "success", "picture_url": picture_url}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error uploading league picture for player {player_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to upload league picture")
+
+
 @router.get('/{player_id}')
 def get_player_info(player_id: int, league_id: int):
     """Get the player information
