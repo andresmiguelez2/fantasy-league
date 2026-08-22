@@ -14,6 +14,24 @@ from .logger import logger
 router = APIRouter(prefix="/player", tags=["player"])
 security = HTTPBearer()
 
+MAX_PICTURE_BYTES = 5 * 1024 * 1024  # 5 MB
+
+
+def _read_validated_image(file: UploadFile) -> bytes:
+    """Read an uploaded picture and validate its size and image format."""
+    img_bytes = file.file.read()
+    if not img_bytes:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+    if len(img_bytes) > MAX_PICTURE_BYTES:
+        raise HTTPException(status_code=400, detail="Uploaded image must be 5 MB or smaller.")
+    fmt = imghdr.what(None, img_bytes)
+    if fmt is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Uploaded file must be a valid image (PNG, JPEG, GIF or BMP).",
+        )
+    return img_bytes
+
 
 def _get_user_id_from_token(credentials: HTTPAuthorizationCredentials) -> int:
     payload = verify_token(credentials.credentials)
@@ -141,9 +159,7 @@ def upload_player_profile_picture(
     user_id = _get_user_id_from_token(credentials)
 
     try:
-        img_bytes = file.file.read()
-        if not img_bytes:
-            raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+        img_bytes = _read_validated_image(file)
 
         # Store in MongoDB (upsert so only one picture per user)
         client = mongo_client()
@@ -220,9 +236,7 @@ def upload_league_player_picture(
     user_id = _get_user_id_from_token(credentials)
 
     try:
-        img_bytes = file.file.read()
-        if not img_bytes:
-            raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+        img_bytes = _read_validated_image(file)
 
         conn = pg_connect()
         cursor = conn.cursor()
