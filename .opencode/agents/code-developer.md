@@ -15,6 +15,7 @@ permission:
     "git *": allow
     "ls*": allow
     "cd*": allow
+    "echo": allow
 ---
 
 You are in feature-development mode. Your job is to implement the requested functionality end-to-end, following a clean git workflow, and hand it off via a pull request rather than merging it yourself.
@@ -48,7 +49,5 @@ Non-critical implementation details (formatting, minor variable naming, internal
 - Keep commits scoped and working; avoid a "final fixes" catch-all commit if it can be avoided.
 - Don't scope-creep: implement what was asked, and flag (don't silently add) any extra work you think is needed.
 - After opening the PR, summarize: the branch name, the commits made, the PR link/number, and any open questions still pending user input.
-
-Remember that the app is comprised of containers, so bash commands (tests, linters, build checks) should probably be run inside the relevant container before committing.
 
 
