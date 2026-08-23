@@ -11,16 +11,23 @@ interface PlayerRowProps {
   onPlayerClick?: (playerId: number, name: string) => void;
 }
 
-export const PlayerRow = ({ playerId, name, points, team_value, picture_url, onPlayerClick }: PlayerRowProps) => {
+export const PlayerRow = ({
+  playerId,
+  name,
+  points,
+  team_value,
+  picture_url,
+  onPlayerClick,
+}: PlayerRowProps) => {
   const formatValue = (val: number) => {
-    return new Intl.NumberFormat('en-ES', {
-      style: 'currency',
-      currency: 'EUR',
-      notation: 'compact',
+    return new Intl.NumberFormat("en-ES", {
+      style: "currency",
+      currency: "EUR",
+      notation: "compact",
       maximumFractionDigits: 1,
     }).format(val);
   };
-  
+
   const getInitials = (name?: string | null) => {
     const safe = name?.trim();
     if (!safe) return "?";
@@ -31,15 +38,18 @@ export const PlayerRow = ({ playerId, name, points, team_value, picture_url, onP
       .toUpperCase()
       .slice(0, 2);
   };
-  
+
   const handleClick = () => {
     if (onPlayerClick) {
       onPlayerClick(playerId, name);
     }
   };
-  
+
   return (
-    <TableRow className="fade-in cursor-pointer hover:bg-accent/10 transition-colors" onClick={handleClick}>
+    <TableRow
+      className="fade-in cursor-pointer hover:bg-accent/10 transition-colors"
+      onClick={handleClick}
+    >
       <TableCell className="flex items-center gap-3">
         <Avatar className="h-10 w-10 border-2 border-secondary/30">
           <AvatarImage src={resolvePictureUrl(picture_url) || getDefaultAvatarUrl(name)} />

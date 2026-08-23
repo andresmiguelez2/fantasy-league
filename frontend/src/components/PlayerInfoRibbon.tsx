@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { fetchPlayerBidSum, fetchPlayerInfo, getActivePlayerId, getActiveLeagueName, PlayerInfo } from "@/lib/api";
+import {
+  fetchPlayerBidSum,
+  fetchPlayerInfo,
+  getActivePlayerId,
+  getActiveLeagueName,
+  PlayerInfo,
+} from "@/lib/api";
 import { User, Wallet } from "lucide-react";
 
 export const PlayerInfoRibbon = () => {
@@ -27,7 +33,7 @@ export const PlayerInfoRibbon = () => {
         setPlayerInfo(playerData);
         setPlayerBidSum(bidSum);
       } catch (error) {
-        console.error('Failed to fetch player info:', error);
+        console.error("Failed to fetch player info:", error);
         setPlayerInfo(null);
         setPlayerBidSum(0);
       } finally {
@@ -56,16 +62,16 @@ export const PlayerInfoRibbon = () => {
           </div>
           <div className="flex items-center gap-2">
             <Wallet className="h-4 w-4 text-muted-foreground" />
-              <div className="flex flex-col items-end leading-tight">
-                <span className="font-semibold text-foreground">
-                  €{playerInfo.budget.toLocaleString()}
+            <div className="flex flex-col items-end leading-tight">
+              <span className="font-semibold text-foreground">
+                €{playerInfo.budget.toLocaleString()}
+              </span>
+              {playerBidSum > 0 && (
+                <span className="text-sm font-medium text-red-500">
+                  € -{playerBidSum.toLocaleString()}
                 </span>
-                {playerBidSum > 0 && (
-                  <span className="text-sm font-medium text-red-500">
-                    € -{playerBidSum.toLocaleString()}
-                  </span>
-                )}
-              </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

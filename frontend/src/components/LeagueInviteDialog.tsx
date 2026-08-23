@@ -70,9 +70,7 @@ export const LeagueInviteDialog = ({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {loading && (
-            <p className="text-sm text-muted-foreground">Loading invite link…</p>
-          )}
+          {loading && <p className="text-sm text-muted-foreground">Loading invite link…</p>}
           {error && <p className="text-sm text-destructive">{error}</p>}
           {!loading && !error && inviteLink && (
             <div className="space-y-4">
@@ -97,9 +95,7 @@ export const LeagueInviteDialog = ({
                     )}
                   </Button>
                 </div>
-                {copied && (
-                  <p className="text-xs text-green-600">Copied to clipboard!</p>
-                )}
+                {copied && <p className="text-xs text-green-600">Copied to clipboard!</p>}
               </div>
             </div>
           )}

@@ -11,7 +11,7 @@ interface LeagueCardProps {
 const gradients = [
   "bg-gradient-to-br from-purple-600 to-blue-500",
   "bg-gradient-to-br from-pink-600 to-purple-500",
-  "bg-gradient-to-br from-cyan-600 to-blue-500"
+  "bg-gradient-to-br from-cyan-600 to-blue-500",
 ];
 
 export const LeagueCard = ({ id, name }: LeagueCardProps) => {
@@ -27,7 +27,7 @@ export const LeagueCard = ({ id, name }: LeagueCardProps) => {
     }
     navigate(`/league/${id}`);
   };
-  
+
   return (
     <Card
       onClick={handleClick}

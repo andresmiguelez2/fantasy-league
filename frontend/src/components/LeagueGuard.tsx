@@ -1,5 +1,5 @@
-import { Navigate } from 'react-router-dom';
-import { getActiveLeagueId } from '@/lib/api';
+import { Navigate } from "react-router-dom";
+import { getActiveLeagueId } from "@/lib/api";
 
 interface LeagueGuardProps {
   children: React.ReactNode;

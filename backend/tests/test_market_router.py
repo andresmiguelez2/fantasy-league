@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 from datetime import datetime, timedelta, timezone
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from backend.app.api.routers.market import (
     BidRequest,
@@ -24,10 +24,24 @@ from backend.app.core.constants import RELEASE_CLAUSE_DAYS
 class PlayerMarketTests(unittest.TestCase):
     @patch("backend.app.api.routers.market.load_market")
     @patch("backend.app.api.routers.market.pg_connect")
-    def test_player_market_returns_market_closing_timestamp(self, mock_pg_connect, mock_load_market):
+    def test_player_market_returns_market_closing_timestamp(
+        self, mock_pg_connect, mock_load_market
+    ):
         mock_cursor = MagicMock()
         mock_cursor.fetchall.return_value = [
-            (1, "Player A", 100, None, "2025-01-01 12:00:00", None, 1.2, 10, False, "FW", "available")
+            (
+                1,
+                "Player A",
+                100,
+                None,
+                "2025-01-01 12:00:00",
+                None,
+                1.2,
+                10,
+                False,
+                "FW",
+                "available",
+            )
         ]
         mock_conn = MagicMock()
         mock_conn.cursor.return_value = mock_cursor
@@ -45,7 +59,9 @@ class PlayerMarketTests(unittest.TestCase):
 
     @patch("backend.app.api.routers.market.load_market")
     @patch("backend.app.api.routers.market.pg_connect")
-    def test_player_market_returns_null_market_closing_timestamp_when_missing(self, mock_pg_connect, mock_load_market):
+    def test_player_market_returns_null_market_closing_timestamp_when_missing(
+        self, mock_pg_connect, mock_load_market
+    ):
         mock_cursor = MagicMock()
         mock_cursor.fetchall.return_value = []
         mock_conn = MagicMock()
@@ -60,7 +76,9 @@ class PlayerMarketTests(unittest.TestCase):
 
     @patch("backend.app.api.routers.market.load_market")
     @patch("backend.app.api.routers.market.pg_connect")
-    def test_player_market_only_joins_active_bids_available_now(self, mock_pg_connect, mock_load_market):
+    def test_player_market_only_joins_active_bids_available_now(
+        self, mock_pg_connect, mock_load_market
+    ):
         mock_cursor = MagicMock()
         mock_cursor.fetchall.return_value = []
         mock_conn = MagicMock()
@@ -74,7 +92,9 @@ class PlayerMarketTests(unittest.TestCase):
         self.assertIn("timestamp <= now()", query)
 
     @patch("backend.app.api.routers.market.pg_connect")
-    def test_outgoing_bids_only_returns_active_bids_available_now(self, mock_pg_connect):
+    def test_outgoing_bids_only_returns_active_bids_available_now(
+        self, mock_pg_connect
+    ):
         mock_cursor = MagicMock()
         mock_cursor.fetchall.return_value = []
         mock_conn = MagicMock()
@@ -89,7 +109,9 @@ class PlayerMarketTests(unittest.TestCase):
         self.assertIn("b.timestamp <= now()", query)
 
     @patch("backend.app.api.routers.market.pg_connect")
-    def test_incoming_bids_only_returns_active_bids_available_now(self, mock_pg_connect):
+    def test_incoming_bids_only_returns_active_bids_available_now(
+        self, mock_pg_connect
+    ):
         mock_cursor = MagicMock()
         mock_cursor.fetchall.return_value = []
         mock_conn = MagicMock()
@@ -118,8 +140,14 @@ class PlayerMarketTests(unittest.TestCase):
         self.assertIn("b.timestamp > now()", query)
 
     @patch("backend.app.api.routers.market.get_team_value", return_value=1000000)
-    @patch("backend.app.api.routers.market.get_player_info", return_value={"player": [1, "Player", 1000000]})
-    @patch("backend.app.api.routers.market.get_player_bid_sum", return_value={"total_bid_sum": 0})
+    @patch(
+        "backend.app.api.routers.market.get_player_info",
+        return_value={"player": [1, "Player", 1000000]},
+    )
+    @patch(
+        "backend.app.api.routers.market.get_player_bid_sum",
+        return_value={"total_bid_sum": 0},
+    )
     @patch("backend.app.api.routers.market.Footballer")
     @patch("backend.app.api.routers.market.pg_connect")
     def test_place_bid_uses_requested_future_timestamp(
@@ -156,8 +184,14 @@ class PlayerMarketTests(unittest.TestCase):
         self.assertEqual(insert_call.args[1], (2, 1, 150, future_timestamp, 10, False))
 
     @patch("backend.app.api.routers.market.get_team_value", return_value=200)
-    @patch("backend.app.api.routers.market.get_player_info", return_value={"player": [1, "Player", 100]})
-    @patch("backend.app.api.routers.market.get_player_bid_sum", return_value={"total_bid_sum": 100})
+    @patch(
+        "backend.app.api.routers.market.get_player_info",
+        return_value={"player": [1, "Player", 100]},
+    )
+    @patch(
+        "backend.app.api.routers.market.get_player_bid_sum",
+        return_value={"total_bid_sum": 100},
+    )
     def test_player_has_enough_budget_allows_replacing_existing_bid_without_double_counting(
         self,
         _mock_bid_sum,
@@ -175,8 +209,14 @@ class PlayerMarketTests(unittest.TestCase):
         self.assertIsNone(budget_error)
 
     @patch("backend.app.api.routers.market.get_team_value", return_value=200)
-    @patch("backend.app.api.routers.market.get_player_info", return_value={"player": [1, "Player", 100]})
-    @patch("backend.app.api.routers.market.get_player_bid_sum", return_value={"total_bid_sum": 150})
+    @patch(
+        "backend.app.api.routers.market.get_player_info",
+        return_value={"player": [1, "Player", 100]},
+    )
+    @patch(
+        "backend.app.api.routers.market.get_player_bid_sum",
+        return_value={"total_bid_sum": 150},
+    )
     def test_player_has_enough_budget_allows_removing_existing_bid(
         self,
         _mock_bid_sum,
@@ -194,8 +234,14 @@ class PlayerMarketTests(unittest.TestCase):
         self.assertIsNone(budget_error)
 
     @patch("backend.app.api.routers.market.get_team_value", return_value=1000000)
-    @patch("backend.app.api.routers.market.get_player_info", return_value={"player": [1, "Player", 1000000]})
-    @patch("backend.app.api.routers.market.get_player_bid_sum", return_value={"total_bid_sum": 100})
+    @patch(
+        "backend.app.api.routers.market.get_player_info",
+        return_value={"player": [1, "Player", 1000000]},
+    )
+    @patch(
+        "backend.app.api.routers.market.get_player_bid_sum",
+        return_value={"total_bid_sum": 100},
+    )
     @patch("backend.app.api.routers.market.Footballer")
     @patch("backend.app.api.routers.market.pg_connect")
     def test_place_bid_updates_existing_bid_instead_of_deleting_and_reinserting(
@@ -234,13 +280,21 @@ class PlayerMarketTests(unittest.TestCase):
         update_call = mock_cursor.execute.call_args_list[2]
         self.assertIn("UPDATE bid", update_call.args[0])
         self.assertEqual(update_call.args[1], (150, future_timestamp, False, 9))
-        executed_sql = " ".join(call.args[0] for call in mock_cursor.execute.call_args_list)
+        executed_sql = " ".join(
+            call.args[0] for call in mock_cursor.execute.call_args_list
+        )
         self.assertNotIn("DELETE FROM bid", executed_sql)
         self.assertNotIn("INSERT INTO bid", executed_sql)
 
     @patch("backend.app.api.routers.market.get_team_value", return_value=1000000)
-    @patch("backend.app.api.routers.market.get_player_info", return_value={"player": [1, "Player", 1000000]})
-    @patch("backend.app.api.routers.market.get_player_bid_sum", return_value={"total_bid_sum": 100})
+    @patch(
+        "backend.app.api.routers.market.get_player_info",
+        return_value={"player": [1, "Player", 1000000]},
+    )
+    @patch(
+        "backend.app.api.routers.market.get_player_bid_sum",
+        return_value={"total_bid_sum": 100},
+    )
     @patch("backend.app.api.routers.market.Footballer")
     @patch("backend.app.api.routers.market.pg_connect")
     def test_place_bid_updates_requested_bid_id_for_future_bid_edits(
@@ -286,8 +340,14 @@ class PlayerMarketTests(unittest.TestCase):
 
     @patch("backend.app.api.routers.market.debit_player_value")
     @patch("backend.app.api.routers.market.get_team_value", return_value=100)
-    @patch("backend.app.api.routers.market.get_player_info", return_value={"player": [2, "Bidder", 100]})
-    @patch("backend.app.api.routers.market.get_player_bid_sum", return_value={"total_bid_sum": 150})
+    @patch(
+        "backend.app.api.routers.market.get_player_info",
+        return_value={"player": [2, "Bidder", 100]},
+    )
+    @patch(
+        "backend.app.api.routers.market.get_player_bid_sum",
+        return_value={"total_bid_sum": 150},
+    )
     @patch("backend.app.api.routers.market.pg_connect")
     def test_reply_to_bid_rejects_acceptance_when_bidder_exceeds_budget_limit(
         self,
@@ -323,7 +383,10 @@ class PlayerMarketTests(unittest.TestCase):
         mock_conn = MagicMock()
         mock_conn.cursor.return_value = mock_cursor
         mock_pg_connect.return_value = mock_conn
-        mock_place_bid.return_value = {"status": "success", "message": "Bid placed successfully."}
+        mock_place_bid.return_value = {
+            "status": "success",
+            "message": "Bid placed successfully.",
+        }
 
         response = schedule_release_clause_bid(
             ScheduleReleaseClauseBidRequest(

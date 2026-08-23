@@ -20,7 +20,9 @@ class GetCurrentFixtureTests(unittest.TestCase):
         start_ts = datetime(2025, 1, 1, 12, 0, 0)
         time_open = timedelta(days=2)
 
-        mock_conn, mock_cursor = self._mock_connection([(1, "fixture-1", start_ts, time_open, True)])
+        mock_conn, mock_cursor = self._mock_connection(
+            [(1, "fixture-1", start_ts, time_open, True)]
+        )
         mock_pg_connect.return_value = mock_conn
 
         fixture = get_current_fixture()
@@ -41,7 +43,9 @@ class GetCurrentFixtureTests(unittest.TestCase):
         start_ts = datetime(2025, 1, 1, 12, 0, 0)
         time_open = timedelta(days=6)
 
-        mock_conn, _ = self._mock_connection([(1, "fixture-1", start_ts, time_open, True)])
+        mock_conn, _ = self._mock_connection(
+            [(1, "fixture-1", start_ts, time_open, True)]
+        )
         mock_pg_connect.return_value = mock_conn
 
         fixture = get_current_fixture()

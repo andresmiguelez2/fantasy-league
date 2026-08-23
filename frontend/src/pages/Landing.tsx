@@ -37,11 +37,11 @@ const Landing = () => {
       setJoinDialogOpen(true);
     }
   }, []);
-  
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-xl font-semibold">Leagues</h2>
@@ -57,20 +57,27 @@ const Landing = () => {
             </Button>
             <Button
               variant="outline"
-              onClick={() => { setPendingInviteCode(""); setJoinDialogOpen(true); }}
+              onClick={() => {
+                setPendingInviteCode("");
+                setJoinDialogOpen(true);
+              }}
               size="sm"
               className="w-full sm:w-auto"
             >
               <UserPlus className="w-4 h-4 mr-2" />
               Join League
             </Button>
-            <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="w-full sm:w-auto">
+            <Button
+              onClick={() => setCreateDialogOpen(true)}
+              size="sm"
+              className="w-full sm:w-auto"
+            >
               <Plus className="w-4 h-4 mr-2" />
               New League
             </Button>
           </div>
         </div>
-        
+
         {loading ? (
           <LoadingSkeleton type="leagues" />
         ) : (
@@ -94,10 +101,7 @@ const Landing = () => {
           initialInviteCode={pendingInviteCode}
         />
 
-        <ProfileDialog
-          open={profileDialogOpen}
-          onOpenChange={setProfileDialogOpen}
-        />
+        <ProfileDialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen} />
       </main>
     </div>
   );

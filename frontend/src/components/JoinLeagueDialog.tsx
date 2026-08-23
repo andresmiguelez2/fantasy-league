@@ -40,7 +40,9 @@ export const JoinLeagueDialog = ({
       setInviteCode(initialInviteCode);
       setPlayerName("");
       setError(null);
-      fetchPlayerNames().then(setPreviousNames).catch(() => setPreviousNames([]));
+      fetchPlayerNames()
+        .then(setPreviousNames)
+        .catch(() => setPreviousNames([]));
     }
   }, [open, initialInviteCode]);
 

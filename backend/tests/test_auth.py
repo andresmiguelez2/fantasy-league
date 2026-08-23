@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from backend.app.core.auth import (
     verify_password,
@@ -18,22 +18,22 @@ class TestPasswordHashing(unittest.TestCase):
         """Test that password hashing and verification work correctly"""
         password = "test_password_123"
         hashed = get_password_hash(password)
-        
+
         # Verify correct password
         self.assertTrue(verify_password(password, hashed))
-        
+
         # Verify incorrect password
         self.assertFalse(verify_password("wrong_password", hashed))
-    
+
     def test_same_password_different_hashes(self):
         """Test that the same password produces different hashes (salt)"""
         password = "test_password_123"
         hash1 = get_password_hash(password)
         hash2 = get_password_hash(password)
-        
+
         # Hashes should be different due to salt
         self.assertNotEqual(hash1, hash2)
-        
+
         # Both should verify correctly
         self.assertTrue(verify_password(password, hash1))
         self.assertTrue(verify_password(password, hash2))
@@ -42,23 +42,19 @@ class TestPasswordHashing(unittest.TestCase):
 class TestJWTTokens(unittest.TestCase):
     def test_create_and_verify_token(self):
         """Test that JWT token creation and verification work"""
-        data = {
-            "sub": "123",
-            "username": "testuser",
-            "player_id": 1
-        }
-        
+        data = {"sub": "123", "username": "testuser", "player_id": 1}
+
         token = create_access_token(data)
         self.assertIsNotNone(token)
         self.assertIsInstance(token, str)
-        
+
         # Verify token
         payload = verify_token(token)
         self.assertIsNotNone(payload)
         self.assertEqual(payload["sub"], "123")
         self.assertEqual(payload["username"], "testuser")
         self.assertEqual(payload["player_id"], 1)
-    
+
     def test_verify_invalid_token(self):
         """Test that invalid tokens return None"""
         invalid_token = "invalid.token.here"
@@ -71,63 +67,63 @@ class TestAuthentication(unittest.TestCase):
     def test_authenticate_user_success(self, mock_pg_connect):
         """Test successful user authentication"""
         from backend.app.core.auth import authenticate_user
-        
+
         # Create a mock password hash
         password = "test_password"
         password_hash = get_password_hash(password)
-        
+
         # Mock database response
         mock_cursor = MagicMock()
         mock_cursor.fetchone.return_value = (1, "testuser", password_hash)
-        
+
         mock_conn = MagicMock()
         mock_conn.cursor.return_value = mock_cursor
-        
+
         mock_pg_connect.return_value = mock_conn
-        
+
         # Authenticate user
         user = authenticate_user("testuser", password)
-        
+
         self.assertIsNotNone(user)
         self.assertEqual(user["id"], 1)
         self.assertEqual(user["username"], "testuser")
-    
+
     @patch("backend.app.core.auth.pg_connect")
     def test_authenticate_user_wrong_password(self, mock_pg_connect):
         """Test authentication with wrong password"""
         from backend.app.core.auth import authenticate_user
-        
+
         password_hash = get_password_hash("correct_password")
-        
+
         mock_cursor = MagicMock()
         mock_cursor.fetchone.return_value = (1, "testuser", password_hash, 10)
-        
+
         mock_conn = MagicMock()
         mock_conn.cursor.return_value = mock_cursor
-        
+
         mock_pg_connect.return_value = mock_conn
-        
+
         # Try to authenticate with wrong password
         user = authenticate_user("testuser", "wrong_password")
-        
+
         self.assertIsNone(user)
-    
+
     @patch("backend.app.core.auth.pg_connect")
     def test_authenticate_user_not_found(self, mock_pg_connect):
         """Test authentication when user doesn't exist"""
         from backend.app.core.auth import authenticate_user
-        
+
         mock_cursor = MagicMock()
         mock_cursor.fetchone.return_value = None
-        
+
         mock_conn = MagicMock()
         mock_conn.cursor.return_value = mock_cursor
-        
+
         mock_pg_connect.return_value = mock_conn
-        
+
         # Try to authenticate non-existent user
         user = authenticate_user("nonexistent", "password")
-        
+
         self.assertIsNone(user)
 
 
@@ -136,11 +132,13 @@ class TestRegisterRequestValidation(unittest.TestCase):
 
     def _make_request(self, username: str, password: str = "validpassword"):
         from backend.app.api.routers.auth import RegisterRequest
+
         return RegisterRequest(username=username, password=password)
 
     def _assert_invalid(self, username: str, fragment: str = ""):
         from pydantic import ValidationError
         from backend.app.api.routers.auth import RegisterRequest
+
         with self.assertRaises(ValidationError) as ctx:
             RegisterRequest(username=username, password="validpassword")
         if fragment:
@@ -178,9 +176,12 @@ class TestRegisterRequestValidation(unittest.TestCase):
 class TestRegisterEndpoint(unittest.TestCase):
     """Test the register() handler for duplicate username handling."""
 
-    def _call_register(self, mock_pg_connect, username="testuser", password="validpass123"):
+    def _call_register(
+        self, mock_pg_connect, username="testuser", password="validpass123"
+    ):
         """Helper to invoke the register endpoint function directly."""
         from backend.app.api.routers.auth import register, RegisterRequest
+
         req = RegisterRequest(username=username, password=password)
         return register(req)
 

@@ -6,7 +6,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, field_validator
 from backend.app.api.routers.footballer import update_footballer_info
 from backend.app.utils.setup_auth_db import create_user
-from backend.app.db.database import pg_connect
+from backend.app.db.database import pg_connect, mongo_client
 from backend.app.core.auth import verify_token
 from backend.app.core.constants import (
     INITIAL_PLAYER_BUDGET,
@@ -18,9 +18,9 @@ from backend.app.core.constants import (
     INITIAL_SQUAD_PLAYER_VALUE_LIMIT,
     INITIAL_SQUAD_TOTAL_VALUE_TOLERANCE,
     UPDATE_DB_INTERVAL,
+    BID_FOR_INITIAL_FOOTBALLERS
 )
 from .logger import logger
-
 
 router = APIRouter(prefix="/leagues", tags=["leagues"])
 security = HTTPBearer()
@@ -47,10 +47,10 @@ def _assign_initial_squad(cursor, player_id: int, league_id: int) -> list[int]:
     lower_bound = round(upper_limit * (1 - INITIAL_SQUAD_TOTAL_VALUE_TOLERANCE))
 
     position_counts = [
-        ('GK', INITIAL_SQUAD_GK),
-        ('DF', INITIAL_SQUAD_DF),
-        ('MD', INITIAL_SQUAD_MD),
-        ('FW', INITIAL_SQUAD_FW),
+        ("GK", INITIAL_SQUAD_GK),
+        ("DF", INITIAL_SQUAD_DF),
+        ("MD", INITIAL_SQUAD_MD),
+        ("FW", INITIAL_SQUAD_FW),
     ]
 
     # Step 1: Fetch all eligible candidates per position (value DESC for upgrade step)
@@ -163,22 +163,28 @@ def _assign_initial_squad(cursor, player_id: int, league_id: int) -> list[int]:
     return selected_ids
 
 
-def _bid_for_initial_footballers(cursor, player_id: int, league_id: int, league_player_id: int):
-    cursor.execute('''
+def _bid_for_initial_footballers(
+    cursor, player_id: int, league_id: int, league_player_id: int
+):
+    cursor.execute(
+        """
         SELECT f.id, fd.value
         FROM footballer AS f JOIN footballer_data AS fd on f.id = fd.id
         WHERE league_id = %s AND owner_id = %s
-        ''', 
-        (league_id, player_id))
+        """,
+        (league_id, player_id),
+    )
 
     footballers = cursor.fetchall()
 
     for footballer_id, value in footballers:
-        cursor.execute('''
+        cursor.execute(
+            """
             INSERT INTO bid (amount, timestamp, bidder_id, footballer_id, league_id, active)
             VALUES (%s, now(), %s, %s, %s, true)
-            ''', 
-            (value, league_player_id, footballer_id, league_id))
+            """,
+            (value, league_player_id, footballer_id, league_id),
+        )
 
 
 def _get_user_leagues(user_id: int):
@@ -197,7 +203,8 @@ def _get_user_leagues(user_id: int):
                 JOIN users ON users.id = player.user_id
                 WHERE users.id = %s
                 ORDER BY league.id
-                """, (user_id,)
+                """,
+                (user_id,),
             )
             leagues = cursor.fetchall()
         finally:
@@ -272,7 +279,7 @@ def _create_league_impl(
             league_id = cursor.fetchone()[0]
 
             cursor.execute(
-                '''
+                """
                 INSERT INTO footballer (id, url_name, on_market, on_lineup, league_id)
                 SELECT DISTINCT
                     id
@@ -281,8 +288,8 @@ def _create_league_impl(
                     , false
                     , %s
                 FROM footballer
-                ''',
-                (league_id,)
+                """,
+                (league_id,),
             )
 
             cursor.execute(
@@ -290,12 +297,17 @@ def _create_league_impl(
                 INSERT INTO market (closing_timestamp, league_id)
                 VALUES (now() + INTERVAL '-1 second', %s)
                 """,
-                (league_id,)
+                (league_id,),
             )
 
             league_user_id = create_user(
-                f'league_user_{league_id}',
-                ''.join(random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=20)),
+                f"league_user_{league_id}",
+                "".join(
+                    random.choices(
+                        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+                        k=20,
+                    )
+                ),
                 cursor=cursor,
             )
             cursor.execute(
@@ -319,7 +331,8 @@ def _create_league_impl(
             player_id = cursor.fetchone()[0]
 
             _assign_initial_squad(cursor, player_id, league_id)
-            _bid_for_initial_footballers(cursor, player_id, league_id, league_player_id)
+            if BID_FOR_INITIAL_FOOTBALLERS:
+                _bid_for_initial_footballers(cursor, player_id, league_id, league_player_id)
 
             conn.commit()
         finally:
@@ -337,7 +350,10 @@ def _create_league_impl(
         }
     except Exception as e:
         logger.error(f"Error creating league for user {user_id}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to create league. The league name may already be taken.")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to create league. The league name may already be taken.",
+        )
 
 
 @router.post("")
@@ -348,6 +364,7 @@ def create_league(
     """Create a new league and a player entry for the authenticated user."""
     user_id = _get_user_id_from_token(credentials)
     return _create_league_impl(request.league_name, request.player_name, user_id)
+
 
 class UpdatePlayerPictureAllRequest(BaseModel):
     picture_url: str
@@ -643,12 +660,23 @@ def delete_league(
                     detail="Only the league creator can delete this league",
                 )
 
+            # Collect player ids before deletion so their per-league pictures can be removed
+            cursor.execute(
+                "SELECT id FROM player WHERE league_id = %s",
+                (league_id,),
+            )
+            player_ids = [row[0] for row in cursor.fetchall()]
+
             # Delete in dependency order to avoid FK constraint violations
             cursor.execute("DELETE FROM bid WHERE league_id = %s", (league_id,))
-            cursor.execute("DELETE FROM fixture_details WHERE league_id = %s", (league_id,))
+            cursor.execute(
+                "DELETE FROM fixture_details WHERE league_id = %s", (league_id,)
+            )
             cursor.execute("DELETE FROM footballer WHERE league_id = %s", (league_id,))
             cursor.execute("DELETE FROM player WHERE league_id = %s", (league_id,))
-            cursor.execute("DELETE FROM users WHERE username = %s", (f'league_user_{league_id}',))
+            cursor.execute(
+                "DELETE FROM users WHERE username = %s", (f"league_user_{league_id}",)
+            )
             cursor.execute("DELETE FROM market WHERE league_id = %s", (league_id,))
             cursor.execute("DELETE FROM league WHERE id = %s", (league_id,))
 
@@ -656,6 +684,13 @@ def delete_league(
         finally:
             cursor.close()
             conn.close()
+
+        # Remove any per-league pictures stored for the deleted players
+        if player_ids:
+            client = mongo_client()
+            db = client["FantasyMDB"]
+            db.league_player_picture.delete_many({"player_id": {"$in": player_ids}})
+            client.close()
 
         logger.info(f"League {league_id} deleted by user {user_id}")
         return {"status": "success"}
@@ -737,7 +772,8 @@ def _join_league_impl(
 
             _assign_initial_squad(cursor, player_id, league_id)
             league_player_id = get_league_player_id(cursor, league_id)
-            _bid_for_initial_footballers(cursor, player_id, league_id, league_player_id)
+            if BID_FOR_INITIAL_FOOTBALLERS:
+                _bid_for_initial_footballers(cursor, player_id, league_id, league_player_id)
 
             conn.commit()
         finally:

@@ -2,7 +2,6 @@ from fastapi import APIRouter
 from backend.app.db.database import pg_connect
 from .logger import logger
 
-
 router = APIRouter(prefix="/squad", tags=["squad"])
 
 
@@ -54,8 +53,8 @@ def squad(player_id: int, league_id: int):
                 "on_market",
                 "on_market_since",
                 "position",
-                "availability"
-            ]
+                "availability",
+            ],
         }
     except Exception as e:
         logger.error(f"Error: {e}")

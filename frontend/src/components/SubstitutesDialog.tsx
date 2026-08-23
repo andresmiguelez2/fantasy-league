@@ -1,10 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SquadRow } from "@/components/SquadRow";
 import { Loader2 } from "lucide-react";
@@ -67,7 +62,7 @@ export const SubstitutesDialog = ({
     if (!playerId) {
       return;
     }
-    
+
     setSwapping(true);
     try {
       // Only remove current footballer if one exists (swapping)
@@ -76,7 +71,7 @@ export const SubstitutesDialog = ({
       }
       // Add new footballer to lineup
       await setLineup(playerId, newFootballerId, true);
-      
+
       onSwapComplete?.();
       onOpenChange(false);
     } catch (error) {
@@ -98,9 +93,7 @@ export const SubstitutesDialog = ({
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : substitutes.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            No substitutes available
-          </div>
+          <div className="text-center py-12 text-muted-foreground">No substitutes available</div>
         ) : (
           <div className="overflow-auto flex-1">
             <Table>

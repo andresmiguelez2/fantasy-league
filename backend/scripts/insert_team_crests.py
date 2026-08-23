@@ -22,7 +22,7 @@ def get_image_binary(image_url):
             print(
                 f"Rate limited while fetching image {image_url}; retrying in {2 ** attempt}s (attempt {attempt + 1}/4)"
             )
-            time.sleep(2 ** attempt)
+            time.sleep(2**attempt)
             continue
 
         if response.status_code == 200:
@@ -36,18 +36,15 @@ def get_image_binary(image_url):
 
 if __name__ == "__main__":
     client = mongo_client()
-    db = client['FantasyMDB']
+    db = client["FantasyMDB"]
 
     for i in range(1, 60):
         try:
-            url = f'https://static.futbolfantasy.com/uploads/images/cabecera/webp/{i}.webp'
+            url = f"https://static.futbolfantasy.com/uploads/images/cabecera/webp/{i}.webp"
 
             image_binary = get_image_binary(url)
 
-            document = {
-                "name": TEAM_NAME_DICT[i],
-                "image_binary": image_binary
-            }
+            document = {"name": TEAM_NAME_DICT[i], "image_binary": image_binary}
 
             db.team.insert_one(document)
         except Exception as e:

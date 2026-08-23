@@ -19,7 +19,7 @@ export const NavigationTabs = ({ leagueId }: NavigationTabsProps) => {
       });
     }
   }, [leagueId]);
-  
+
   const mainTabs = [
     { id: "league", label: "Leaderboard", path: `/league/${activeLeagueId}` },
     { id: "team", label: "Team", path: "/squad" },
@@ -40,10 +40,15 @@ export const NavigationTabs = ({ leagueId }: NavigationTabsProps) => {
     { id: "future-bids", label: "Future Bids", path: "/market/future" },
     { id: "market-history", label: "Market History", path: "/market/history" },
   ];
-  
-  const isMainTabActive = (tab: typeof mainTabs[0]) => {
+
+  const isMainTabActive = (tab: (typeof mainTabs)[0]) => {
     if (tab.id === "team") {
-      return location.pathname === "/squad" || location.pathname.startsWith("/squad/") || location.pathname === "/lineup" || location.pathname === "/fixtures";
+      return (
+        location.pathname === "/squad" ||
+        location.pathname.startsWith("/squad/") ||
+        location.pathname === "/lineup" ||
+        location.pathname === "/fixtures"
+      );
     }
     if (tab.id === "market") {
       return location.pathname.startsWith("/market");
@@ -58,9 +63,13 @@ export const NavigationTabs = ({ leagueId }: NavigationTabsProps) => {
     return location.pathname === path || location.pathname.startsWith(path + "/");
   };
 
-  const showTeamSubTabs = location.pathname === "/squad" || location.pathname.startsWith("/squad/") || location.pathname === "/lineup" || location.pathname === "/fixtures";
+  const showTeamSubTabs =
+    location.pathname === "/squad" ||
+    location.pathname.startsWith("/squad/") ||
+    location.pathname === "/lineup" ||
+    location.pathname === "/fixtures";
   const showMarketSubTabs = location.pathname.startsWith("/market");
-  
+
   return (
     <div className="border-b border-border bg-card">
       <div className="container mx-auto px-3 sm:px-6 lg:px-8">

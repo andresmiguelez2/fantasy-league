@@ -40,9 +40,9 @@ export const BidDialog = ({
   };
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'EUR',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "EUR",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(value);
@@ -59,36 +59,37 @@ export const BidDialog = ({
     }
     setScheduledTimestamp("");
   }, [currentBid, currentBidTimestamp, open, footballerValue]);
-  
+
   const handleSubmit = async () => {
-    const bidTimestamp = scheduledTimestamp ? new Date(scheduledTimestamp).toISOString() : undefined;
+    const bidTimestamp = scheduledTimestamp
+      ? new Date(scheduledTimestamp).toISOString()
+      : undefined;
     const submitted = await onSubmit(Number(bidAmount), bidTimestamp);
     if (submitted) {
       onOpenChange(false);
     }
   };
-  
+
   const handleDeleteBid = async () => {
     const submitted = await onSubmit(0);
     if (submitted) {
       onOpenChange(false);
     }
   };
-  
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Place Bid</DialogTitle>
-          <DialogDescription>
-            Place your bid for {footballerName}
-          </DialogDescription>
+          <DialogDescription>Place your bid for {footballerName}</DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4 py-4">
           {footballerValue !== undefined && (
             <div className="text-sm text-muted-foreground">
-              Footballer value: <span className="font-medium text-foreground">{formatCurrency(footballerValue)}</span>
+              Footballer value:{" "}
+              <span className="font-medium text-foreground">{formatCurrency(footballerValue)}</span>
             </div>
           )}
 
@@ -97,7 +98,7 @@ export const BidDialog = ({
               Current bid: {formatCurrency(currentBid)}
             </div>
           )}
-          
+
           <div className="space-y-2">
             <Label htmlFor="amount">Your bid amount (€)</Label>
             <Input
@@ -105,7 +106,11 @@ export const BidDialog = ({
               type="number"
               value={bidAmount}
               onChange={(e) => setBidAmount(e.target.value)}
-              placeholder={currentBid === undefined && footballerValue !== undefined ? formatCurrency(footballerValue) : undefined}
+              placeholder={
+                currentBid === undefined && footballerValue !== undefined
+                  ? formatCurrency(footballerValue)
+                  : undefined
+              }
               min={currentBid ? currentBid + 1 : 1}
             />
           </div>
@@ -120,7 +125,7 @@ export const BidDialog = ({
             />
           </div>
         </div>
-        
+
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
@@ -130,9 +135,7 @@ export const BidDialog = ({
               Delete Bid
             </Button>
           )}
-          <Button onClick={handleSubmit}>
-            Place Bid
-          </Button>
+          <Button onClick={handleSubmit}>Place Bid</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

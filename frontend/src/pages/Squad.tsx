@@ -17,7 +17,7 @@ const Squad = () => {
   const [loading, setLoading] = useState(true);
   const [selectedFootballer, setSelectedFootballer] = useState<Footballer | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  
+
   useEffect(() => {
     const loadFootballers = async () => {
       setLoading(true);
@@ -30,13 +30,13 @@ const Squad = () => {
         const data = await fetchSquadFootballers(id);
         setFootballers(data);
       } catch (error) {
-        console.error('Failed to fetch squad data:', error);
+        console.error("Failed to fetch squad data:", error);
         setFootballers([]);
       } finally {
         setLoading(false);
       }
     };
-    
+
     loadFootballers();
   }, [playerId]);
 
@@ -44,47 +44,47 @@ const Squad = () => {
     setSelectedFootballer(footballer);
     setDialogOpen(true);
   };
-  
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <Header showBackButton />
       <NavigationTabs leagueId={leagueId} />
-      
+
       <main className="container mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
         {loading ? (
           <LoadingSkeleton type="footballers" />
         ) : (
           <div className="max-w-4xl overflow-x-auto">
-           <Table className="table-fixed w-full">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[40%]">Name</TableHead>
-                <TableHead className="w-[10%] text-center"></TableHead>
-                <TableHead className="w-[10%] text-center"></TableHead>
-                <TableHead className="w-[18%] text-center">Points</TableHead>
-                <TableHead className="w-[22%] text-center">Value</TableHead>
-              </TableRow>
-            </TableHeader>
+            <Table className="table-fixed w-full">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[40%]">Name</TableHead>
+                  <TableHead className="w-[10%] text-center"></TableHead>
+                  <TableHead className="w-[10%] text-center"></TableHead>
+                  <TableHead className="w-[18%] text-center">Points</TableHead>
+                  <TableHead className="w-[22%] text-center">Value</TableHead>
+                </TableRow>
+              </TableHeader>
               <TableBody>
                 {footballers.map((footballer) => (
                   <SquadRow
                     key={footballer.id}
-                  id={footballer.id}
-                  name={footballer.name}
-                  value={footballer.value}
-                  totalPoints={footballer.totalPoints}
-                  averagePoints={footballer.averagePoints}
-                  position={footballer.position}
-                  availability={footballer.availability}
-                  onClick={() => handleFootballerClick(footballer)}
-                />
+                    id={footballer.id}
+                    name={footballer.name}
+                    value={footballer.value}
+                    totalPoints={footballer.totalPoints}
+                    averagePoints={footballer.averagePoints}
+                    position={footballer.position}
+                    availability={footballer.availability}
+                    onClick={() => handleFootballerClick(footballer)}
+                  />
                 ))}
               </TableBody>
             </Table>
           </div>
         )}
       </main>
-      
+
       {selectedFootballer && (
         <FootballerInfoDialog
           open={dialogOpen}
@@ -93,7 +93,7 @@ const Squad = () => {
           footballerName={selectedFootballer.name}
         />
       )}
-      
+
       <PlayerInfoRibbon />
     </div>
   );

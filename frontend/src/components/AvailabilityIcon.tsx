@@ -4,7 +4,11 @@ interface AvailabilityIconProps {
   showText?: boolean;
 }
 
-export const AvailabilityIcon = ({ availability, className = "", showText = false }: AvailabilityIconProps) => {
+export const AvailabilityIcon = ({
+  availability,
+  className = "",
+  showText = false,
+}: AvailabilityIconProps) => {
   if (!availability) return null;
 
   const key = availability.toLowerCase();
@@ -16,7 +20,15 @@ export const AvailabilityIcon = ({ availability, className = "", showText = fals
         className={`inline-flex items-center gap-1.5 flex-shrink-0 ${className}`}
       >
         <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-500">
-          <svg viewBox="0 0 12 12" className="w-3 h-3" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            viewBox="0 0 12 12"
+            className="w-3 h-3"
+            fill="none"
+            stroke="white"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <polyline points="2,6 5,9 10,3" />
           </svg>
         </span>
@@ -32,7 +44,14 @@ export const AvailabilityIcon = ({ availability, className = "", showText = fals
         className={`inline-flex items-center gap-1.5 flex-shrink-0 ${className}`}
       >
         <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-yellow-400">
-          <svg viewBox="0 0 12 12" className="w-3 h-3" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+          <svg
+            viewBox="0 0 12 12"
+            className="w-3 h-3"
+            fill="none"
+            stroke="white"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          >
             <line x1="2" y1="6" x2="10" y2="6" />
           </svg>
         </span>

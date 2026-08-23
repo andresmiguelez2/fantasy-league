@@ -4,6 +4,7 @@ Database setup script for users table and league tables
 This script creates the users table and league tables if they don't exist.
 Run this script before using the authentication system.
 """
+
 import logging
 import sys
 import os
@@ -39,7 +40,7 @@ def create_user(username: str, password: str, cursor=None) -> int | None:
             VALUES (%s, %s)
             RETURNING id
             """,
-            (username, password_hash)
+            (username, password_hash),
         )
 
         user_id = cursor.fetchone()[0]
@@ -56,31 +57,31 @@ def create_user(username: str, password: str, cursor=None) -> int | None:
     except Exception as e:
         logger.error(f"Error creating user: {e}")
         return None
- 
+
 
 def create_player(name: str, league_id: int, user_id: int, player_id: int):
     """Create a new player"""
     try:
         conn = pg_connect()
         cursor = conn.cursor()
-        
+
         cursor.execute(
             """
             INSERT INTO player (name, id, league_id, user_id)
             VALUES (%s, %s, %s, %s)
             RETURNING id
             """,
-            (name, player_id, league_id, user_id)
+            (name, player_id, league_id, user_id),
         )
-        
+
         player_id = cursor.fetchone()[0]
         conn.commit()
-        
+
         logger.info("Player created successfully")
-        
+
         cursor.close()
         conn.close()
-        
+
         return player_id
     except Exception as e:
         logger.error(f"Error creating player: {e}")
@@ -96,9 +97,9 @@ def migrate_users_from_file():
         with open("/secrets/users.env", "r") as f:
             for line in f:
                 line = line.strip()
-                if not line or ':' not in line:
+                if not line or ":" not in line:
                     continue
-                parts = line.split(':', 1)
+                parts = line.split(":", 1)
                 if len(parts) != 2:
                     logger.warning("Skipping malformed line in users.env")
                     continue
@@ -134,5 +135,5 @@ def migrate_users_from_file():
 if __name__ == "__main__":
     logger.info("Attempting to migrate users from file...")
     migrate_users_from_file()
-    
+
     logger.info("Database setup completed successfully!")

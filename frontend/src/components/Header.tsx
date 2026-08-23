@@ -19,8 +19,8 @@ export const Header = ({ showBackButton = false }: HeaderProps) => {
   const handleLogout = () => {
     logout();
     toast({
-      title: 'Logged out',
-      description: 'You have been logged out successfully',
+      title: "Logged out",
+      description: "You have been logged out successfully",
     });
     navigate("/login");
   };
@@ -36,7 +36,7 @@ export const Header = ({ showBackButton = false }: HeaderProps) => {
           >
             Fantasy
           </Button>
-          
+
           <div className="flex items-center gap-2 sm:gap-4">
             {isAuthenticated && user && (
               <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">

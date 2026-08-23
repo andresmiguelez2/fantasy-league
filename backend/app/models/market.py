@@ -5,10 +5,13 @@ import psycopg2
 import random
 
 from backend.app.api.routers.footballer import update_footballer_info
-from backend.app.core.constants import N_NEW_FOOTBALLERS_INTO_MARKET, UPDATE_DB_INTERVAL, BID_EXPIRATION_DAYS
+from backend.app.core.constants import (
+    N_NEW_FOOTBALLERS_INTO_MARKET,
+    UPDATE_DB_INTERVAL,
+    BID_EXPIRATION_DAYS,
+)
 from pymongo import MongoClient
 from backend.app.db.database import pg_connect, mongo_client
-
 
 # Create logger for this module
 logger = logging.getLogger(__name__)
@@ -70,19 +73,24 @@ class Market:
         if self._closing_ts:
             return self._closing_ts > datetime.datetime.now(tz=datetime.timezone.utc)
         return False
-    
+
     def _open_new_market(self, cursor):
         cursor.execute(
             """
             INSERT INTO market (id, closing_timestamp, has_been_closed, league_id)
             VALUES (default, '{}', FALSE, {})
-            """.format(datetime.datetime.strftime(self._closing_ts + datetime.timedelta(days=1), "%Y-%m-%d %H:%M:%S"), self.league_id)
+            """.format(
+                datetime.datetime.strftime(
+                    self._closing_ts + datetime.timedelta(days=1), "%Y-%m-%d %H:%M:%S"
+                ),
+                self.league_id,
+            )
         )
         logger.info(f"New market opened. League {self.league_id}.")
 
     def _cleanup_market(self, cursor) -> list[int]:
         """Removes footballers without bids and owner from the market.
-            
+
         returns:
             list[int]: List of footballer IDs removed from the market.
         """
@@ -94,7 +102,8 @@ class Market:
                 on_market = TRUE
                 AND owner_id IS NULL
                 AND league_id = %s
-            """, (self.league_id,)
+            """,
+            (self.league_id,),
         )
         footballers_to_remove = cursor.fetchall()
         if footballers_to_remove:
@@ -106,9 +115,11 @@ class Market:
                     on_market_since = NULL
                 WHERE id IN %s AND league_id = %s
                 """,
-                (tuple([f[0] for f in footballers_to_remove]), self.league_id)
+                (tuple([f[0] for f in footballers_to_remove]), self.league_id),
             )
-            logger.info(f"Removed footballers without bids and owner from market: {footballers_to_remove}. League {self.league_id}.")
+            logger.info(
+                f"Removed footballers without bids and owner from market: {footballers_to_remove}. League {self.league_id}."
+            )
 
         return [f_[0] for f_ in footballers_to_remove]
 
@@ -124,7 +135,7 @@ class Market:
                 AND footballer.id NOT IN %s
                 AND footballer.league_id = %s
             """,
-            (tuple(just_removed) if just_removed else (0,), self.league_id)
+            (tuple(just_removed) if just_removed else (0,), self.league_id),
         )
         free_agents = cursor.fetchall()
         chosen_free_agents = random.sample(free_agents, min(n_agents, len(free_agents)))
@@ -142,13 +153,17 @@ class Market:
                 id in %s
                 AND league_id = %s;
             """,
-            (tuple([fa[0] for fa in chosen_free_agents]), self.league_id)
+            (tuple([fa[0] for fa in chosen_free_agents]), self.league_id),
         )
-        logger.info(f"Placed players {chosen_free_agents} into the market. League {self.league_id}.")
+        logger.info(
+            f"Placed players {chosen_free_agents} into the market. League {self.league_id}."
+        )
 
     def _mark_expired_bids_inactive(self, cursor):
         """Mark bids as inactive if they have expired based on BID_EXPIRATION_DAYS."""
-        expiration_threshold = datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(days=BID_EXPIRATION_DAYS)
+        expiration_threshold = datetime.datetime.now(
+            tz=datetime.timezone.utc
+        ) - datetime.timedelta(days=BID_EXPIRATION_DAYS)
         cursor.execute(
             """
             UPDATE bid
@@ -158,11 +173,13 @@ class Market:
                 AND active = TRUE
                 AND timestamp <= %s
             """,
-            (self.league_id, expiration_threshold)
+            (self.league_id, expiration_threshold),
         )
         expired_count = cursor.rowcount
         if expired_count > 0:
-            logger.info(f"Marked {expired_count} expired bids as inactive. League {self.league_id}.")
+            logger.info(
+                f"Marked {expired_count} expired bids as inactive. League {self.league_id}."
+            )
 
     def _assign_bids(self, cursor):
         """Assign bids placed on league players."""
@@ -184,7 +201,8 @@ class Market:
             ORDER BY 
                 amount DESC
                 , timestamp ASC
-            """, (self.league_id, )
+            """,
+            (self.league_id,),
         )
         bid_data = cursor.fetchall()
 
@@ -196,9 +214,16 @@ class Market:
             elif amount > bid_players[footballer_id][1]:
                 bid_players[footballer_id] = (bidder_id, amount, seller_id, bid_id)
             elif amount == bid_players[footballer_id][1]:
-                logger.warning(f"Bid for footballer {footballer_id} by {bidder_id} with amount {amount} is equal to an existing bid. Skipping.")
+                logger.warning(
+                    f"Bid for footballer {footballer_id} by {bidder_id} with amount {amount} is equal to an existing bid. Skipping."
+                )
 
-        for footballer_id, (bidder_id, amount, seller_id, bid_id) in bid_players.items():
+        for footballer_id, (
+            bidder_id,
+            amount,
+            seller_id,
+            bid_id,
+        ) in bid_players.items():
             cursor.execute(
                 """
                 UPDATE footballer
@@ -219,7 +244,14 @@ class Market:
                             AND league_id = %s))
                 WHERE id = %s;
                 """,
-                (bidder_id, footballer_id, self.league_id, seller_id, self.league_id, bid_id)
+                (
+                    bidder_id,
+                    footballer_id,
+                    self.league_id,
+                    seller_id,
+                    self.league_id,
+                    bid_id,
+                ),
             )
 
             if bidder_id is not None:
@@ -229,7 +261,7 @@ class Market:
                     SET budget = budget - %s
                     WHERE id = %s AND league_id = %s
                     """,
-                    (amount, bidder_id, self.league_id)
+                    (amount, bidder_id, self.league_id),
                 )
 
             if seller_id is not None:
@@ -239,12 +271,13 @@ class Market:
                     SET budget = budget + %s
                     WHERE id = %s AND league_id = %s
                     """,
-                    (amount, seller_id, self.league_id)
+                    (amount, seller_id, self.league_id),
                 )
 
-            logger.info(f"Footballer {footballer_id} assigned to bidder {bidder_id} with amount {amount}. League {self.league_id}.")
-            
-            
+            logger.info(
+                f"Footballer {footballer_id} assigned to bidder {bidder_id} with amount {amount}. League {self.league_id}."
+            )
+
     def fulfill_market(self):
         """Fulfill the market if it has been closed."""
         if not self._is_active() and not self._has_been_closed:
@@ -255,20 +288,20 @@ class Market:
                 conn = pg_connect()
                 cursor = conn.cursor()
 
-                cursor.execute(
-                    f"""
+                cursor.execute(f"""
                     UPDATE market
                     SET has_been_closed = TRUE
                     WHERE id = {self._id}
-                    """
-                )
+                    """)
                 logger.info(f"Database updated: Market {self._id} marked as closed")
 
                 self._mark_expired_bids_inactive(cursor)
                 self._assign_bids(cursor)
                 self._open_new_market(cursor)
                 removed_from_market = self._cleanup_market(cursor)
-                self._place_footballers_into_market(cursor, N_NEW_FOOTBALLERS_INTO_MARKET, removed_from_market)
+                self._place_footballers_into_market(
+                    cursor, N_NEW_FOOTBALLERS_INTO_MARKET, removed_from_market
+                )
                 self._place_bid_on_footballers(cursor)
 
                 conn.commit()
@@ -277,7 +310,9 @@ class Market:
 
             except psycopg2.Error as e:
                 logger.error(f"Database error while fulfilling market {self._id}: {e}")
-                self._has_been_closed = False# Rollback the local state change if database update failed
+                self._has_been_closed = (
+                    False  # Rollback the local state change if database update failed
+                )
 
     def _place_bid_on_footballers(self, cursor):
         """Place bids on all footballers owned by someone on the market, by the league."""
@@ -291,7 +326,8 @@ class Market:
                 owner_id IS NOT NULL
                 AND on_market = true
                 AND f.league_id = %s
-            """, (self.league_id,)
+            """,
+            (self.league_id,),
         )
         footballers_on_market = cursor.fetchall()
 
@@ -299,7 +335,8 @@ class Market:
             """
             DELETE FROM BID
             WHERE bidder_id IS NULL AND league_id = %s
-            """, (self.league_id,)
+            """,
+            (self.league_id,),
         )
 
         for id, value in footballers_on_market:
@@ -309,10 +346,11 @@ class Market:
                 INSERT INTO bid (footballer_id, bidder_id, amount, timestamp, league_id, active)
                 VALUES (%s, %s, %s, now(), %s, true)
                 """,
-                (id, None, bid_amount, self.league_id)
+                (id, None, bid_amount, self.league_id),
             )
-            logger.info(f"League placed bid of amount {bid_amount} on footballer {id}. League {self.league_id}.")
-
+            logger.info(
+                f"League placed bid of amount {bid_amount} on footballer {id}. League {self.league_id}."
+            )
 
     def shift_closing_ts(self):
         """Shift the market closing timestamp far into the future."""
@@ -320,32 +358,32 @@ class Market:
 
     def __str__(self):
         return f"Market(id={self._id}, closing_ts={self._closing_ts}, has_been_closed={self._has_been_closed})"
-    
+
     @classmethod
     def get_random_bid(cls, market_value):
         """Generate a random bid based on the market value."""
         bid_multiplier = random.uniform(0.9, 1.1)
         return int(market_value * bid_multiplier)
-    
+
 
 def load_market(league_id: int):
     """Load the active market from the database."""
     try:
         logger.debug("Loading market data...")
         logger.debug("Connecting to database...")
-        
+
         conn = pg_connect()
         cursor = conn.cursor()
 
         logger.debug("Executing market query...")
-        
+
         cursor.execute(
             """
             SELECT *
             FROM market
             WHERE closing_timestamp > now() AND has_been_closed = FALSE AND league_id = %s
-            """, 
-            (league_id,)
+            """,
+            (league_id,),
         )
         market_data = cursor.fetchall()
 
@@ -353,7 +391,9 @@ def load_market(league_id: int):
             logger.error("Several concurrent markets found in the database.")
             raise ValueError("Several concurrent markets found in the database.")
         if len(market_data) == 0:
-            logger.warning(f"No active market found in the database for league {league_id}.")
+            logger.warning(
+                f"No active market found in the database for league {league_id}."
+            )
             return None
 
         market = Market()
@@ -373,6 +413,7 @@ def load_market(league_id: int):
         logger.error(f"Database error: {e}")
         return []
 
+
 def load_last_market(league_id: int):
     try:
         logger.debug("Loading last unfulfilled market...")
@@ -385,16 +426,24 @@ def load_last_market(league_id: int):
             FROM market
             WHERE closing_timestamp < now() AND has_been_closed = FALSE AND league_id = %s
         """,
-            (league_id,)
+            (league_id,),
         )
         market_data = cursor.fetchall()
 
         if len(market_data) > 1:
-            logger.error(f"Several non closed markets found in the database for league {league_id}.")
-            raise ValueError(f"Several non closed markets found in the database for league {league_id}.")
+            logger.error(
+                f"Several non closed markets found in the database for league {league_id}."
+            )
+            raise ValueError(
+                f"Several non closed markets found in the database for league {league_id}."
+            )
         if len(market_data) == 0:
-            logger.error(f"No non closed market found in the database for league {league_id}.")
-            raise ValueError(f"No non closed market found in the database for league {league_id}.")
+            logger.error(
+                f"No non closed market found in the database for league {league_id}."
+            )
+            raise ValueError(
+                f"No non closed market found in the database for league {league_id}."
+            )
 
         market = Market()
         market.id = market_data[0][0]

@@ -4,8 +4,19 @@ import { NavigationTabs } from "@/components/NavigationTabs";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FootballerInfoRow } from "@/components/FootballerInfoRow";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
-import { fetchAllFootballers, FootballerFilterOptions, FootballerFilters, MarketFootballer } from "@/lib/api";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  fetchAllFootballers,
+  FootballerFilterOptions,
+  FootballerFilters,
+  MarketFootballer,
+} from "@/lib/api";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,7 +63,13 @@ interface FilterDropdownProps {
   formatOption?: (value: string) => string;
 }
 
-const FilterDropdown = ({ label, options, selected, onToggle, formatOption = (value) => value }: FilterDropdownProps) => (
+const FilterDropdown = ({
+  label,
+  options,
+  selected,
+  onToggle,
+  formatOption = (value) => value,
+}: FilterDropdownProps) => (
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
       <Button variant="outline" className="min-w-[180px] justify-between">
@@ -79,48 +96,59 @@ const FilterDropdown = ({ label, options, selected, onToggle, formatOption = (va
 const FootballerInfo = () => {
   const leagueId = getActiveLeagueId();
   const [footballers, setFootballers] = useState<MarketFootballer[]>([]);
-  const [filterOptions, setFilterOptions] = useState<FootballerFilterOptions>(DEFAULT_FILTER_OPTIONS);
+  const [filterOptions, setFilterOptions] =
+    useState<FootballerFilterOptions>(DEFAULT_FILTER_OPTIONS);
   const [filters, setFilters] = useState<FootballerFilters>(DEFAULT_FILTERS);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [sortBy, setSortBy] = useState<'name' | 'points' | 'value'>('name');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<"name" | "points" | "value">("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [search, setSearch] = useState("");
   const [selectedFootballerId, setSelectedFootballerId] = useState<number | null>(null);
   const observerTarget = useRef<HTMLDivElement>(null);
 
-  const loadFootballers = useCallback(async (
-    pageNum: number, 
-    sort: 'name' | 'points' | 'value', 
-    order: 'asc' | 'desc',
-    searchTerm: string,
-    selectedFilters: FootballerFilters,
-    reset = false
-  ) => {
-    try {
-      if (pageNum === 1) {
-        setLoading(true);
-      } else {
-        setLoadingMore(true);
-      }
+  const loadFootballers = useCallback(
+    async (
+      pageNum: number,
+      sort: "name" | "points" | "value",
+      order: "asc" | "desc",
+      searchTerm: string,
+      selectedFilters: FootballerFilters,
+      reset = false,
+    ) => {
+      try {
+        if (pageNum === 1) {
+          setLoading(true);
+        } else {
+          setLoadingMore(true);
+        }
 
-      const data = await fetchAllFootballers(pageNum, 30, sort, order, searchTerm, selectedFilters);
-      
-      if (data.footballers.length < 30) {
-        setHasMore(false);
-      }
+        const data = await fetchAllFootballers(
+          pageNum,
+          30,
+          sort,
+          order,
+          searchTerm,
+          selectedFilters,
+        );
 
-      setFilterOptions(data.filterOptions);
-      setFootballers(prev => reset ? data.footballers : [...prev, ...data.footballers]);
-    } catch (error) {
-      console.error('Error loading footballers:', error);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, []);
+        if (data.footballers.length < 30) {
+          setHasMore(false);
+        }
+
+        setFilterOptions(data.filterOptions);
+        setFootballers((prev) => (reset ? data.footballers : [...prev, ...data.footballers]));
+      } catch (error) {
+        console.error("Error loading footballers:", error);
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     setFootballers([]);
@@ -131,12 +159,12 @@ const FootballerInfo = () => {
 
   useEffect(() => {
     const observer = new IntersectionObserver(
-      entries => {
+      (entries) => {
         if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
-          setPage(prev => prev + 1);
+          setPage((prev) => prev + 1);
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     const currentTarget = observerTarget.current;
@@ -174,7 +202,7 @@ const FootballerInfo = () => {
     <div className="min-h-screen bg-background pb-20">
       <Header />
       <NavigationTabs leagueId={leagueId} />
-      
+
       <main className="container mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="flex flex-col gap-4 mb-6">
           <h1 className="text-3xl font-bold text-foreground">All Footballers</h1>
@@ -205,7 +233,10 @@ const FootballerInfo = () => {
               onToggle={(value) => toggleFilter("availabilities", value)}
               formatOption={formatAvailability}
             />
-            <Select value={sortBy} onValueChange={(value: 'name' | 'points' | 'value') => setSortBy(value)}>
+            <Select
+              value={sortBy}
+              onValueChange={(value: "name" | "points" | "value") => setSortBy(value)}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
@@ -218,7 +249,7 @@ const FootballerInfo = () => {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+              onClick={() => setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))}
             >
               <ArrowUpDown className="h-4 w-4" />
             </Button>

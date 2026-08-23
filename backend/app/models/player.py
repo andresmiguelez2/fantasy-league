@@ -1,7 +1,6 @@
 import logging
 from backend.app.db.database import pg_connect
 
-
 logger = logging.getLogger(__name__)
 
 

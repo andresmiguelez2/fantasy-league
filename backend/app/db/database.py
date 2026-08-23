@@ -2,6 +2,7 @@ import os
 import psycopg2
 from pymongo import MongoClient
 
+
 def pg_connect():
     return psycopg2.connect(
         host=os.getenv("DB_HOST", "postgres_db"),
@@ -10,6 +11,7 @@ def pg_connect():
         password=os.getenv("DB_PASSWORD", "password"),
         port=os.getenv("DB_PORT", "5432"),
     )
+
 
 def mongo_client():
     return MongoClient(
