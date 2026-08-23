@@ -2,7 +2,7 @@
 
 ## Architecture
 
-- Docker Compose app with five containers: `backend_app` (FastAPI), `frontend_app`
+- Docker Compose app with five containers: `backend_app` (python, FastAPI), `frontend_app`
   (Vite + React + TS + shadcn/Tailwind), `postgres_db`, `mongo_db`, `pgadmin`.
   Everything runs through Docker; there is no local-only dev path.
 - Backend imports are rooted at the **repo root**, not `backend/`
@@ -17,6 +17,9 @@
 - Frontend calls the backend at `${VITE_BACKEND_URL:-<hostname>:8000}`
   (`frontend/src/lib/api.ts`); backend CORS allows only `localhost:5173` and
   `127.0.0.1:5173`.
+- There is no production environment: no CI/CD, deploy scripts, or prod compose
+  override exist, and both Dockerfiles run dev servers (`uvicorn --reload`,
+  `npm run dev`). The compose stack is local development only.
 
 ## Commands
 
@@ -37,18 +40,6 @@
   volume, so host installs don't reach it).
 - First-time database setup (schema restore from `resources/database_schema`, seed
   scripts): follow `docs/SETUP.md`.
-
-## First-run setup
-
-- Create `secrets/db.env`, `secrets/mongo.env`, `secrets/pgadmin.env` from the
-  templates in `docs/SETUP.md` before `docker compose up`; keep `DB_NAME`,
-  `POSTGRES_DB` and `DATABASE_URL` consistent with each other.
-- Postgres starts empty: restore the dump in `resources/database_schema` via pgAdmin
-  (:5050) per `docs/SETUP.md`, then create the `unaccent` extension.
-- Seed data once ever: `docker exec backend_app python scripts/insert_fixtures.py`
-  plus `insert_team_crests.py` and `insert_footballers.py`.
-- Set `JWT_SECRET_KEY` or auth falls back to an insecure default key (see
-  `docs/AUTHENTICATION.md`).
 
 ## Conventions
 
