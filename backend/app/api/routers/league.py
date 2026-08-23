@@ -18,6 +18,7 @@ from backend.app.core.constants import (
     INITIAL_SQUAD_PLAYER_VALUE_LIMIT,
     INITIAL_SQUAD_TOTAL_VALUE_TOLERANCE,
     UPDATE_DB_INTERVAL,
+    BID_FOR_INITIAL_FOOTBALLERS
 )
 from .logger import logger
 
@@ -330,7 +331,8 @@ def _create_league_impl(
             player_id = cursor.fetchone()[0]
 
             _assign_initial_squad(cursor, player_id, league_id)
-            _bid_for_initial_footballers(cursor, player_id, league_id, league_player_id)
+            if BID_FOR_INITIAL_FOOTBALLERS:
+                _bid_for_initial_footballers(cursor, player_id, league_id, league_player_id)
 
             conn.commit()
         finally:
@@ -756,7 +758,8 @@ def _join_league_impl(
 
             _assign_initial_squad(cursor, player_id, league_id)
             league_player_id = get_league_player_id(cursor, league_id)
-            _bid_for_initial_footballers(cursor, player_id, league_id, league_player_id)
+            if BID_FOR_INITIAL_FOOTBALLERS:
+                _bid_for_initial_footballers(cursor, player_id, league_id, league_player_id)
 
             conn.commit()
         finally:
