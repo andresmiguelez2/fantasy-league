@@ -24,8 +24,21 @@ import { Pencil, Check, X, Images, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const AVATAR_SEEDS = [
-  "Felix", "Aneka", "Jamari", "Kira", "Nora", "Leo", "Mia", "Oscar",
-  "Luna", "Kai", "Zara", "Axel", "Ivy", "Rex", "Sage",
+  "Felix",
+  "Aneka",
+  "Jamari",
+  "Kira",
+  "Nora",
+  "Leo",
+  "Mia",
+  "Oscar",
+  "Luna",
+  "Kai",
+  "Zara",
+  "Axel",
+  "Ivy",
+  "Rex",
+  "Sage",
 ];
 
 function getInitials(name?: string | null) {
@@ -92,16 +105,26 @@ const ProfileCard = ({ profile, onSaved }: ProfileCardProps) => {
       if (editState.pendingFile) {
         const result = await uploadPlayerPicture(editState.pendingFile);
         if (result.status !== "success") {
-          toast({ title: "Failed to upload picture", description: result.detail, variant: "destructive" });
+          toast({
+            title: "Failed to upload picture",
+            description: result.detail,
+            variant: "destructive",
+          });
           return;
         }
         newPictureUrl = result.picture_url;
       }
 
       if (editState.name.trim() !== profile.player_name) {
-        const result = await updatePlayerProfile(profile.player_id, { name: editState.name.trim() });
+        const result = await updatePlayerProfile(profile.player_id, {
+          name: editState.name.trim(),
+        });
         if (result.status !== "success") {
-          toast({ title: "Failed to update name", description: result.detail, variant: "destructive" });
+          toast({
+            title: "Failed to update name",
+            description: result.detail,
+            variant: "destructive",
+          });
           return;
         }
       }
@@ -127,9 +150,7 @@ const ProfileCard = ({ profile, onSaved }: ProfileCardProps) => {
   return (
     <div className="rounded-lg border border-border p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-muted-foreground">
-          {profile.league_name}
-        </span>
+        <span className="text-sm font-medium text-muted-foreground">{profile.league_name}</span>
         {!editing && (
           <Button variant="ghost" size="sm" onClick={handleEdit}>
             <Pencil className="h-3.5 w-3.5 mr-1" />
@@ -155,9 +176,7 @@ const ProfileCard = ({ profile, onSaved }: ProfileCardProps) => {
             <Input
               id={`name-${profile.player_id}`}
               value={editState.name}
-              onChange={(e) =>
-                setEditState((s) => ({ ...s, name: e.target.value }))
-              }
+              onChange={(e) => setEditState((s) => ({ ...s, name: e.target.value }))}
               placeholder="Your player name"
             />
           </div>
@@ -192,12 +211,7 @@ const ProfileCard = ({ profile, onSaved }: ProfileCardProps) => {
           </div>
 
           <div className="flex gap-2 justify-end">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCancel}
-              disabled={saving}
-            >
+            <Button variant="outline" size="sm" onClick={handleCancel} disabled={saving}>
               <X className="h-3.5 w-3.5 mr-1" />
               Cancel
             </Button>
@@ -238,9 +252,7 @@ export const ProfileDialog = ({ open, onOpenChange }: ProfileDialogProps) => {
   }, [open]);
 
   const handleProfileSaved = (updated: PlayerProfile) => {
-    setProfiles((prev) =>
-      prev.map((p) => (p.player_id === updated.player_id ? updated : p))
-    );
+    setProfiles((prev) => prev.map((p) => (p.player_id === updated.player_id ? updated : p)));
   };
 
   const handleAllFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -260,7 +272,11 @@ export const ProfileDialog = ({ open, onOpenChange }: ProfileDialogProps) => {
       if (allPictureFile) {
         const result = await uploadPlayerPicture(allPictureFile);
         if (result.status !== "success" || !result.picture_url) {
-          toast({ title: "Failed to upload picture", description: result.detail, variant: "destructive" });
+          toast({
+            title: "Failed to upload picture",
+            description: result.detail,
+            variant: "destructive",
+          });
           return;
         }
         newPictureUrl = result.picture_url;
@@ -268,7 +284,11 @@ export const ProfileDialog = ({ open, onOpenChange }: ProfileDialogProps) => {
         const finalUrl = getDefaultAvatarUrl(allPictureSeed);
         const result = await updateAllPlayerPictures(finalUrl);
         if (result.status !== "success") {
-          toast({ title: "Failed to update pictures", description: result.detail, variant: "destructive" });
+          toast({
+            title: "Failed to update pictures",
+            description: result.detail,
+            variant: "destructive",
+          });
           return;
         }
         newPictureUrl = finalUrl;
@@ -290,15 +310,11 @@ export const ProfileDialog = ({ open, onOpenChange }: ProfileDialogProps) => {
       <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>My Profiles</DialogTitle>
-          <DialogDescription>
-            Manage your player name and picture in each league.
-          </DialogDescription>
+          <DialogDescription>Manage your player name and picture in each league.</DialogDescription>
         </DialogHeader>
 
         {loading ? (
-          <div className="py-8 text-center text-muted-foreground text-sm">
-            Loading…
-          </div>
+          <div className="py-8 text-center text-muted-foreground text-sm">Loading…</div>
         ) : profiles.length === 0 ? (
           <div className="py-8 text-center text-muted-foreground text-sm">
             You have not joined any leagues yet.
@@ -306,29 +322,19 @@ export const ProfileDialog = ({ open, onOpenChange }: ProfileDialogProps) => {
         ) : (
           <div className="space-y-3 py-2">
             {profiles.map((profile) => (
-              <ProfileCard
-                key={profile.player_id}
-                profile={profile}
-                onSaved={handleProfileSaved}
-              />
+              <ProfileCard key={profile.player_id} profile={profile} onSaved={handleProfileSaved} />
             ))}
 
             <Separator />
 
             {!allPictureOpen ? (
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => setAllPictureOpen(true)}
-              >
+              <Button variant="outline" className="w-full" onClick={() => setAllPictureOpen(true)}>
                 <Images className="h-4 w-4 mr-2" />
                 Change picture for all leagues
               </Button>
             ) : (
               <div className="rounded-lg border border-border p-4 space-y-3">
-                <p className="text-sm font-medium">
-                  Change picture for all leagues
-                </p>
+                <p className="text-sm font-medium">Change picture for all leagues</p>
 
                 <div className="space-y-1.5">
                   <Label>Choose an avatar</Label>
@@ -405,11 +411,7 @@ export const ProfileDialog = ({ open, onOpenChange }: ProfileDialogProps) => {
                     <X className="h-3.5 w-3.5 mr-1" />
                     Cancel
                   </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleApplyToAll}
-                    disabled={savingAll}
-                  >
+                  <Button size="sm" onClick={handleApplyToAll} disabled={savingAll}>
                     <Check className="h-3.5 w-3.5 mr-1" />
                     {savingAll ? "Saving…" : "Apply to all leagues"}
                   </Button>

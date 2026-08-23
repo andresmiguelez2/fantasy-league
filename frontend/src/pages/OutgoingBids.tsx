@@ -41,16 +41,16 @@ const OutgoingBids = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setUpdateTrigger(prev => prev + 1);
+      setUpdateTrigger((prev) => prev + 1);
     }, 1000);
     return () => clearInterval(interval);
   }, []);
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'EUR',
-      notation: 'compact',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "EUR",
+      notation: "compact",
       maximumFractionDigits: 1,
     }).format(value);
   };
@@ -143,11 +143,7 @@ const OutgoingBids = () => {
                       {formatCurrency(bid.amount)}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => handleEditClick(e, bid)}
-                      >
+                      <Button size="sm" variant="outline" onClick={(e) => handleEditClick(e, bid)}>
                         <Edit className="h-4 w-4" />
                       </Button>
                     </TableCell>

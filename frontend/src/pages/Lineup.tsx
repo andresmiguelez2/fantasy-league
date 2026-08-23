@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
-import { fetchLineupFormation, fetchLineupFootballers, fetchFootballerShortName, BACKEND_URL } from "@/lib/api";
+import {
+  fetchLineupFormation,
+  fetchLineupFootballers,
+  fetchFootballerShortName,
+  BACKEND_URL,
+} from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { SubstitutesDialog } from "@/components/SubstitutesDialog";
@@ -69,21 +74,24 @@ const Lineup = () => {
       try {
         const [formationData, footballersData] = await Promise.all([
           fetchLineupFormation(activePlayerId),
-          fetchLineupFootballers(activePlayerId)
+          fetchLineupFootballers(activePlayerId),
         ]);
         setFormation(formationData);
         setLineupFootballers(footballersData);
 
         // Fetch short names for all footballers
-        const allFootballerIds = footballersData.flat().filter(id => id !== undefined);
-        const namePromises = allFootballerIds.map(id => 
-          fetchFootballerShortName(id).then(name => ({ id, name }))
+        const allFootballerIds = footballersData.flat().filter((id) => id !== undefined);
+        const namePromises = allFootballerIds.map((id) =>
+          fetchFootballerShortName(id).then((name) => ({ id, name })),
         );
         const names = await Promise.all(namePromises);
-        const namesMap = names.reduce((acc, { id, name }) => {
-          acc[id] = name;
-          return acc;
-        }, {} as Record<number, string>);
+        const namesMap = names.reduce(
+          (acc, { id, name }) => {
+            acc[id] = name;
+            return acc;
+          },
+          {} as Record<number, string>,
+        );
         setFootballerNames(namesMap);
       } catch (error) {
         console.error("Error fetching lineup:", error);
@@ -113,20 +121,23 @@ const Lineup = () => {
     try {
       const [formationData, footballersData] = await Promise.all([
         fetchLineupFormation(activePlayerId),
-        fetchLineupFootballers(activePlayerId)
+        fetchLineupFootballers(activePlayerId),
       ]);
       setFormation(formationData);
       setLineupFootballers(footballersData);
 
-      const allFootballerIds = footballersData.flat().filter(id => id !== undefined);
-      const namePromises = allFootballerIds.map(id => 
-        fetchFootballerShortName(id).then(name => ({ id, name }))
+      const allFootballerIds = footballersData.flat().filter((id) => id !== undefined);
+      const namePromises = allFootballerIds.map((id) =>
+        fetchFootballerShortName(id).then((name) => ({ id, name })),
       );
       const names = await Promise.all(namePromises);
-      const namesMap = names.reduce((acc, { id, name }) => {
-        acc[id] = name;
-        return acc;
-      }, {} as Record<string, string>);
+      const namesMap = names.reduce(
+        (acc, { id, name }) => {
+          acc[id] = name;
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
       setFootballerNames(namesMap);
     } catch (error) {
       console.error("Error refreshing lineup:", error);
@@ -145,13 +156,16 @@ const Lineup = () => {
         throw new Error("No active player selected");
       }
 
-      const response = await fetch(`${API_ENDPOINT}/player/update/lineup/${activePlayerId}?league_id=${leagueId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${API_ENDPOINT}/player/update/lineup/${activePlayerId}?league_id=${leagueId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(newFormation),
         },
-        body: JSON.stringify(newFormation),
-      });
+      );
 
       if (!response.ok) {
         throw new Error("Failed to update lineup");
@@ -172,19 +186,22 @@ const Lineup = () => {
   };
 
   const getFormationString = () => {
-    return formation.join('-');
+    return formation.join("-");
   };
 
   const renderRow = (count: number, rowIndex: number) => {
     const footballersInRow = lineupFootballers[rowIndex] || [];
-    
+
     return (
-      <div className="flex justify-center gap-2 sm:gap-6 w-full" style={{ marginBottom: rowIndex === 0 ? '1.5rem' : '1rem' }}>
+      <div
+        className="flex justify-center gap-2 sm:gap-6 w-full"
+        style={{ marginBottom: rowIndex === 0 ? "1.5rem" : "1rem" }}
+      >
         {Array.from({ length: count }).map((_, index) => {
           const footballerId = footballersInRow[index];
           const hasFootballer = footballerId !== undefined;
           const shortName = hasFootballer ? footballerNames[footballerId] : null;
-          
+
           return (
             <div
               key={`${rowIndex}-${index}`}
@@ -201,7 +218,9 @@ const Lineup = () => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-xs sm:text-sm text-muted-foreground font-medium">Empty</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground font-medium">
+                    Empty
+                  </span>
                 )}
               </div>
               {shortName && (
@@ -220,50 +239,51 @@ const Lineup = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <NavigationTabs leagueId={leagueId} />
-      
+
       <main className="container mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-4 sm:mb-6">
-          <h1 className="text-xl sm:text-3xl font-bold"></h1>
-          {!loading && formation.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="default" size="lg" className="font-bold text-base sm:text-lg">
-                  {getFormationString()}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {POSSIBLE_FORMATIONS.map((form) => (
-                  <DropdownMenuItem
-                    key={form.join('-')}
-                    onClick={() => handleFormationChange(form)}
-                  >
-                    {form[0]}-{form[1]}-{form[2]}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>          {loading ? (
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <h1 className="text-xl sm:text-3xl font-bold"></h1>
+            {!loading && formation.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="default" size="lg" className="font-bold text-base sm:text-lg">
+                    {getFormationString()}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {POSSIBLE_FORMATIONS.map((form) => (
+                    <DropdownMenuItem
+                      key={form.join("-")}
+                      onClick={() => handleFormationChange(form)}
+                    >
+                      {form[0]}-{form[1]}-{form[2]}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>{" "}
+          {loading ? (
             <div className="flex justify-center items-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
             <Card className="overflow-hidden">
               <CardContent className="p-0">
-                <div 
+                <div
                   className="relative w-full bg-gradient-to-b from-green-600 to-green-700 p-3 sm:p-8"
-                  style={{ aspectRatio: '3/4' }}
+                  style={{ aspectRatio: "3/4" }}
                 >
                   {/* Pitch markings */}
                   <div className="absolute inset-2 sm:inset-4 border-2 border-white/40 rounded-lg">
                     {/* Center circle */}
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 sm:w-24 h-12 sm:h-24 border-2 border-white/40 rounded-full" />
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 sm:w-2 h-1.5 sm:h-2 bg-white/40 rounded-full" />
-                    
+
                     {/* Center line */}
                     <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-white/40" />
-                    
+
                     {/* Goal areas */}
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 sm:w-32 h-6 sm:h-12 border-2 border-white/40 border-t-0" />
                     <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 sm:w-32 h-6 sm:h-12 border-2 border-white/40 border-b-0" />
@@ -273,13 +293,13 @@ const Lineup = () => {
                   <div className="relative h-full flex flex-col justify-between py-4 sm:py-8">
                     {/* Top row (Attack) */}
                     {formation[2] && renderRow(formation[2], 3)}
-                    
+
                     {/* Second row (Midfield upper) */}
                     {formation[1] && renderRow(formation[1], 2)}
-                    
+
                     {/* Third row (Midfield lower / Defense) */}
                     {formation[0] && renderRow(formation[0], 1)}
-                    
+
                     {/* Bottom row (Goalkeeper) */}
                     {renderRow(1, 0)}
                   </div>
@@ -305,4 +325,3 @@ const Lineup = () => {
 };
 
 export default Lineup;
-

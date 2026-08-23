@@ -1,12 +1,26 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { NavigationTabs } from "@/components/NavigationTabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { FootballerInfoDialog } from "@/components/FootballerInfoDialog";
 import { ArrowRight } from "lucide-react";
-import { getActiveLeagueId, getActivePlayerId, fetchMarketHistory, fetchPlayerInfo, MarketHistoryBid, BACKEND_URL } from "@/lib/api";
+import {
+  getActiveLeagueId,
+  getActivePlayerId,
+  fetchMarketHistory,
+  fetchPlayerInfo,
+  MarketHistoryBid,
+  BACKEND_URL,
+} from "@/lib/api";
 import { PlayerInfoRibbon } from "@/components/PlayerInfoRibbon";
 
 const MarketHistory = () => {
@@ -36,9 +50,9 @@ const MarketHistory = () => {
         setHasMore(false);
       }
 
-      setBids(prev => reset ? data.bids : [...prev, ...data.bids]);
+      setBids((prev) => (reset ? data.bids : [...prev, ...data.bids]));
     } catch (error) {
-      console.error('Error loading market history:', error);
+      console.error("Error loading market history:", error);
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -62,19 +76,19 @@ const MarketHistory = () => {
     fetchPlayerInfo(playerId)
       .then((player) => setActivePlayerName(player.name))
       .catch((error) => {
-        console.error('Error loading active player name:', error);
+        console.error("Error loading active player name:", error);
         setActivePlayerName(null);
       });
   }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
-      entries => {
+      (entries) => {
         if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
-          setPage(prev => prev + 1);
+          setPage((prev) => prev + 1);
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     const currentTarget = observerTarget.current;
@@ -95,12 +109,13 @@ const MarketHistory = () => {
     }
   }, [page, loadBids]);
 
-  const formatAmount = (amount: number) => new Intl.NumberFormat('en-ES', {
-    style: 'currency',
-    currency: 'EUR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+  const formatAmount = (amount: number) =>
+    new Intl.NumberFormat("en-ES", {
+      style: "currency",
+      currency: "EUR",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
 
   const getInitials = (name?: string | null) => {
     const safe = name?.trim();
@@ -117,7 +132,13 @@ const MarketHistory = () => {
     const isOwnPlayer = activePlayerName?.trim().toLowerCase() === name.trim().toLowerCase();
 
     return (
-      <span className={isOwnPlayer ? "rounded bg-primary/15 px-1.5 py-0.5 font-semibold text-primary" : "truncate"}>
+      <span
+        className={
+          isOwnPlayer
+            ? "rounded bg-primary/15 px-1.5 py-0.5 font-semibold text-primary"
+            : "truncate"
+        }
+      >
         {name}
       </span>
     );
@@ -139,8 +160,12 @@ const MarketHistory = () => {
                   <TableRow className="hover:bg-transparent border-border/50">
                     <TableHead className="text-muted-foreground font-semibold">Name</TableHead>
                     <TableHead className="text-muted-foreground font-semibold">From / To</TableHead>
-                    <TableHead className="text-center text-muted-foreground font-semibold">Amount</TableHead>
-                    <TableHead className="text-center text-muted-foreground font-semibold hidden sm:table-cell">Timestamp</TableHead>
+                    <TableHead className="text-center text-muted-foreground font-semibold">
+                      Amount
+                    </TableHead>
+                    <TableHead className="text-center text-muted-foreground font-semibold hidden sm:table-cell">
+                      Timestamp
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -153,7 +178,9 @@ const MarketHistory = () => {
                       <TableCell className="min-w-0">
                         <div className="flex items-center gap-3 min-w-0">
                           <Avatar className="h-12 w-12 border-2 border-secondary/30 flex-shrink-0">
-                            <AvatarImage src={`${BACKEND_URL}/footballer/image/${bid.footballerId}`} />
+                            <AvatarImage
+                              src={`${BACKEND_URL}/footballer/image/${bid.footballerId}`}
+                            />
                             <AvatarFallback className="bg-gradient-primary text-white font-semibold text-xs">
                               {getInitials(bid.footballerName)}
                             </AvatarFallback>
@@ -189,7 +216,9 @@ const MarketHistory = () => {
             <div ref={observerTarget} className="h-4" />
 
             {!hasMore && bids.length > 0 && (
-              <p className="text-center text-muted-foreground mt-4">No more market history to load</p>
+              <p className="text-center text-muted-foreground mt-4">
+                No more market history to load
+              </p>
             )}
           </div>
         )}

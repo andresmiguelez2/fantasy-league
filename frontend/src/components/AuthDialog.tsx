@@ -20,25 +20,25 @@ export const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Authentication</DialogTitle>
-          <DialogDescription>
-            Log in to your Fantasy account
-          </DialogDescription>
+          <DialogDescription>Log in to your Fantasy account</DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" placeholder="your@email.com" />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
             <Input id="password" type="password" placeholder="••••••••" />
           </div>
-          
+
           <div className="flex gap-2">
             <Button className="flex-1">Log in</Button>
-            <Button variant="outline" className="flex-1">Sign up</Button>
+            <Button variant="outline" className="flex-1">
+              Sign up
+            </Button>
           </div>
         </div>
       </DialogContent>

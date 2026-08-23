@@ -51,9 +51,7 @@ export const IncrementReleaseClauseDialog = ({
   const parsedIncrement = Number(incrementInput);
   const isValid = Number.isInteger(parsedIncrement) && parsedIncrement > 0;
   const newReleaseClause =
-    isValid && currentReleaseClause !== null
-      ? currentReleaseClause + 2*parsedIncrement
-      : null;
+    isValid && currentReleaseClause !== null ? currentReleaseClause + 2 * parsedIncrement : null;
 
   const formatValue = (val: number) =>
     new Intl.NumberFormat("en-ES", {
@@ -86,16 +84,12 @@ export const IncrementReleaseClauseDialog = ({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Increment Release Clause</DialogTitle>
-          <DialogDescription>
-            Increase the release clause for {footballerName}
-          </DialogDescription>
+          <DialogDescription>Increase the release clause for {footballerName}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           {fetchingClause ? (
-            <div className="text-sm text-muted-foreground">
-              Loading current release clause...
-            </div>
+            <div className="text-sm text-muted-foreground">Loading current release clause...</div>
           ) : currentReleaseClause !== null ? (
             <div className="space-y-1">
               <div className="text-sm text-muted-foreground">Current release clause</div>

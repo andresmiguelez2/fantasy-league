@@ -1,8 +1,8 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { BACKEND_URL, clearActivePlayerId } from '@/lib/api';
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { BACKEND_URL, clearActivePlayerId } from "@/lib/api";
 
 interface User {
-  id: number;        // User ID from the users table
+  id: number; // User ID from the users table
   username: string;
 }
 
@@ -20,7 +20,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   // Load token from localStorage on mount and verify with server
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
+    const storedToken = localStorage.getItem("token");
 
     if (!storedToken) {
       setIsLoading(false);
@@ -47,8 +47,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     fetch(`${BACKEND_URL}/auth/me`, {
       headers: { Authorization: `Bearer ${storedToken}` },
     })
-      .then(res => (res.ok ? res.json() : null))
-      .then(data => {
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
         if (data) {
           const refreshedUser: User = {
             id: data.id,
@@ -56,13 +56,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           };
           setToken(storedToken);
           setUser(refreshedUser);
-          localStorage.setItem('user', JSON.stringify(refreshedUser));
+          localStorage.setItem("user", JSON.stringify(refreshedUser));
         } else {
           // Token is invalid or expired – clear stored session
           setToken(null);
           setUser(null);
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
           clearActivePlayerId();
         }
       })
@@ -70,8 +70,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         // Network error – clear stored session so the user is prompted to log in
         setToken(null);
         setUser(null);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
         clearActivePlayerId();
       })
       .finally(() => setIsLoading(false));
@@ -80,9 +80,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
       const response = await fetch(`${BACKEND_URL}/auth/login`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ username, password }),
       });
@@ -92,22 +92,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
 
       const data = await response.json();
-      
+
       const userData: User = {
-        id: data.id,           // User ID from the users table
+        id: data.id, // User ID from the users table
         username: data.username,
       };
 
       setToken(data.access_token);
       setUser(userData);
-      
+
       // Store in localStorage
-      localStorage.setItem('token', data.access_token);
-      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem("token", data.access_token);
+      localStorage.setItem("user", JSON.stringify(userData));
 
       return true;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       return false;
     }
   };
@@ -117,8 +117,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // Note: JWT tokens are stateless, so invalidation is handled client-side
     setToken(null);
     setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     clearActivePlayerId();
   };
 

@@ -44,9 +44,9 @@ const FutureBids = () => {
   };
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'EUR',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "EUR",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(value);
@@ -144,11 +144,7 @@ const FutureBids = () => {
                       {formatCurrency(bid.amount)}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => handleEditClick(e, bid)}
-                      >
+                      <Button size="sm" variant="outline" onClick={(e) => handleEditClick(e, bid)}>
                         <Edit className="h-4 w-4" />
                       </Button>
                     </TableCell>

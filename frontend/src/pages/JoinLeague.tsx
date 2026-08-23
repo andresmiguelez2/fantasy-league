@@ -4,13 +4,7 @@ import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   fetchLeagueByInviteCode,
   joinLeague,
@@ -56,7 +50,9 @@ const JoinLeague = () => {
   // Load previous player names when authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      fetchPlayerNames().then(setPreviousNames).catch(() => setPreviousNames([]));
+      fetchPlayerNames()
+        .then(setPreviousNames)
+        .catch(() => setPreviousNames([]));
     }
   }, [isAuthenticated]);
 
@@ -147,9 +143,7 @@ const JoinLeague = () => {
                   />
                   {previousNames.length > 0 && (
                     <div className="flex flex-wrap items-center gap-2 mt-1">
-                      <span className="text-xs text-muted-foreground">
-                        Previous names:
-                      </span>
+                      <span className="text-xs text-muted-foreground">Previous names:</span>
                       {previousNames.map((name) => (
                         <button
                           key={name}
@@ -165,11 +159,7 @@ const JoinLeague = () => {
                 </div>
                 {error && <p className="text-sm text-destructive">{error}</p>}
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => navigate("/")}
-                    disabled={loading}
-                  >
+                  <Button variant="outline" onClick={() => navigate("/")} disabled={loading}>
                     Cancel
                   </Button>
                   <Button

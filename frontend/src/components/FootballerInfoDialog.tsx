@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,8 +20,34 @@ import { BidDialog } from "@/components/BidDialog";
 import { ReleaseClauseDialog } from "@/components/ReleaseClauseDialog";
 import { IncrementReleaseClauseDialog } from "@/components/IncrementReleaseClauseDialog";
 import { AvailabilityIcon } from "@/components/AvailabilityIcon";
-import { fetchFootballerInfo, fetchFixtureDetail, FootballerInfo, FixtureDetail, placeBid, payReleaseClause, scheduleReleaseClauseBid, fetchMarketStatus, changeMarketStatus, getActivePlayerId, BACKEND_URL, incrementReleaseClause, fetchReleaseClauseData } from "@/lib/api";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, Cell } from "recharts";
+import {
+  fetchFootballerInfo,
+  fetchFixtureDetail,
+  FootballerInfo,
+  FixtureDetail,
+  placeBid,
+  payReleaseClause,
+  scheduleReleaseClauseBid,
+  fetchMarketStatus,
+  changeMarketStatus,
+  getActivePlayerId,
+  BACKEND_URL,
+  incrementReleaseClause,
+  fetchReleaseClauseData,
+} from "@/lib/api";
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Brush,
+  Cell,
+} from "recharts";
 import { MoreVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useParams } from "react-router-dom";
@@ -44,7 +72,9 @@ export const FootballerInfoDialog = ({
   onBid,
 }: FootballerInfoDialogProps) => {
   const [info, setInfo] = useState<FootballerInfo | null>(null);
-  const [releaseClauseRemainingSeconds, setReleaseClauseRemainingSeconds] = useState<number | null>(null);
+  const [releaseClauseRemainingSeconds, setReleaseClauseRemainingSeconds] = useState<number | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [imgError, setImgError] = useState(false);
   const [teamBadgeError, setTeamBadgeError] = useState(false);
@@ -55,7 +85,9 @@ export const FootballerInfoDialog = ({
   const [incrementReleaseClauseDialogOpen, setIncrementReleaseClauseDialogOpen] = useState(false);
   const [onMarket, setOnMarket] = useState<boolean | null>(null);
   const [releaseClause, setReleaseClause] = useState<number | null>(null);
-  const [brushRange, setBrushRange] = useState<{ startIndex: number; endIndex: number } | null>(null);
+  const [brushRange, setBrushRange] = useState<{ startIndex: number; endIndex: number } | null>(
+    null,
+  );
   const { toast } = useToast();
   const { playerId } = useParams();
 
@@ -75,9 +107,7 @@ export const FootballerInfoDialog = ({
   // Fetch market status when the dialog opens (for owned footballers)
   useEffect(() => {
     if (open && footballerId) {
-      fetchMarketStatus(footballerId)
-        .then(setOnMarket)
-        .catch(console.error);
+      fetchMarketStatus(footballerId).then(setOnMarket).catch(console.error);
     }
   }, [open, footballerId]);
 
@@ -95,7 +125,7 @@ export const FootballerInfoDialog = ({
       if (defaultFixture !== undefined && defaultFixture !== null) {
         setSelectedFixture(defaultFixture);
       } else {
-        const latestFixture = Math.max(...info.fixture_breakdown.map(f => f.fixture));
+        const latestFixture = Math.max(...info.fixture_breakdown.map((f) => f.fixture));
         setSelectedFixture(latestFixture);
       }
 
@@ -110,9 +140,7 @@ export const FootballerInfoDialog = ({
   // Fetch fixture detail when selected fixture changes
   useEffect(() => {
     if (selectedFixture !== null && footballerId) {
-      fetchFixtureDetail(footballerId, selectedFixture)
-        .then(setFixtureDetail)
-        .catch(console.error);
+      fetchFixtureDetail(footballerId, selectedFixture).then(setFixtureDetail).catch(console.error);
     }
   }, [selectedFixture, footballerId]);
 
@@ -150,9 +178,9 @@ export const FootballerInfoDialog = ({
   }, [releaseClauseRemainingSeconds]);
 
   const formatValue = (val: number) => {
-    return new Intl.NumberFormat('en-ES', {
-      style: 'currency',
-      currency: 'EUR',
+    return new Intl.NumberFormat("en-ES", {
+      style: "currency",
+      currency: "EUR",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(val);
@@ -194,13 +222,17 @@ export const FootballerInfoDialog = ({
   };
 
   const extractMessage = (resp: any) => {
-    return resp?.message || resp?.detail || resp?.text || 
-           (typeof resp === 'string' ? resp : JSON.stringify(resp));
+    return (
+      resp?.message ||
+      resp?.detail ||
+      resp?.text ||
+      (typeof resp === "string" ? resp : JSON.stringify(resp))
+    );
   };
 
   const handleBidSubmit = async (amount: number, timestamp?: string | null) => {
     if (!info) return false;
-    
+
     const id = getCurrentPlayerId();
     if (!id) {
       toast({
@@ -209,17 +241,19 @@ export const FootballerInfoDialog = ({
       });
       return false;
     }
-    
+
     const resp = await placeBid(footballerId, id, amount, timestamp);
     const message = extractMessage(resp);
     const scheduledForFuture = timestamp && new Date(timestamp).getTime() > Date.now();
 
     toast({
-      description: message || (amount === 0
-        ? `Your bid for ${info.name} has been deleted.`
-        : scheduledForFuture
-          ? `Your bid of €${amount.toLocaleString()} for ${info.name} has been scheduled.`
-          : `Your bid of €${amount.toLocaleString()} for ${info.name} has been placed.`),
+      description:
+        message ||
+        (amount === 0
+          ? `Your bid for ${info.name} has been deleted.`
+          : scheduledForFuture
+            ? `Your bid of €${amount.toLocaleString()} for ${info.name} has been scheduled.`
+            : `Your bid of €${amount.toLocaleString()} for ${info.name} has been placed.`),
       variant: resp?.status === "success" ? "default" : "destructive",
     });
 
@@ -228,7 +262,7 @@ export const FootballerInfoDialog = ({
 
   const handleReleaseClauseSubmit = async () => {
     if (!info) return false;
-    
+
     const id = getCurrentPlayerId();
     if (!id) {
       toast({
@@ -237,7 +271,7 @@ export const FootballerInfoDialog = ({
       });
       return false;
     }
-    
+
     const resp = await payReleaseClause(footballerId, id);
     const message = extractMessage(resp);
 
@@ -248,9 +282,7 @@ export const FootballerInfoDialog = ({
 
     if (resp?.status === "success") {
       // Refresh info after successful transfer
-      fetchFootballerInfo(footballerId)
-        .then(setInfo)
-        .catch(console.error);
+      fetchFootballerInfo(footballerId).then(setInfo).catch(console.error);
     }
     return resp?.status === "success";
   };
@@ -278,8 +310,8 @@ export const FootballerInfoDialog = ({
 
   // Check if "Offer Amount" and "Pay release clause" options should be available
   // Only available if the footballer belongs to another player (not NULL and not current player)
-  const canPlaceBid = info?.owner_id !== null && 
-                      info?.owner_id?.toString() !== getCurrentPlayerId();
+  const canPlaceBid =
+    info?.owner_id !== null && info?.owner_id?.toString() !== getCurrentPlayerId();
 
   // Check if the current player owns this footballer
   const isOwner = info?.owner_id?.toString() === getCurrentPlayerId();
@@ -436,12 +468,16 @@ export const FootballerInfoDialog = ({
                 <div className="flex-1 flex gap-6">
                   <div>
                     <p className="text-sm text-muted-foreground">Market Value</p>
-                    <p className="text-2xl font-bold text-primary">{formatValue(info.market_value)}</p>
+                    <p className="text-2xl font-bold text-primary">
+                      {formatValue(info.market_value)}
+                    </p>
                   </div>
                   {releaseClause !== null && (
                     <div>
                       <p className="text-sm text-muted-foreground">Release Clause</p>
-                      <p className="text-2xl font-bold text-secondary">{formatValue(releaseClause)}</p>
+                      <p className="text-2xl font-bold text-secondary">
+                        {formatValue(releaseClause)}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -481,25 +517,28 @@ export const FootballerInfoDialog = ({
 
         {/* Fixture Breakdown Bar Chart */}
         <Card className="p-6 mb-6">
-          <h3 className="text-lg font-semibold mb-4">Points by Fixture {selectedFixture && <span className="text-muted-foreground text-sm"></span>}</h3>
+          <h3 className="text-lg font-semibold mb-4">
+            Points by Fixture{" "}
+            {selectedFixture && <span className="text-muted-foreground text-sm"></span>}
+          </h3>
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={sortedFixtures} onClick={handleBarClick} margin={{ top: 5, right: 10, left: 0, bottom: 20 }}>
+            <BarChart
+              data={sortedFixtures}
+              onClick={handleBarClick}
+              margin={{ top: 5, right: 10, left: 0, bottom: 20 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="fixture" 
-                label={{ value: 'Fixture', position: 'insideBottom', offset: -5 }}
+              <XAxis
+                dataKey="fixture"
+                label={{ value: "Fixture", position: "insideBottom", offset: -5 }}
               />
-              <YAxis 
-                domain={[0, 15]}
-                ticks={yTicks}
-                width={30}
-              />
+              <YAxis domain={[0, 15]} ticks={yTicks} width={30} />
               <Tooltip />
-              <Brush 
-                dataKey="fixture" 
-                height={30} 
-                stroke="hsl(var(--primary))" 
-                startIndex={brushRange?.startIndex} 
+              <Brush
+                dataKey="fixture"
+                height={30}
+                stroke="hsl(var(--primary))"
+                startIndex={brushRange?.startIndex}
                 endIndex={brushRange?.endIndex}
                 travellerWidth={10}
                 onChange={(range) => {
@@ -512,7 +551,11 @@ export const FootballerInfoDialog = ({
                 {sortedFixtures.map((entry) => (
                   <Cell
                     key={`cell-${entry.fixture}`}
-                    fill={entry.fixture === selectedFixture ? "hsl(var(--accent))" : "hsl(var(--primary))"}
+                    fill={
+                      entry.fixture === selectedFixture
+                        ? "hsl(var(--accent))"
+                        : "hsl(var(--primary))"
+                    }
                   />
                 ))}
               </Bar>
@@ -523,7 +566,9 @@ export const FootballerInfoDialog = ({
         {/* Fixture Detail Table */}
         {fixtureDetail && (
           <Card className="p-6 mb-6">
-            <h3 className="text-lg font-semibold mb-4">Fixture {fixtureDetail.fixture} Breakdown</h3>
+            <h3 className="text-lg font-semibold mb-4">
+              Fixture {fixtureDetail.fixture} Breakdown
+            </h3>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -536,15 +581,23 @@ export const FootballerInfoDialog = ({
                 {Object.entries(fixtureDetail.breakdown).map(([item, data]) => (
                   <TableRow key={item}>
                     <TableCell>{item}</TableCell>
-                    <TableCell className="text-center">{(data as { value: number | null; points: number }).value ?? '-'}</TableCell>
-                    <TableCell className="text-center text-primary font-semibold">{(data as { value: number | null; points: number }).points}</TableCell>
+                    <TableCell className="text-center">
+                      {(data as { value: number | null; points: number }).value ?? "-"}
+                    </TableCell>
+                    <TableCell className="text-center text-primary font-semibold">
+                      {(data as { value: number | null; points: number }).points}
+                    </TableCell>
                   </TableRow>
                 ))}
                 <TableRow className="bg-green-600/10 border-t-2 border-green-600">
                   <TableCell className="font-bold">Total</TableCell>
                   <TableCell className="text-center">-</TableCell>
                   <TableCell className="text-center text-green-600 font-bold text-lg">
-                    {Object.values(fixtureDetail.breakdown).reduce((sum, data) => sum + (data as { value: number | null; points: number }).points, 0)}
+                    {Object.values(fixtureDetail.breakdown).reduce(
+                      (sum, data) =>
+                        sum + (data as { value: number | null; points: number }).points,
+                      0,
+                    )}
                   </TableCell>
                 </TableRow>
               </TableBody>
@@ -556,35 +609,38 @@ export const FootballerInfoDialog = ({
         <Card className="p-6 pl-2 pr-4 mb-4">
           <h3 className="text-lg font-semibold mb-4 pl-4">Market Value History</h3>
           <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={info.market_details} margin={{ top: 5, right: 5, left: -15, bottom: 20 }}>
+            <LineChart
+              data={info.market_details}
+              margin={{ top: 5, right: 5, left: -15, bottom: 20 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
+              <XAxis
                 dataKey="date"
-                label={{ value: 'Date', position: 'insideBottom', offset: -15 }}
+                label={{ value: "Date", position: "insideBottom", offset: -15 }}
                 tick={{ fontSize: 12 }}
                 interval="preserveStartEnd"
                 angle={-30}
                 textAnchor="end"
                 height={50}
               />
-              <YAxis 
+              <YAxis
                 tick={{ fontSize: 12 }}
                 width={50}
                 tickFormatter={(value) =>
-                  new Intl.NumberFormat('en-ES', {
-                    notation: 'compact',
+                  new Intl.NumberFormat("en-ES", {
+                    notation: "compact",
                     maximumFractionDigits: 1,
                   }).format(value)
                 }
               />
-              <Tooltip 
+              <Tooltip
                 formatter={(value: number) => formatValue(value)}
-                labelStyle={{ color: 'hsl(var(--foreground))' }}
+                labelStyle={{ color: "hsl(var(--foreground))" }}
               />
-              <Line 
-                type="monotone" 
-                dataKey="value" 
-                stroke="hsl(var(--accent))" 
+              <Line
+                type="monotone"
+                dataKey="value"
+                stroke="hsl(var(--accent))"
                 strokeWidth={2}
                 dot={false}
               />
@@ -592,7 +648,7 @@ export const FootballerInfoDialog = ({
           </ResponsiveContainer>
         </Card>
       </DialogContent>
-      
+
       <BidDialog
         open={bidDialogOpen}
         onOpenChange={setBidDialogOpen}
@@ -600,7 +656,7 @@ export const FootballerInfoDialog = ({
         footballerValue={info.market_value}
         onSubmit={handleBidSubmit}
       />
-      
+
       <ReleaseClauseDialog
         open={releaseClauseDialogOpen}
         onOpenChange={setReleaseClauseDialogOpen}

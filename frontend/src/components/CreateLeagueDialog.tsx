@@ -18,11 +18,7 @@ interface CreateLeagueDialogProps {
   onCreated: () => void;
 }
 
-export const CreateLeagueDialog = ({
-  open,
-  onOpenChange,
-  onCreated,
-}: CreateLeagueDialogProps) => {
+export const CreateLeagueDialog = ({ open, onOpenChange, onCreated }: CreateLeagueDialogProps) => {
   const [leagueName, setLeagueName] = useState("");
   const [playerName, setPlayerName] = useState("");
   const [previousNames, setPreviousNames] = useState<string[]>([]);
@@ -34,7 +30,9 @@ export const CreateLeagueDialog = ({
       setLeagueName("");
       setPlayerName("");
       setError(null);
-      fetchPlayerNames().then(setPreviousNames).catch(() => setPreviousNames([]));
+      fetchPlayerNames()
+        .then(setPreviousNames)
+        .catch(() => setPreviousNames([]));
     }
   }, [open]);
 

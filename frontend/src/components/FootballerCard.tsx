@@ -4,7 +4,7 @@ import { BACKEND_URL } from "@/lib/api";
 import { AvailabilityIcon } from "@/components/AvailabilityIcon";
 
 const POSITION_STYLES: Record<string, { label: string; className: string }> = {
-  gk:  { label: "GK",  className: "bg-yellow-400 text-yellow-900" },
+  gk: { label: "GK", className: "bg-yellow-400 text-yellow-900" },
   df: { label: "DF", className: "bg-blue-500 text-white" },
   md: { label: "MD", className: "bg-green-500 text-white" },
   fw: { label: "FW", className: "bg-red-500 text-white" },
@@ -40,10 +40,10 @@ export const FootballerCard = ({
   availability,
 }: FootballerCardProps) => {
   const formatMoney = (amount: number) => {
-    return new Intl.NumberFormat('en-ES', {
-      style: 'currency',
-      currency: 'EUR',
-      notation: 'compact',
+    return new Intl.NumberFormat("en-ES", {
+      style: "currency",
+      currency: "EUR",
+      notation: "compact",
       maximumFractionDigits: 2,
     }).format(amount);
   };
@@ -65,14 +65,20 @@ export const FootballerCard = ({
 
         <div className="flex-1 min-w-0 p-2.5 sm:p-3.5 flex flex-col gap-2.5">
           <div className="min-w-0 cursor-pointer" onClick={() => onOwnerClick?.()}>
-            <span className="font-bold text-foreground text-base sm:text-lg block truncate">{name}</span>
-            {owner ? <div className="text-xs sm:text-sm text-secondary truncate">{owner}</div> : null}
+            <span className="font-bold text-foreground text-base sm:text-lg block truncate">
+              {name}
+            </span>
+            {owner ? (
+              <div className="text-xs sm:text-sm text-secondary truncate">{owner}</div>
+            ) : null}
           </div>
 
           <div className="grid grid-cols-[44px_1fr_1fr_88px] gap-2 items-center mt-auto">
             <div className="flex flex-col items-center gap-0.5 sm:flex-row sm:justify-center sm:gap-1">
               {positionStyle ? (
-                <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-bold uppercase ${positionStyle.className}`}>
+                <span
+                  className={`inline-block px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-bold uppercase ${positionStyle.className}`}
+                >
                   {positionStyle.label}
                 </span>
               ) : (
@@ -89,13 +95,13 @@ export const FootballerCard = ({
             </div>
 
             <div className="text-center">
-              {(totalPoints !== undefined || averagePoints !== undefined) ? (
+              {totalPoints !== undefined || averagePoints !== undefined ? (
                 <div>
                   <div className="text-xs sm:text-sm font-semibold text-foreground">
                     {totalPoints ?? 0}
                   </div>
                   <div className="text-[10px] sm:text-xs text-muted-foreground">
-                    {averagePoints ?? '0'}
+                    {averagePoints ?? "0"}
                   </div>
                 </div>
               ) : (

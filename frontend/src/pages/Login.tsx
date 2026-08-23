@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { BACKEND_URL } from '@/lib/api';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { BACKEND_URL } from "@/lib/api";
 import {
   Dialog,
   DialogContent,
@@ -14,11 +14,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 
 const Login = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -26,9 +26,9 @@ const Login = () => {
 
   // Create account dialog state
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [newUsername, setNewUsername] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [newUsername, setNewUsername] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,25 +37,25 @@ const Login = () => {
 
     try {
       const success = await login(username, password);
-      
+
       if (success) {
         toast({
-          title: 'Login successful',
-          description: 'Welcome back!',
+          title: "Login successful",
+          description: "Welcome back!",
         });
-        navigate('/');
+        navigate("/");
       } else {
         toast({
-          title: 'Login failed',
-          description: 'Invalid username or password',
-          variant: 'destructive',
+          title: "Login failed",
+          description: "Invalid username or password",
+          variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'An error occurred during login',
-        variant: 'destructive',
+        title: "Error",
+        description: "An error occurred during login",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -67,18 +67,18 @@ const Login = () => {
 
     if (newPassword.length < 6) {
       toast({
-        title: 'Password too short',
-        description: 'Password must be at least 6 characters long',
-        variant: 'destructive',
+        title: "Password too short",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive",
       });
       return;
     }
 
     if (newPassword !== confirmPassword) {
       toast({
-        title: 'Passwords do not match',
-        description: 'Please make sure both passwords are the same',
-        variant: 'destructive',
+        title: "Passwords do not match",
+        description: "Please make sure both passwords are the same",
+        variant: "destructive",
       });
       return;
     }
@@ -86,35 +86,35 @@ const Login = () => {
     setIsCreating(true);
     try {
       const response = await fetch(`${BACKEND_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: newUsername, password: newPassword }),
       });
 
       if (response.ok) {
         toast({
-          title: 'Account created',
+          title: "Account created",
           description: `Welcome, ${newUsername}! You can now log in.`,
         });
         setCreateDialogOpen(false);
-        setNewUsername('');
-        setNewPassword('');
-        setConfirmPassword('');
+        setNewUsername("");
+        setNewPassword("");
+        setConfirmPassword("");
         // Pre-fill the login form for convenience
         setUsername(newUsername);
       } else {
         const data = await response.json().catch(() => ({}));
         toast({
-          title: 'Registration failed',
-          description: data.detail ?? 'Could not create account. Please try again.',
-          variant: 'destructive',
+          title: "Registration failed",
+          description: data.detail ?? "Could not create account. Please try again.",
+          variant: "destructive",
         });
       }
     } catch {
       toast({
-        title: 'Error',
-        description: 'An error occurred while creating the account',
-        variant: 'destructive',
+        title: "Error",
+        description: "An error occurred while creating the account",
+        variant: "destructive",
       });
     } finally {
       setIsCreating(false);
@@ -156,12 +156,8 @@ const Login = () => {
                 disabled={isLoading}
               />
             </div>
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Logging in...' : 'Login'}
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Logging in..." : "Login"}
             </Button>
             <Button
               type="button"
@@ -181,9 +177,7 @@ const Login = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Create Account</DialogTitle>
-            <DialogDescription>
-              Fill in your details to create a new account.
-            </DialogDescription>
+            <DialogDescription>Fill in your details to create a new account.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateAccount}>
             <div className="space-y-4 py-4">
@@ -234,7 +228,7 @@ const Login = () => {
                 Cancel
               </Button>
               <Button type="submit" disabled={isCreating}>
-                {isCreating ? 'Creating...' : 'Create Account'}
+                {isCreating ? "Creating..." : "Create Account"}
               </Button>
             </DialogFooter>
           </form>

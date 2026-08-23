@@ -33,18 +33,122 @@ const App = () => (
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/join/:inviteCode" element={<JoinLeague />} />
-            <Route path="/" element={<ProtectedRoute><Landing /></ProtectedRoute>} />
-            <Route path="/league/:leagueId" element={<ProtectedRoute><League /></ProtectedRoute>} />
-            <Route path="/squad" element={<ProtectedRoute><LeagueGuard><Squad /></LeagueGuard></ProtectedRoute>} />
-            <Route path="/squad/:playerId" element={<ProtectedRoute><LeagueGuard><Squad /></LeagueGuard></ProtectedRoute>} />
-            <Route path="/lineup" element={<ProtectedRoute><LeagueGuard><Lineup /></LeagueGuard></ProtectedRoute>} />
-            <Route path="/fixtures" element={<ProtectedRoute><LeagueGuard><Fixtures /></LeagueGuard></ProtectedRoute>} />
-            <Route path="/market" element={<ProtectedRoute><LeagueGuard><Market /></LeagueGuard></ProtectedRoute>} />
-            <Route path="/market/incoming" element={<ProtectedRoute><LeagueGuard><IncomingBids /></LeagueGuard></ProtectedRoute>} />
-            <Route path="/market/outgoing" element={<ProtectedRoute><LeagueGuard><OutgoingBids /></LeagueGuard></ProtectedRoute>} />
-            <Route path="/market/future" element={<ProtectedRoute><LeagueGuard><FutureBids /></LeagueGuard></ProtectedRoute>} />
-            <Route path="/market/history" element={<ProtectedRoute><LeagueGuard><MarketHistory /></LeagueGuard></ProtectedRoute>} />
-            <Route path="/footballer-info" element={<ProtectedRoute><LeagueGuard><FootballerInfo /></LeagueGuard></ProtectedRoute>} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Landing />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/league/:leagueId"
+              element={
+                <ProtectedRoute>
+                  <League />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/squad"
+              element={
+                <ProtectedRoute>
+                  <LeagueGuard>
+                    <Squad />
+                  </LeagueGuard>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/squad/:playerId"
+              element={
+                <ProtectedRoute>
+                  <LeagueGuard>
+                    <Squad />
+                  </LeagueGuard>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lineup"
+              element={
+                <ProtectedRoute>
+                  <LeagueGuard>
+                    <Lineup />
+                  </LeagueGuard>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/fixtures"
+              element={
+                <ProtectedRoute>
+                  <LeagueGuard>
+                    <Fixtures />
+                  </LeagueGuard>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/market"
+              element={
+                <ProtectedRoute>
+                  <LeagueGuard>
+                    <Market />
+                  </LeagueGuard>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/market/incoming"
+              element={
+                <ProtectedRoute>
+                  <LeagueGuard>
+                    <IncomingBids />
+                  </LeagueGuard>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/market/outgoing"
+              element={
+                <ProtectedRoute>
+                  <LeagueGuard>
+                    <OutgoingBids />
+                  </LeagueGuard>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/market/future"
+              element={
+                <ProtectedRoute>
+                  <LeagueGuard>
+                    <FutureBids />
+                  </LeagueGuard>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/market/history"
+              element={
+                <ProtectedRoute>
+                  <LeagueGuard>
+                    <MarketHistory />
+                  </LeagueGuard>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/footballer-info"
+              element={
+                <ProtectedRoute>
+                  <LeagueGuard>
+                    <FootballerInfo />
+                  </LeagueGuard>
+                </ProtectedRoute>
+              }
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

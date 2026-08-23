@@ -41,6 +41,6 @@ export function formatRemainingTime(remainingTime: RemainingTime): string {
   if (remainingTime.isExpired) {
     return "Expired";
   }
-  const pad = (num: number) => String(num).padStart(2, '0');
+  const pad = (num: number) => String(num).padStart(2, "0");
   return `${remainingTime.days}d ${pad(remainingTime.hours)}:${pad(remainingTime.minutes)}:${pad(remainingTime.seconds)}`;
 }

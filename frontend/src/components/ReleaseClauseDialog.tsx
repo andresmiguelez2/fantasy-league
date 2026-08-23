@@ -38,23 +38,23 @@ export const ReleaseClauseDialog = ({
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<ReleaseClauseData | null>(null);
   const [bidAmountInput, setBidAmountInput] = useState("");
-  
+
   useEffect(() => {
     if (open && footballerId) {
       setLoading(true);
       fetchReleaseClauseData(footballerId)
-        .then(data => {
+        .then((data) => {
           setData(data);
           setBidAmountInput(data?.release_clause ? data.release_clause.toString() : "");
           setLoading(false);
         })
-        .catch(err => {
+        .catch((err) => {
           console.error(err);
           setLoading(false);
         });
     }
   }, [open, footballerId]);
-  
+
   const handleSubmit = async () => {
     if (!data) return;
 
@@ -65,46 +65,45 @@ export const ReleaseClauseDialog = ({
       onOpenChange(false);
     }
   };
-  
+
   const formatValue = (val: number) => {
-    return new Intl.NumberFormat('en-ES', {
-      style: 'currency',
-      currency: 'EUR',
+    return new Intl.NumberFormat("en-ES", {
+      style: "currency",
+      currency: "EUR",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(val);
   };
-  
+
   const formatTimeRemaining = (seconds: number | undefined) => {
     // Return empty string if undefined, zero, or negative
-    if (seconds === undefined || seconds <= 0) return '';
-    
+    if (seconds === undefined || seconds <= 0) return "";
+
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor((seconds % 86400) / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
-    
+
     // Format as DD hh:mm:ss
-    const hh = hours.toString().padStart(2, '0');
-    const mm = minutes.toString().padStart(2, '0');
-    const ss = secs.toString().padStart(2, '0');
-    
+    const hh = hours.toString().padStart(2, "0");
+    const mm = minutes.toString().padStart(2, "0");
+    const ss = secs.toString().padStart(2, "0");
+
     return `${days} ${hh}:${mm}:${ss}`;
   };
 
   const parsedScheduledBidAmount = Number(bidAmountInput);
-  const isValidScheduledBid = Number.isInteger(parsedScheduledBidAmount) && parsedScheduledBidAmount >= 1;
-  
+  const isValidScheduledBid =
+    Number.isInteger(parsedScheduledBidAmount) && parsedScheduledBidAmount >= 1;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Pay Release Clause</DialogTitle>
-          <DialogDescription>
-            Release clause for {footballerName}
-          </DialogDescription>
+          <DialogDescription>Release clause for {footballerName}</DialogDescription>
         </DialogHeader>
-        
+
         {loading ? (
           <div className="py-4 text-center text-muted-foreground">
             Loading release clause data...
@@ -117,7 +116,7 @@ export const ReleaseClauseDialog = ({
                 {formatValue(data.release_clause)}
               </div>
             </div>
-            
+
             {!data.rc_available && (
               <div className="space-y-2">
                 <div className="text-sm text-destructive">
@@ -130,7 +129,9 @@ export const ReleaseClauseDialog = ({
                   </div>
                 )} */}
                 <div className="space-y-2">
-                  <Label htmlFor="scheduled-release-clause-bid">Bid amount for release clause (€)</Label>
+                  <Label htmlFor="scheduled-release-clause-bid">
+                    Bid amount for release clause (€)
+                  </Label>
                   <Input
                     id="scheduled-release-clause-bid"
                     type="number"
@@ -148,12 +149,12 @@ export const ReleaseClauseDialog = ({
             Failed to load release clause data.
           </div>
         )}
-        
+
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={handleSubmit}
             disabled={loading || !data || (!data.rc_available && !isValidScheduledBid)}
           >

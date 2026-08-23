@@ -4,7 +4,7 @@ import { BACKEND_URL } from "@/lib/api";
 import { AvailabilityIcon } from "@/components/AvailabilityIcon";
 
 const POSITION_STYLES: Record<string, { label: string; className: string }> = {
-  gk:  { label: "GK",  className: "bg-yellow-400 text-yellow-900" },
+  gk: { label: "GK", className: "bg-yellow-400 text-yellow-900" },
   df: { label: "DF", className: "bg-blue-500 text-white" },
   md: { label: "MD", className: "bg-green-500 text-white" },
   fw: { label: "FW", className: "bg-red-500 text-white" },
@@ -22,26 +22,26 @@ interface FootballerInfoRowProps {
   onClick?: () => void;
 }
 
-export const FootballerInfoRow = ({ 
-  id, 
-  name, 
-  value, 
+export const FootballerInfoRow = ({
+  id,
+  name,
+  value,
   ownerId,
   averagePoints,
   totalPoints,
   position,
   availability,
-  onClick 
+  onClick,
 }: FootballerInfoRowProps) => {
   const formatValue = (val: number) => {
-    return new Intl.NumberFormat('en-ES', {
-      style: 'currency',
-      currency: 'EUR',
-      notation: 'compact',
+    return new Intl.NumberFormat("en-ES", {
+      style: "currency",
+      currency: "EUR",
+      notation: "compact",
       maximumFractionDigits: 2,
     }).format(val);
   };
-  
+
   const getInitials = (name?: string | null) => {
     const safe = name?.trim();
     if (!safe) return "?";
@@ -55,7 +55,7 @@ export const FootballerInfoRow = ({
 
   const positionKey = position?.toLowerCase() ?? "";
   const positionStyle = POSITION_STYLES[positionKey];
-  
+
   return (
     <TableRow className="fade-in cursor-pointer hover:bg-accent/50" onClick={onClick}>
       <TableCell className="flex items-center gap-3">
@@ -72,7 +72,9 @@ export const FootballerInfoRow = ({
       </TableCell>
       <TableCell className="text-center">
         {positionStyle ? (
-          <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold uppercase ${positionStyle.className}`}>
+          <span
+            className={`inline-block px-2 py-0.5 rounded text-xs font-bold uppercase ${positionStyle.className}`}
+          >
             {positionStyle.label}
           </span>
         ) : (
@@ -83,12 +85,8 @@ export const FootballerInfoRow = ({
         <AvailabilityIcon availability={availability} />
       </TableCell>
       <TableCell className="text-center">
-        <div className="text-sm font-semibold text-foreground">
-          {totalPoints ?? 0}
-        </div>
-        <div className="text-xs text-muted-foreground">
-          {averagePoints ?? '0'}
-        </div>
+        <div className="text-sm font-semibold text-foreground">{totalPoints ?? 0}</div>
+        <div className="text-xs text-muted-foreground">{averagePoints ?? "0"}</div>
       </TableCell>
       <TableCell className="text-center">
         <span className="text-secondary font-semibold">{formatValue(value)}</span>
