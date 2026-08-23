@@ -2,11 +2,10 @@ from fastapi import APIRouter
 from backend.app.db.database import pg_connect, mongo_client
 from .logger import logger
 
-
 router = APIRouter(prefix="/leaderboard", tags=["leaderboard"])
 
 
-@router.get('/{fixture_id}')
+@router.get("/{fixture_id}")
 def leaderboard(fixture_id: str, league_id: int):
     """Get the leaderboard of players
 
@@ -21,7 +20,7 @@ def leaderboard(fixture_id: str, league_id: int):
 
         if fixture_id == "total":
             cursor.execute(
-                    """
+                """
                     SELECT
                         player.id
                         , player.name
@@ -44,11 +43,11 @@ def leaderboard(fixture_id: str, league_id: int):
                         AND player.lineup IS NOT NULL
                     ORDER BY player.points DESC
                     """,
-                    (league_id, league_id)
-                )
+                (league_id, league_id),
+            )
         else:
             cursor.execute(
-                    """
+                """
                     SELECT
                         player.id
                         , player.name
@@ -78,14 +77,18 @@ def leaderboard(fixture_id: str, league_id: int):
                         AND player.lineup IS NOT NULL
                     ORDER BY fixture.points DESC
                     """,
-                    (league_id, fixture_id, league_id, league_id)
-                )
-        
+                (league_id, fixture_id, league_id, league_id),
+            )
+
         players = cursor.fetchall()
 
         cursor.close()
         conn.close()
-        return {"status": "success", "leaderboard": players, "columns": ["id", "name", "points", "team_value", "picture_url"]}
+        return {
+            "status": "success",
+            "leaderboard": players,
+            "columns": ["id", "name", "points", "team_value", "picture_url"],
+        }
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "leaderboard": []}

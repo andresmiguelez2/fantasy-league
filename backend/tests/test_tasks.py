@@ -4,7 +4,7 @@ import os
 import unittest
 from unittest.mock import MagicMock, patch, AsyncMock
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 
 class BackgroundLoopTests(unittest.IsolatedAsyncioTestCase):
@@ -12,7 +12,9 @@ class BackgroundLoopTests(unittest.IsolatedAsyncioTestCase):
     @patch("backend.app.tasks.load_market", return_value=None)
     @patch("backend.app.tasks.load_last_market")
     @patch("backend.app.tasks.get_current_fixture", return_value=None)
-    @patch("backend.app.tasks.footballers_to_update", return_value={"footballer_ids": []})
+    @patch(
+        "backend.app.tasks.footballers_to_update", return_value={"footballer_ids": []}
+    )
     @patch("backend.app.tasks.update_fixture_times")
     async def test_background_loop_runs_and_cancels(
         self,
@@ -45,7 +47,9 @@ class BackgroundLoopTests(unittest.IsolatedAsyncioTestCase):
     @patch("backend.app.tasks.load_market")
     @patch("backend.app.tasks.load_last_market")
     @patch("backend.app.tasks.get_current_fixture", return_value=None)
-    @patch("backend.app.tasks.footballers_to_update", return_value={"footballer_ids": []})
+    @patch(
+        "backend.app.tasks.footballers_to_update", return_value={"footballer_ids": []}
+    )
     @patch("backend.app.tasks.update_fixture_times")
     async def test_active_markets_dict_is_updated_per_league(
         self,
@@ -76,7 +80,9 @@ class BackgroundLoopTests(unittest.IsolatedAsyncioTestCase):
     @patch("backend.app.tasks.load_market", return_value=None)
     @patch("backend.app.tasks.load_last_market")
     @patch("backend.app.tasks.get_current_fixture")
-    @patch("backend.app.tasks.footballers_to_update", return_value={"footballer_ids": []})
+    @patch(
+        "backend.app.tasks.footballers_to_update", return_value={"footballer_ids": []}
+    )
     @patch("backend.app.tasks.update_fixture_times")
     async def test_fixture_fulfill_called_when_active(
         self,
@@ -105,7 +111,9 @@ class BackgroundLoopTests(unittest.IsolatedAsyncioTestCase):
     @patch("backend.app.tasks.get_leagues", return_value=[1])
     @patch("backend.app.tasks.load_market", side_effect=RuntimeError("db error"))
     @patch("backend.app.tasks.get_current_fixture", return_value=None)
-    @patch("backend.app.tasks.footballers_to_update", return_value={"footballer_ids": []})
+    @patch(
+        "backend.app.tasks.footballers_to_update", return_value={"footballer_ids": []}
+    )
     @patch("backend.app.tasks.update_fixture_times")
     async def test_loop_recovers_from_exception(
         self,

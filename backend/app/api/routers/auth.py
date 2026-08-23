@@ -5,7 +5,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, field_validator
 from typing import Optional
-from backend.app.core.auth import authenticate_user, create_access_token, verify_token, get_user_by_id, get_password_hash
+from backend.app.core.auth import (
+    authenticate_user,
+    create_access_token,
+    verify_token,
+    get_user_by_id,
+    get_password_hash,
+)
 from backend.app.db.database import pg_connect
 from .logger import logger
 
@@ -23,12 +29,10 @@ def _ensure_username_unique_index():
         conn = pg_connect()
         cursor = conn.cursor()
         try:
-            cursor.execute(
-                """
+            cursor.execute("""
                 CREATE UNIQUE INDEX IF NOT EXISTS users_username_lower_idx
                 ON users (LOWER(username))
-                """
-            )
+                """)
             conn.commit()
         finally:
             cursor.close()
@@ -53,11 +57,17 @@ class RegisterRequest(BaseModel):
     def validate_username(cls, v: str) -> str:
         v = v.strip()
         if len(v) < _USERNAME_MIN_LEN:
-            raise ValueError(f"Username must be at least {_USERNAME_MIN_LEN} characters long")
+            raise ValueError(
+                f"Username must be at least {_USERNAME_MIN_LEN} characters long"
+            )
         if len(v) > _USERNAME_MAX_LEN:
-            raise ValueError(f"Username must be at most {_USERNAME_MAX_LEN} characters long")
+            raise ValueError(
+                f"Username must be at most {_USERNAME_MAX_LEN} characters long"
+            )
         if not _USERNAME_RE.match(v):
-            raise ValueError("Username may only contain letters, digits, and underscores")
+            raise ValueError(
+                "Username may only contain letters, digits, and underscores"
+            )
         return v
 
 
@@ -79,26 +89,26 @@ def login(request: LoginRequest):
     Authenticate user and return JWT token
     """
     user = authenticate_user(request.username, request.password)
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     # Create access token
     access_token = create_access_token(
         data={"sub": str(user["id"]), "username": user["username"]}
     )
-    
+
     logger.info(f"User {user['username']} logged in successfully")
-    
+
     return {
         "access_token": access_token,
         "token_type": "bearer",
         "id": user["id"],
-        "username": user["username"]
+        "username": user["username"],
     }
 
 
@@ -129,7 +139,9 @@ def register(request: RegisterRequest):
         cursor = conn.cursor()
 
         # Check if username already exists (case-insensitive)
-        cursor.execute("SELECT id FROM users WHERE LOWER(username) = LOWER(%s)", (username,))
+        cursor.execute(
+            "SELECT id FROM users WHERE LOWER(username) = LOWER(%s)", (username,)
+        )
         if cursor.fetchone():
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -173,31 +185,33 @@ def register(request: RegisterRequest):
             conn.close()
 
 
-def get_current_user_from_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+def get_current_user_from_token(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> dict:
     """
     Dependency to get current user from JWT token
     Can be used to protect routes
     """
     token = credentials.credentials
     payload = verify_token(token)
-    
+
     if not payload:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     user_id = int(payload.get("sub"))
     user = get_user_by_id(user_id)
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     return user
 
 
@@ -210,7 +224,6 @@ def logout(credentials: HTTPAuthorizationCredentials = Depends(security)):
     # For more advanced implementations, you could maintain a token blacklist
     logger.info("User logged out")
     return {"message": "Logged out successfully"}
-
 
 
 @router.get("/me", response_model=UserInfo)

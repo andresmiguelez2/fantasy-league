@@ -1,6 +1,7 @@
 """
 Authentication module for JWT token handling and password management
 """
+
 import os
 import logging
 from datetime import datetime, timedelta, timezone
@@ -17,7 +18,9 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # JWT configuration
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 if not SECRET_KEY:
-    logger.warning("JWT_SECRET_KEY environment variable not set. Using insecure default for development only.")
+    logger.warning(
+        "JWT_SECRET_KEY environment variable not set. Using insecure default for development only."
+    )
     SECRET_KEY = "insecure-dev-key-please-set-JWT_SECRET_KEY-in-production"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
@@ -39,8 +42,10 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    
+        expire = datetime.now(timezone.utc) + timedelta(
+            minutes=ACCESS_TOKEN_EXPIRE_MINUTES
+        )
+
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -67,7 +72,7 @@ def authenticate_user(username: str, password: str) -> Optional[dict]:
     try:
         conn = pg_connect()
         cursor = conn.cursor()
-        
+
         # Query user from database
         cursor.execute(
             """
@@ -79,29 +84,29 @@ def authenticate_user(username: str, password: str) -> Optional[dict]:
             WHERE username = %s
             LIMIT 1
             """,
-            (username,)
+            (username,),
         )
-        
+
         user = cursor.fetchone()
         cursor.close()
         conn.close()
-        
+
         if not user:
             logger.warning(f"User not found: {username}")
             return None
-        
+
         user_id, db_username, password_hash = user
-        
+
         # Verify password
         if not verify_password(password, password_hash):
             logger.warning(f"Invalid password for user: {username}")
             return None
-        
+
         return {
             "id": user_id,
             "username": db_username,
         }
-        
+
     except Exception as e:
         logger.error(f"Error authenticating user: {e}")
         return None
@@ -112,29 +117,29 @@ def get_user_by_id(user_id: int) -> Optional[dict]:
     try:
         conn = pg_connect()
         cursor = conn.cursor()
-        
+
         cursor.execute(
             """
             SELECT id, username
             FROM users
             WHERE id = %s
             """,
-            (user_id,)
+            (user_id,),
         )
-        
+
         user = cursor.fetchone()
         cursor.close()
         conn.close()
-        
+
         if not user:
             return None
-        
+
         user_id, username = user
         return {
             "id": user_id,
             "username": username,
         }
-        
+
     except Exception as e:
         logger.error(f"Error getting user by ID: {e}")
         return None

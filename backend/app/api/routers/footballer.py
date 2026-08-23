@@ -36,7 +36,7 @@ def get_last_updated_time(footballer_id: int):
             FROM footballer_data
             WHERE id = %s
             """,
-            (footballer_id,)
+            (footballer_id,),
         )
 
         row = cursor.fetchone()
@@ -60,10 +60,15 @@ def get_footballer_info(footballer_id: int, league_id: int):
         client = mongo_client()
         db = client["FantasyMDB"]
 
-        if (datetime.datetime.now(tz=datetime.timezone.utc) - get_last_updated_time(footballer_id)).seconds > UPDATE_DB_INTERVAL:
+        if (
+            datetime.datetime.now(tz=datetime.timezone.utc)
+            - get_last_updated_time(footballer_id)
+        ).seconds > UPDATE_DB_INTERVAL:
             update_footballer_info(footballer_id)
         else:
-            logger.info(f"Footballer {footballer_id} data is up-to-date; no update needed.")
+            logger.info(
+                f"Footballer {footballer_id} data is up-to-date; no update needed."
+            )
 
         document = db.footballer.find_one({"id": footballer_id})
         cursor = conn.cursor()
@@ -85,7 +90,7 @@ def get_footballer_info(footballer_id: int, league_id: int):
             LEFT JOIN player p ON f.owner_id = p.id AND f.league_id = p.league_id
             WHERE fd.id = %s AND f.league_id = %s
             """,
-            (footballer_id, league_id)
+            (footballer_id, league_id),
         )
 
         footballer_data = cursor.fetchone()
@@ -97,7 +102,11 @@ def get_footballer_info(footballer_id: int, league_id: int):
         if document is None or footballer_data is None:
             return {"status": "error", "message": "Footballer not found."}
 
-        release_clause_available = footballer_data[8].total_seconds() - RELEASE_CLAUSE_DAYS * 24 * 60 * 60 if footballer_data[8] is not None else None
+        release_clause_available = (
+            footballer_data[8].total_seconds() - RELEASE_CLAUSE_DAYS * 24 * 60 * 60
+            if footballer_data[8] is not None
+            else None
+        )
 
         return {
             "status": "success",
@@ -106,20 +115,24 @@ def get_footballer_info(footballer_id: int, league_id: int):
                 "team": footballer_data[1],
                 "total_points": footballer_data[2],
                 "average_points": footballer_data[3],
-                "market_value": document['market_details'][-1]['value'],
+                "market_value": document["market_details"][-1]["value"],
                 "owner_id": footballer_data[4],
                 "owner_name": footballer_data[5],
                 "position": footballer_data[6],
                 "availability": footballer_data[7],
-                "time_to_release_clause": release_clause_available if footballer_data[8] is not None else None,
-                "market_details": document['market_details'],
-                "fixture_breakdown": extract_fixture_points(document['fixture_breakdown']),
-            }
+                "time_to_release_clause": (
+                    release_clause_available if footballer_data[8] is not None else None
+                ),
+                "market_details": document["market_details"],
+                "fixture_breakdown": extract_fixture_points(
+                    document["fixture_breakdown"]
+                ),
+            },
         }
     except Exception as e:
         logger.error(f"Error retrieving footballer info: {e}")
         return {"status": "error", "message": str(e)}
-    
+
 
 @router.get("/short_name/{footballer_id}")
 def get_short_name(footballer_id: int):
@@ -157,13 +170,17 @@ def get_fixture_detail(footballer_id: int, fixture: int):
 
         if document is None:
             return {"status": "error", "message": "Footballer not found."}
-        
+
         return {
             "status": "success",
             "fixture_detail": next(
-                (item for item in document['fixture_breakdown'] if item['fixture'] == fixture),
-                {}
-            )
+                (
+                    item
+                    for item in document["fixture_breakdown"]
+                    if item["fixture"] == fixture
+                ),
+                {},
+            ),
         }
     except Exception as e:
         logger.error(f"Error: {e}")
@@ -182,13 +199,15 @@ def get_fixture_points(footballer_id: int, fixture: int):
         if document is None:
             return {"status": "error", "message": "Footballer not found."}
 
-        for fixture_dict in extract_fixture_points(document.get('fixture_breakdown', {})):
-            if fixture_dict['fixture'] == fixture:
-                points = fixture_dict.get('points', 0)
+        for fixture_dict in extract_fixture_points(
+            document.get("fixture_breakdown", {})
+        ):
+            if fixture_dict["fixture"] == fixture:
+                points = fixture_dict.get("points", 0)
                 break
         else:
             points = 0
-        
+
         return {
             "status": "success",
             "points": points,
@@ -208,7 +227,7 @@ def get_all_footballers(
     limit: int = 20,
     offset: int = 0,
     page: int | None = None,
-    sort: str = 'name',
+    sort: str = "name",
     invert: str = "false",
     search: str = "",
     teams: str = "",
@@ -221,13 +240,9 @@ def get_all_footballers(
     Returns SQL tuples in `footballers` for backward compatibility and a `meta` object with `total`, `limit`, `offset`, and `page`.
     """
     # whitelist allowed sort columns
-    sort_map = {
-        'name': 'name',
-        'points': 'total_points',
-        'value': 'value'
-    }
+    sort_map = {"name": "name", "points": "total_points", "value": "value"}
     if sort not in sort_map:
-        sort = 'name'
+        sort = "name"
 
     limit = max(1, min(int(limit), 100))
     if page is not None:
@@ -237,10 +252,10 @@ def get_all_footballers(
         offset = max(0, int(offset))
 
     sort_col = sort_map[sort]
-    if sort_col in ['total_points', 'value']:
-        direction = 'ASC' if invert == 'true' else 'DESC'
-    elif sort_col == 'name':
-        direction = 'DESC' if invert == 'true' else 'ASC'
+    if sort_col in ["total_points", "value"]:
+        direction = "ASC" if invert == "true" else "DESC"
+    elif sort_col == "name":
+        direction = "DESC" if invert == "true" else "ASC"
 
     team_filters = _parse_csv_filter(teams)
     position_filters = _parse_csv_filter(positions)
@@ -346,7 +361,7 @@ def get_all_footballers(
                 "total_points",
                 "position",
                 "availability",
-            ]
+            ],
         }
     except Exception as e:
         logger.error(f"Error retrieving footballer info: {e}")
@@ -386,9 +401,12 @@ def get_footballer_image(footballer_id: int):
 
 
 @router.post("/update/{footballer_id}")
-def update_footballer_info(footballer_id: int, update_threshold_seconds: int | None = None):
+def update_footballer_info(
+    footballer_id: int, update_threshold_seconds: int | None = None
+):
     """Update footballer information in the database.
-    The method will fetch the source for the footballer and update relevant fields in both PostgreSQL and MongoDB."""
+    The method will fetch the source for the footballer and update relevant fields in both PostgreSQL and MongoDB.
+    """
     init_time = time.time()
 
     try:
@@ -403,7 +421,7 @@ def update_footballer_info(footballer_id: int, update_threshold_seconds: int | N
             WHERE f.id = %s
             LIMIT 1
             """,
-            (footballer_id,)
+            (footballer_id,),
         )
 
         row = cursor.fetchone()
@@ -418,8 +436,11 @@ def update_footballer_info(footballer_id: int, update_threshold_seconds: int | N
         fb.url_name = url_name
         fb.get_player_data()
 
-        if not update_threshold_seconds or int(last_update_seconds) > update_threshold_seconds:
-            if fb.data['market_details']:
+        if (
+            not update_threshold_seconds
+            or int(last_update_seconds) > update_threshold_seconds
+        ):
+            if fb.data["market_details"]:
                 cursor.execute(
                     """
                     UPDATE footballer_data
@@ -427,11 +448,12 @@ def update_footballer_info(footballer_id: int, update_threshold_seconds: int | N
                     WHERE id = %s;
                     """,
                     (
-                        fb.data['total_points'],
-                        fb.data['average_points'],
-                        fb.data['market_details'][-1]['value'],
-                        fb.availability, footballer_id,
-                    )
+                        fb.data["total_points"],
+                        fb.data["average_points"],
+                        fb.data["market_details"][-1]["value"],
+                        fb.availability,
+                        footballer_id,
+                    ),
                 )
                 cursor.execute(
                     """
@@ -439,7 +461,11 @@ def update_footballer_info(footballer_id: int, update_threshold_seconds: int | N
                     SET release_clause = GREATEST(release_clause, CAST(%s AS BIGINT), CAST(%s AS BIGINT))
                     WHERE id = %s
                     """,
-                    (fb.data['market_details'][-1]['value'], MIN_RELEASE_CLAUSE_VALUE, footballer_id)
+                    (
+                        fb.data["market_details"][-1]["value"],
+                        MIN_RELEASE_CLAUSE_VALUE,
+                        footballer_id,
+                    ),
                 )
 
                 client = mongo_client()
@@ -450,14 +476,20 @@ def update_footballer_info(footballer_id: int, update_threshold_seconds: int | N
                     if fb.data.get("market_details") is not None:
                         update_fields["market_details"] = fb.data["market_details"]
                     if fb.data.get("fixture_breakdown") is not None:
-                        update_fields["fixture_breakdown"] = fb.data["fixture_breakdown"]
+                        update_fields["fixture_breakdown"] = fb.data[
+                            "fixture_breakdown"
+                        ]
                     # if fb.data.get("image_binary") is not None:
                     #     update_fields["image_binary"] = fb.data["image_binary"]
 
                 if update_fields:
-                    db.footballer.update_one({"id": footballer_id}, {"$set": update_fields}, upsert=True)
+                    db.footballer.update_one(
+                        {"id": footballer_id}, {"$set": update_fields}, upsert=True
+                    )
             else:
-                logger.warning(f"No market details found for footballer {footballer_id}; skipping update. Consider removing from database")
+                logger.warning(
+                    f"No market details found for footballer {footballer_id}; skipping update. Consider removing from database"
+                )
 
         conn.commit()
         cursor.close()
@@ -467,7 +499,9 @@ def update_footballer_info(footballer_id: int, update_threshold_seconds: int | N
 
         elapsed_time = time.time() - init_time
 
-        logger.debug(f"Updated footballer {footballer_id}. Elapsed time: {elapsed_time:.4f} seconds.")
+        logger.debug(
+            f"Updated footballer {footballer_id}. Elapsed time: {elapsed_time:.4f} seconds."
+        )
         return {"status": "success", "elapsed_time": round(elapsed_time, 4)}
     except Exception as e:
         logger.error(f"Error updating footballer data: {e}")
@@ -475,7 +509,9 @@ def update_footballer_info(footballer_id: int, update_threshold_seconds: int | N
 
 
 @router.post("/update_field/{footballer_id}")
-def update_footballer_field(footballer_id: int, league_id: int, field: str | None = None):
+def update_footballer_field(
+    footballer_id: int, league_id: int, field: str | None = None
+):
     """Update a specific field of footballer data in the database."""
     init_time = time.time()
 
@@ -490,7 +526,7 @@ def update_footballer_field(footballer_id: int, league_id: int, field: str | Non
             WHERE id = %s
             LIMIT 1
             """,
-            (footballer_id,)
+            (footballer_id,),
         )
 
         row = cursor.fetchone()
@@ -503,14 +539,14 @@ def update_footballer_field(footballer_id: int, league_id: int, field: str | Non
         fb = Footballer(obtain_data=False)
         search_url = FANTASY_PLAYER_URL + url_name
         soup = scrape_page(search_url, logger)
-        
-        if field == 'total_points':
+
+        if field == "total_points":
             value = fb._get_total_points(soup)
-        elif field == 'average_points':
+        elif field == "average_points":
             value = fb._get_average_points(soup)
-        elif field == 'team':
+        elif field == "team":
             value = fb._get_team(soup)
-        elif field == 'position':
+        elif field == "position":
             value = FOOTBALLER_POSITIONS[fb._get_position(soup)]
         else:
             cursor.close()
@@ -523,7 +559,7 @@ def update_footballer_field(footballer_id: int, league_id: int, field: str | Non
             SET {field} = %s
             WHERE id = %s
             """,
-            (value, footballer_id)
+            (value, footballer_id),
         )
 
         conn.commit()
@@ -532,8 +568,14 @@ def update_footballer_field(footballer_id: int, league_id: int, field: str | Non
 
         elapsed_time = time.time() - init_time
 
-        logger.info(f"Updated field {field} for footballer {footballer_id}. Elapsed time: {elapsed_time:.4f} seconds.")
-        return {"status": "success", "field": field, "elapsed_time": round(elapsed_time, 4)}
+        logger.info(
+            f"Updated field {field} for footballer {footballer_id}. Elapsed time: {elapsed_time:.4f} seconds."
+        )
+        return {
+            "status": "success",
+            "field": field,
+            "elapsed_time": round(elapsed_time, 4),
+        }
     except Exception as e:
         logger.error(f"Error updating footballer data: {e}")
         return {"status": "error", "message": str(e)}
@@ -557,7 +599,7 @@ def count_footballers_per_position(player_id: int, league_id: int):
                 AND footballer.on_lineup = TRUE
             GROUP BY footballer_data.position
             """,
-            (player_id, league_id)
+            (player_id, league_id),
         )
 
         counts = dict(cursor.fetchall())
@@ -569,18 +611,20 @@ def count_footballers_per_position(player_id: int, league_id: int):
     except Exception as e:
         logger.error(f"Error counting footballers per position: {e}")
         return {}
-    
+
 
 class LineUpFotballer(BaseModel):
     player_id: int
     footballer_id: int
     league_id: int
     on_lineup: bool
+
+
 @router.post("/set_lineup/")
 def set_footballer_on_lineup(data: LineUpFotballer):
     """Set or unset a footballer in a player's lineup."""
     try:
-        update_footballer_field(data.footballer_id, data.league_id, 'position')
+        update_footballer_field(data.footballer_id, data.league_id, "position")
 
         conn = pg_connect()
         cursor = conn.cursor()
@@ -596,8 +640,9 @@ def set_footballer_on_lineup(data: LineUpFotballer):
                 AND footballer.id = %s
                 AND player.league_id = %s
                 AND footballer.league_id = %s
-            """
-        , (data.player_id, data.footballer_id, data.league_id, data.league_id))
+            """,
+            (data.player_id, data.footballer_id, data.league_id, data.league_id),
+        )
 
         lineup = cursor.fetchone()
 
@@ -607,17 +652,19 @@ def set_footballer_on_lineup(data: LineUpFotballer):
             return {"status": "error", "message": "Footballer not owned by player."}
         else:
             lineup = lineup[0]
-        
+
         cursor.execute(
             """
             UPDATE footballer
             SET on_lineup = %s
             WHERE id = %s AND league_id = %s
             """,
-            (data.on_lineup, data.footballer_id, data.league_id)
+            (data.on_lineup, data.footballer_id, data.league_id),
         )
 
-        footballers_per_position = count_footballers_per_position(data.player_id, data.league_id)
+        footballers_per_position = count_footballers_per_position(
+            data.player_id, data.league_id
+        )
         logger.info(footballers_per_position)
 
         for n_spots, pos_name in zip([1] + lineup, LINEUP_POSITIONS):
@@ -631,12 +678,15 @@ def set_footballer_on_lineup(data: LineUpFotballer):
             cursor.close()
             conn.close()
 
-        return {"status": "success", "message": f"Footballer {'added to' if data.on_lineup else 'removed from'} lineup."}
+        return {
+            "status": "success",
+            "message": f"Footballer {'added to' if data.on_lineup else 'removed from'} lineup.",
+        }
     except Exception as e:
         logger.error(f"Error setting footballer lineup: {e}")
         return {"status": "error", "message": str(e)}
 
-    
+
 @router.get("/market_status/{footballer_id}")
 def get_market_status(footballer_id: int, league_id: int):
     """Get the market status of a footballer."""
@@ -650,7 +700,7 @@ def get_market_status(footballer_id: int, league_id: int):
             FROM footballer
             WHERE id = %s AND league_id = %s
             """,
-            (footballer_id, league_id)
+            (footballer_id, league_id),
         )
 
         row = cursor.fetchone()
@@ -678,7 +728,7 @@ def _can_change_market_status(footballer_id: int, league_id: int) -> bool:
             FROM footballer
             WHERE id = %s AND league_id = %s
             """,
-            (RELEASE_CLAUSE_DAYS, footballer_id, league_id)
+            (RELEASE_CLAUSE_DAYS, footballer_id, league_id),
         )
 
         row = cursor.fetchone()
@@ -712,18 +762,27 @@ def change_market_status(footballer_id: int, league_id: int, on_market: bool):
                     , on_market_since = CASE WHEN %s THEN NOW() ELSE NULL END
                 WHERE id = %s AND league_id = %s
                 """,
-                (on_market, on_market, footballer_id, league_id)
+                (on_market, on_market, footballer_id, league_id),
             )
             conn.commit()
             cursor.close()
             conn.close()
 
-            logger.info(f"Footballer {footballer_id} market status changed to {'on market' if on_market else 'off market'}.")
-            return {"status": "success", "footballer_id": footballer_id, "on_market": on_market}
+            logger.info(
+                f"Footballer {footballer_id} market status changed to {'on market' if on_market else 'off market'}."
+            )
+            return {
+                "status": "success",
+                "footballer_id": footballer_id,
+                "on_market": on_market,
+            }
         else:
             cursor.close()
             conn.close()
-            return {"status": "error", "message": "Footballer cannot be placed on market due to restrictions."}
+            return {
+                "status": "error",
+                "message": "Footballer cannot be placed on market due to restrictions.",
+            }
     except Exception as e:
         logger.error(f"Error changing footballer market status: {e}")
         return {"status": "error", "message": str(e)}
@@ -745,7 +804,7 @@ def get_release_clause_data(footballer_id: int, league_id: int):
             FROM footballer
             WHERE id = %s AND league_id = %s
             """,
-            (RELEASE_CLAUSE_DAYS, RELEASE_CLAUSE_DAYS, footballer_id, league_id)
+            (RELEASE_CLAUSE_DAYS, RELEASE_CLAUSE_DAYS, footballer_id, league_id),
         )
 
         data = cursor.fetchone()
@@ -755,7 +814,7 @@ def get_release_clause_data(footballer_id: int, league_id: int):
 
         if not data:
             return {"status": "error", "message": "Footballer not found."}
-        
+
         return {"status": "success", "rc_available": data[0], "release_clause": data[1]}
     except Exception as e:
         logger.error(f"Error getting footballer release clause data: {e}")
@@ -777,14 +836,16 @@ def _auto_increment_release_clause(footballer_id: int, leagues: list[int]):
                 FROM footballer AS f JOIN footballer_data AS fd ON f.id = fd.id
                 WHERE f.id = %s AND f.league_id = %s
                 """,
-                (footballer_id, league_id)
+                (footballer_id, league_id),
             )
 
             row = cursor.fetchone()
 
             if row:
                 current_release_clause = row[0]
-                new_release_clause = max(current_release_clause, MIN_RELEASE_CLAUSE_VALUE, row[1])
+                new_release_clause = max(
+                    current_release_clause, MIN_RELEASE_CLAUSE_VALUE, row[1]
+                )
                 if current_release_clause < new_release_clause:
                     cursor.execute(
                         """
@@ -792,16 +853,19 @@ def _auto_increment_release_clause(footballer_id: int, leagues: list[int]):
                         SET release_clause = %s
                         WHERE id = %s AND league_id = %s
                         """,
-                        (new_release_clause, footballer_id, league_id)
+                        (new_release_clause, footballer_id, league_id),
                     )
-                    logger.info(f"Release clause for footballer {footballer_id} in league {league_id} updated to {new_release_clause}.")
+                    logger.info(
+                        f"Release clause for footballer {footballer_id} in league {league_id} updated to {new_release_clause}."
+                    )
 
-        
         conn.commit()
         cursor.close()
         conn.close()
     except Exception as e:
-        logger.error(f"Error auto-incrementing release clause for footballer {footballer_id}: {e}")
+        logger.error(
+            f"Error auto-incrementing release clause for footballer {footballer_id}: {e}"
+        )
     finally:
         elapsed_time = time.time() - init_time
         return elapsed_time

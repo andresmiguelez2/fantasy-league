@@ -4,7 +4,6 @@ from .logger import logger
 import imghdr
 from fastapi.responses import Response
 
-
 router = APIRouter(prefix="/team", tags=["team"])
 
 

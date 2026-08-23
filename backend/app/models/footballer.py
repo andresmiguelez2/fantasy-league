@@ -7,13 +7,16 @@ from bson import Binary
 from backend.app.utils.aux_functions import scrape_page
 from pymongo import MongoClient
 
-from backend.app.core.constants import FANTASY_PLAYER_URL, FANTASY_PLAYER_MARKET_URL, COMPETITION_NAME
-
+from backend.app.core.constants import (
+    FANTASY_PLAYER_URL,
+    FANTASY_PLAYER_MARKET_URL,
+    COMPETITION_NAME,
+)
 
 logger = logging.getLogger(__name__)
 
 
-class Footballer():
+class Footballer:
     def __init__(self, obtain_data=False, name=None, full_name=None):
         self._id: int = None
         self._name: str = None
@@ -26,7 +29,7 @@ class Footballer():
         self._team: str = None
         self._position: str = None
         self._availability: str = None
-        
+
         if obtain_data and name:
             self._name = name
             self._full_name = full_name
@@ -37,7 +40,7 @@ class Footballer():
     def id(self):
         """Get the footballer ID."""
         return self._id
-    
+
     @id.setter
     def id(self, value):
         """Set the footballer ID."""
@@ -47,12 +50,12 @@ class Footballer():
     def name(self):
         """Get the footballer name."""
         return self._name
-    
+
     @name.setter
     def name(self, value):
         """Set the footballer name."""
         self._name = value
-    
+
     @property
     def full_name(self):
         """Get the footballer full name."""
@@ -61,7 +64,7 @@ class Footballer():
     @full_name.setter
     def full_name(self, value):
         """Set the footballer full name."""
-        if '-1' in value:
+        if "-1" in value:
             logger.warning(f"Full name not found in API: {value}")
         self._full_name = value
 
@@ -79,7 +82,7 @@ class Footballer():
     def value(self):
         """Get the footballer value."""
         return self._value
-    
+
     @value.setter
     def value(self, value):
         """Set the footballer value."""
@@ -89,7 +92,7 @@ class Footballer():
     def on_market(self):
         """Check if the footballer is on the market."""
         return self._on_market
-    
+
     @on_market.setter
     def on_market(self, value):
         """Set the footballer on market status."""
@@ -99,7 +102,7 @@ class Footballer():
     def owner_id(self):
         """Get the footballer owner_id ID."""
         return self._owner_id
-    
+
     @owner_id.setter
     def owner_id(self, value):
         """Set the footballer owner ID."""
@@ -139,19 +142,22 @@ class Footballer():
     def availability(self):
         """Get the footballer availability."""
         return self._availability
-    
+
     @availability.setter
     def availability(self, value):
         """Set the footballer availability."""
         self._availability = value
 
     def __str__(self):
-        attrs = [attr for attr in dir(self) if attr.startswith('_') and not attr.startswith('__')]
+        attrs = [
+            attr
+            for attr in dir(self)
+            if attr.startswith("_") and not attr.startswith("__")
+        ]
         attr_strs = []
         for attr in attrs:
             attr_strs.append(f"{attr[1:]}={getattr(self, attr)}")
         return f"Footballer({', '.join(attr_strs)})"
-
 
     def _get_total_points(self, soup):
         """Extracts the total points from the player's page soup."""
@@ -168,21 +174,24 @@ class Footballer():
         logger.warning("Total points not found.")
         return 0
 
-
     def _get_average_points(self, soup):
         """Extracts the average points from the player's page soup."""
         # Find all <span> tags and check if their text contains "Media puntos"
-        media_spans = soup.find_all("span", class_="racha-box columna_puntos point mx-auto")
+        media_spans = soup.find_all(
+            "span", class_="racha-box columna_puntos point mx-auto"
+        )
         for span in media_spans:
             if "Media puntos" in span.get_text():
                 # Go up to the parent <td>
                 td = span.find_parent("td")
                 if td:
                     # Find the next <td> with the desired class
-                    next_td = td.find_next_sibling("td", class_="data points bold d-flex rachita")
+                    next_td = td.find_next_sibling(
+                        "td", class_="data points bold d-flex rachita"
+                    )
                     if next_td:
-                        points_str = next_td.text.strip('\n').strip(' ')
-                        first_break = points_str.find('\n')
+                        points_str = next_td.text.strip("\n").strip(" ")
+                        first_break = points_str.find("\n")
                         fantasy_points = points_str[:first_break]
                         try:
                             return float(fantasy_points)
@@ -203,13 +212,13 @@ class Footballer():
             value = int(match.group(1))
             stat_name = match.group(2).strip()
             points = int(match.group(3))
-            return stat_name, {'value': value, 'points': points}
+            return stat_name, {"value": value, "points": points}
         # Try to match: [stat_name] [points] p (no value)
         match = re.match(r"([^\d]+?)\s+(-?\d+)\s*p", stat_text)
         if match:
             stat_name = match.group(1).strip()
             points = int(match.group(2))
-            return stat_name, {'value': None, 'points': points}
+            return stat_name, {"value": None, "points": points}
         return None, None
 
     def _get_fixture_breakdown(self, soup):
@@ -222,7 +231,9 @@ class Footballer():
             match = re.match(r"(\d+)", fixture_str)
             fixture_number = int(match.group(1)) if match else fixture_str
             # The fixture row's parent is a <tr>, so find the next <tr class="desglose">
-            desglose_tr = fixture_td.find_parent("tr").find_next_sibling("tr", class_="desglose")
+            desglose_tr = fixture_td.find_parent("tr").find_next_sibling(
+                "tr", class_="desglose"
+            )
             if desglose_tr:
                 # Find all statistics divs inside this breakdown
                 stats_dict = {}
@@ -231,11 +242,9 @@ class Footballer():
                     stat_name, stat_entry = self._parse_stat_text(stat_text)
                     if stat_name:
                         stats_dict[stat_name] = stat_entry
-                    if stat_name in ['Puntos DAZN', 'Puntos Relevo']: break
-                breakdowns.append({
-                    "fixture": fixture_number,
-                    "breakdown": stats_dict
-                })
+                    if stat_name in ["Puntos DAZN", "Puntos Relevo"]:
+                        break
+                breakdowns.append({"fixture": fixture_number, "breakdown": stats_dict})
         return breakdowns
 
     def _get_player_data(self):
@@ -244,10 +253,12 @@ class Footballer():
         soup = scrape_page(search_url, logger)
 
         if COMPETITION_NAME not in soup.text:
-            if '-1' not in self.url_name:
-                self.url_name += '-1'
+            if "-1" not in self.url_name:
+                self.url_name += "-1"
                 self._get_player_data()
-            logger.debug(f"Player {self.url_name} does not belong to {COMPETITION_NAME}.")
+            logger.debug(
+                f"Player {self.url_name} does not belong to {COMPETITION_NAME}."
+            )
             return
 
         total_points = self._get_total_points(soup)
@@ -255,7 +266,7 @@ class Footballer():
         fixture_breakdown = self._get_fixture_breakdown(soup)
         image_url = self._get_player_image_url(soup)
         image_binary = self._get_image_binary(image_url) if image_url else None
-        player_id = int(image_url.split('/')[-1].split('.')[0]) if image_url else None
+        player_id = int(image_url.split("/")[-1].split(".")[0]) if image_url else None
         market_details = self._get_market_details(player_id) if player_id else None
         self.team = self._get_team(soup)
         self.position = self._get_position(soup)
@@ -295,7 +306,9 @@ class Footballer():
                     date = match.group(1)
                     value = int(match.group(2))
                     chart_data.append({"date": date, "value": value})
-        logger.debug(f"Found {len(chart_data)} market data points for player {player_id}")
+        logger.debug(
+            f"Found {len(chart_data)} market data points for player {player_id}"
+        )
         return list(reversed(chart_data))
 
     def _get_player_image_url(self, soup):
@@ -311,7 +324,7 @@ class Footballer():
                     return img["src"]
         logger.warning("Player image URL not found.")
         return None
-    
+
     def _get_image_binary(self, image_url):
         for attempt in range(4):
             response = requests.get(
@@ -329,7 +342,7 @@ class Footballer():
                 logger.warning(
                     f"Rate limited while fetching image {image_url}; retrying in {2 ** attempt}s (attempt {attempt + 1}/4)"
                 )
-                time.sleep(2 ** attempt)
+                time.sleep(2**attempt)
                 continue
 
             if response.status_code == 200:
@@ -341,11 +354,14 @@ class Footballer():
         logger.warning("Image binary not found.")
         return None
 
-
     def _get_team(self, soup):
         """Extracts the player's team from the player's page soup."""
         # Find all <a> tags with the team URL pattern
-        team_links = [a for a in soup.find_all("a", href=True) if "https://www.futbolfantasy.com/laliga/equipos/" in a["href"]]
+        team_links = [
+            a
+            for a in soup.find_all("a", href=True)
+            if "https://www.futbolfantasy.com/laliga/equipos/" in a["href"]
+        ]
         if len(team_links) >= 41:
             team_a = team_links[40]  # 41st appearance (0-based index)
             img = team_a.find("img")
@@ -373,7 +389,7 @@ class Footballer():
             class_attr = span.get("class") or []
             # return the first token that is not 'position-box'
             for token in class_attr:
-                if token and token != 'position-box':
+                if token and token != "position-box":
                     return str(token).lower()
 
             # fallback to the inner text (e.g. 'X')
@@ -407,7 +423,9 @@ class Footballer():
                 return "uncertain"
 
             # Injured: ONLY if an <img> alt contains 'lesionado'
-            img_les = soup.find("img", alt=lambda v: v and re.search(r"Lesionado", v, re.I))
+            img_les = soup.find(
+                "img", alt=lambda v: v and re.search(r"Lesionado", v, re.I)
+            )
             if img_les:
                 return "injured"
 

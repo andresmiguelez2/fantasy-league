@@ -10,7 +10,6 @@ from backend.app.core.auth import verify_token
 from .footballer import get_footballer_image, set_footballer_on_lineup
 from .logger import logger
 
-
 router = APIRouter(prefix="/player", tags=["player"])
 security = HTTPBearer()
 
@@ -63,7 +62,9 @@ def update_player_profile(
                 (player_id, user_id),
             )
             if not cursor.fetchone():
-                raise HTTPException(status_code=403, detail="Not authorized to update this player")
+                raise HTTPException(
+                    status_code=403, detail="Not authorized to update this player"
+                )
 
             cursor.execute(
                 "UPDATE player SET name = %s WHERE id = %s AND user_id = %s",
@@ -109,7 +110,9 @@ def get_player_profile_picture(user_id: int):
         raise
     except Exception as e:
         logger.error(f"Error retrieving profile picture for user {user_id}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve profile picture")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve profile picture"
+        )
 
 
 @router.post("/profile-picture")
@@ -158,10 +161,9 @@ def upload_player_profile_picture(
         raise HTTPException(status_code=500, detail="Failed to upload profile picture")
 
 
-@router.get('/{player_id}')
+@router.get("/{player_id}")
 def get_player_info(player_id: int, league_id: int):
-    """Get the player information
-    """
+    """Get the player information"""
     try:
         conn = pg_connect()
 
@@ -185,17 +187,16 @@ def get_player_info(player_id: int, league_id: int):
         return {
             "status": "success",
             "player": player,
-            "columns": ["id", "name", "budget", "points"]
+            "columns": ["id", "name", "budget", "points"],
         }
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "player": None}
 
 
-@router.get('/lineup/{player_id}')
+@router.get("/lineup/{player_id}")
 def get_player_lineup(player_id: int, league_id: int):
-    """Get the player lineup
-    """
+    """Get the player lineup"""
     try:
         conn = pg_connect()
 
@@ -222,7 +223,7 @@ def get_player_lineup(player_id: int, league_id: int):
         return {"status": "error", "lineup": None}
 
 
-@router.get('/lineup_footballers/{player_id}')
+@router.get("/lineup_footballers/{player_id}")
 def get_footballers_on_lineup(player_id: int, league_id: int):
     """
     Get the footballers on the player's lineup
@@ -262,14 +263,14 @@ def get_footballers_on_lineup(player_id: int, league_id: int):
         return {
             "status": "success",
             "lineup_footballers": lineup,
-            "columns": ["GK", "DF", "MD", "FW"]
+            "columns": ["GK", "DF", "MD", "FW"],
         }
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "lineup": None}
-    
 
-@router.get('/fixture_lineup/{player_id}')
+
+@router.get("/fixture_lineup/{player_id}")
 def get_fixture_lineup(player_id: int, fixture_n: int, league_id: int):
     """
     Get the footballers on the player's lineup for a specific fixture
@@ -278,7 +279,7 @@ def get_fixture_lineup(player_id: int, fixture_n: int, league_id: int):
         player_id (int): The player ID
         fixture_id (int): The fixture number
         league_id (int): The league ID
-    
+
     API Returns:
         list[list[int]]: A list of lists containing the footballer IDs on the lineup. Includes GK, DF, MD, FW
         list[int]: The formation lineup
@@ -330,14 +331,14 @@ def get_fixture_lineup(player_id: int, fixture_n: int, league_id: int):
             "status": "success",
             "lineup_footballers": lineup,
             "lineup": formation,
-            "columns": ["GK", "DF", "MD", "FW"]
+            "columns": ["GK", "DF", "MD", "FW"],
         }
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "lineup": [], "lineup_footballers": []}
 
 
-@router.get('/fixtures/{player_id}')
+@router.get("/fixtures/{player_id}")
 def get_player_fixtures(player_id: int, league_id: int):
     """
     Get the fixtures where the player took part.
@@ -366,10 +367,11 @@ def get_player_fixtures(player_id: int, league_id: int):
         return {"status": "error", "fixtures": None}
 
 
-@router.get('/benched_footballers/{player_id}')
-def get_footballers_not_on_lineup(player_id: int, league_id: int, target_position: str = None):
-    """
-    """
+@router.get("/benched_footballers/{player_id}")
+def get_footballers_not_on_lineup(
+    player_id: int, league_id: int, target_position: str = None
+):
+    """ """
     try:
         conn = pg_connect()
 
@@ -400,23 +402,22 @@ def get_footballers_not_on_lineup(player_id: int, league_id: int, target_positio
             return {
                 "status": "success",
                 "benched_footballers": lineup,
-                "columns": ["GK", "DF", "MD", "FW"]
+                "columns": ["GK", "DF", "MD", "FW"],
             }
         else:
             return {
                 "status": "success",
                 "benched_footballers": lineup[POSITION_ORDER[target_position]],
-                "columns": [target_position]
+                "columns": [target_position],
             }
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "lineup": None}
-    
 
-@router.get('/available_subs/{player_id}')
+
+@router.get("/available_subs/{player_id}")
 def get_available_substitutes(player_id: int, league_id: int, position: str):
-    """Get the available substitutes for a given position
-    """
+    """Get the available substitutes for a given position"""
     try:
         conn = pg_connect()
 
@@ -452,20 +453,25 @@ def get_available_substitutes(player_id: int, league_id: int, position: str):
         return {
             "status": "success",
             "substitutes": substitutes,
-            "columns": ["id", "name", "value", "total_points", "average_points"]
+            "columns": ["id", "name", "value", "total_points", "average_points"],
         }
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "substitutes": []}
-    
 
-@router.post('/update/lineup/{player_id}')
+
+@router.post("/update/lineup/{player_id}")
 def update_player_lineup(player_id: int, league_id: int, lineup: list[int]):
-    """Update the player lineup. This should be a list of three integers representing the number of defenders, midfielders, and forwards.
-    """
-    assert len(lineup) == 3, logger.error("Lineup must contain exactly 3 elements: [DF, MD, FW]")
-    assert all(isinstance(x, int) for x in lineup), logger.error("All elements in lineup must be integers")
-    assert all(0 <= x <= 10 for x in lineup), logger.error("All elements in lineup must be between 0 and 10")
+    """Update the player lineup. This should be a list of three integers representing the number of defenders, midfielders, and forwards."""
+    assert len(lineup) == 3, logger.error(
+        "Lineup must contain exactly 3 elements: [DF, MD, FW]"
+    )
+    assert all(isinstance(x, int) for x in lineup), logger.error(
+        "All elements in lineup must be integers"
+    )
+    assert all(0 <= x <= 10 for x in lineup), logger.error(
+        "All elements in lineup must be between 0 and 10"
+    )
     assert sum(lineup) == 10, logger.error("The sum of the lineup elements must be 10")
 
     try:
@@ -490,7 +496,7 @@ def update_player_lineup(player_id: int, league_id: int, lineup: list[int]):
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error"}
-    
+
 
 def validate_lineup(player_id: int, league_id: int, lineup: list[int]):
     """
@@ -517,7 +523,7 @@ def validate_lineup(player_id: int, league_id: int, lineup: list[int]):
         )
 
         footballers_on_lineup = cursor.fetchall()
-        
+
         # Organize by position
         lineup_by_pos = [[], [], [], []]
         for f_id, position in footballers_on_lineup:
@@ -538,7 +544,7 @@ def validate_lineup(player_id: int, league_id: int, lineup: list[int]):
                 SET on_lineup = FALSE
                 WHERE id = %s
                 """,
-                (footballer_id,)
+                (footballer_id,),
             )
 
         conn.commit()
@@ -546,7 +552,9 @@ def validate_lineup(player_id: int, league_id: int, lineup: list[int]):
         conn.close()
 
         if footballers_to_remove:
-            logger.info(f"Footballers removed from player's {player_id} lineup due to incompatibilities: {footballers_to_remove}")
+            logger.info(
+                f"Footballers removed from player's {player_id} lineup due to incompatibilities: {footballers_to_remove}"
+            )
     except Exception as e:
         logger.error(f"Error validating lineup: {e}")
 
@@ -554,7 +562,7 @@ def validate_lineup(player_id: int, league_id: int, lineup: list[int]):
 @router.get("/bid_sum/{player_id}")
 def get_player_bid_sum(player_id: int, league_id: int):
     """Get the total sum of active bids made by a player in a specific league.
-    
+
     Args:
         player_id (int): The ID of the player to get the bid sum for.
         league_id (int): The league ID to filter by.
@@ -572,7 +580,7 @@ def get_player_bid_sum(player_id: int, league_id: int):
                 AND league_id = %s
                 AND bidder_id = %s
             """,
-            (league_id, player_id)
+            (league_id, player_id),
         )
         total_bid_sum = cursor.fetchone()[0]
 
@@ -607,7 +615,7 @@ def get_team_value(player_id: int, league_id: int) -> int:
                 footballer.league_id = %s
                 AND footballer.owner_id = %s
             """,
-            (league_id, player_id)
+            (league_id, player_id),
         )
         team_value = int(cursor.fetchone()[0])
 

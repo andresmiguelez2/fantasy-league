@@ -31,7 +31,9 @@ def mark_expired_bids_inactive(league_id: int):
         conn = pg_connect()
         cursor = conn.cursor()
 
-        expiration_threshold = datetime.now(tz=timezone.utc) - timedelta(days=BID_EXPIRATION_DAYS)
+        expiration_threshold = datetime.now(tz=timezone.utc) - timedelta(
+            days=BID_EXPIRATION_DAYS
+        )
         cursor.execute(
             """
             UPDATE bid
@@ -41,7 +43,7 @@ def mark_expired_bids_inactive(league_id: int):
                 AND active = TRUE
                 AND timestamp <= %s
             """,
-            (league_id, expiration_threshold)
+            (league_id, expiration_threshold),
         )
         expired_count = cursor.rowcount
         conn.commit()
@@ -49,7 +51,9 @@ def mark_expired_bids_inactive(league_id: int):
         conn.close()
 
         if expired_count > 0:
-            logger.info(f"Marked {expired_count} expired bids as inactive. League {league_id}.")
+            logger.info(
+                f"Marked {expired_count} expired bids as inactive. League {league_id}."
+            )
         return expired_count
     except Exception as e:
         logger.error(f"Error marking expired bids as inactive: {e}")
@@ -74,7 +78,7 @@ def market(league_id: int):
             WHERE on_market = TRUE AND league_id = %s
             ORDER BY owner_id, on_market_since
             """,
-            (league_id,)
+            (league_id,),
         )
         footballers = cursor.fetchall()
 
@@ -90,7 +94,7 @@ def market(league_id: int):
                 "on_market_since",
                 "owner_id",
                 "on_lineup",
-            ]
+            ],
         }
     except Exception as e:
         logger.error(f"Error: {e}")
@@ -100,7 +104,7 @@ def market(league_id: int):
 @router.get("/{player_id}")
 def player_market(player_id: int, league_id: int):
     """Get all footballers currently on the market with bid info for a specific player.
-    
+
     Args:
         player_id (int): The ID of the player to get bid info for.
         league_id (int): The league ID to filter by.
@@ -136,11 +140,15 @@ def player_market(player_id: int, league_id: int):
                 AND f.league_id = %s
             ORDER BY is_own ASC, (f.owner_id IS NULL) DESC, on_market_since DESC
             """,
-            (player_id, player_id, league_id, league_id)
+            (player_id, player_id, league_id, league_id),
         )
         footballers = cursor.fetchall()
         market = load_market(league_id)
-        market_closing_timestamp = market.closing_ts.isoformat() if market and getattr(market, "closing_ts", None) else None
+        market_closing_timestamp = (
+            market.closing_ts.isoformat()
+            if market and getattr(market, "closing_ts", None)
+            else None
+        )
 
         cursor.close()
         conn.close()
@@ -159,8 +167,8 @@ def player_market(player_id: int, league_id: int):
                 "total_points",
                 "is_own",
                 "position",
-                "availability"
-            ]
+                "availability",
+            ],
         }
     except Exception as e:
         logger.error(f"Error: {e}")
@@ -180,11 +188,13 @@ def get_past_bids(league_id: int, limit: int = 20, offset: int = 0):
             league_id = %s
             AND active = false
             AND acquired_from IS NOT NULL
-        """, (league_id,)
+        """,
+        (league_id,),
     )
     total = cursor.fetchone()[0]
 
-    cursor.execute("""
+    cursor.execute(
+        """
         SELECT
 	        COALESCE(p_from.name, 'League') AS "from"
             , COALESCE(p_to.name, 'League') AS "to"
@@ -203,7 +213,8 @@ def get_past_bids(league_id: int, limit: int = 20, offset: int = 0):
         ORDER BY bid.timestamp DESC
         LIMIT %s
         OFFSET %s
-        """, (league_id, limit, offset)
+        """,
+        (league_id, limit, offset),
     )
 
     bid_history = cursor.fetchall()
@@ -214,13 +225,21 @@ def get_past_bids(league_id: int, limit: int = 20, offset: int = 0):
     return {
         "status": "success",
         "bid_history": bid_history,
-        "columns": ["from_player", "to_player", "amount", "footballer_name", "footballer_id", "timestamp"],
+        "columns": [
+            "from_player",
+            "to_player",
+            "amount",
+            "footballer_name",
+            "footballer_id",
+            "timestamp",
+        ],
         "meta": {
-                "total": total,
-                "limit": limit,
-                "offset": offset,
-            },
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+        },
     }
+
 
 class BidRequest(BaseModel):
     player_id: int
@@ -258,6 +277,7 @@ def _player_has_enough_budget(
 
     return True, None
 
+
 @router.post("/bid")
 def place_bid(bid: BidRequest):
     """Place or remove a bid on a footballer. To remove a bid, bid an amount of 0.
@@ -265,16 +285,16 @@ def place_bid(bid: BidRequest):
         bid (BidRequest): The bid request containing player_id, footballer_id, bid_amount, and league_id.
     """
     try:
-        conn = pg_connect()        
+        conn = pg_connect()
         cursor = conn.cursor()
-        
+
         cursor.execute(
-                """
+            """
                 SELECT footballer_data.FULL_name, footballer.url_name, footballer.owner_id
                 FROM footballer LEFT JOIN footballer_data ON footballer.id = footballer_data.id
                 WHERE footballer.id = %s AND footballer.league_id = %s
             """,
-            (bid.footballer_id, bid.league_id)
+            (bid.footballer_id, bid.league_id),
         )
         full_name, url_name, owner_id = cursor.fetchone()
 
@@ -295,7 +315,7 @@ def place_bid(bid: BidRequest):
                     AND league_id = %s
                     AND active = true
                 """,
-                (bid.bid_id, bid.footballer_id, bid.player_id, bid.league_id)
+                (bid.bid_id, bid.footballer_id, bid.player_id, bid.league_id),
             )
         else:
             cursor.execute(
@@ -310,7 +330,7 @@ def place_bid(bid: BidRequest):
                 ORDER BY timestamp DESC, id DESC
                 LIMIT 1
                 """,
-                (bid.footballer_id, bid.player_id, bid.league_id)
+                (bid.footballer_id, bid.player_id, bid.league_id),
             )
         existing_bid = cursor.fetchone()
         if bid.bid_id is not None and existing_bid is None:
@@ -325,13 +345,19 @@ def place_bid(bid: BidRequest):
             bid.league_id,
             bid.bid_amount,
             existing_bid_amount,
-            adjust_team_value = owner_id is not None,
+            adjust_team_value=owner_id is not None,
         )
 
-        if bid.bid_amount < footballer.data['market_details'][-1]['value'] and bid.bid_amount != 0:
+        if (
+            bid.bid_amount < footballer.data["market_details"][-1]["value"]
+            and bid.bid_amount != 0
+        ):
             cursor.close()
             conn.close()
-            return {"status": "error", "message": "Bid amount is less than the footballer's market value."}
+            return {
+                "status": "error",
+                "message": "Bid amount is less than the footballer's market value.",
+            }
         elif bid.player_id == owner_id:
             cursor.close()
             conn.close()
@@ -349,7 +375,7 @@ def place_bid(bid: BidRequest):
                     SET active = false
                     WHERE id = %s
                     """,
-                    (existing_bid_id,)
+                    (existing_bid_id,),
                 )
             conn.commit()
             cursor.close()
@@ -367,7 +393,12 @@ def place_bid(bid: BidRequest):
                     SET amount = %s, timestamp = %s, release_clause = %s
                     WHERE id = %s
                     """,
-                    (bid.bid_amount, bid_timestamp, bid.release_clause, existing_bid_id)
+                    (
+                        bid.bid_amount,
+                        bid_timestamp,
+                        bid.release_clause,
+                        existing_bid_id,
+                    ),
                 )
                 logger.info(
                     f"Updated bid: Player {bid.player_id} bids {bid.bid_amount} on footballer {bid.footballer_id}"
@@ -378,7 +409,14 @@ def place_bid(bid: BidRequest):
                     INSERT INTO bid (footballer_id, bidder_id, amount, timestamp, league_id, active, release_clause)
                     VALUES (%s, %s, %s, %s, %s, true, %s)
                     """,
-                    (bid.footballer_id, bid.player_id, bid.bid_amount, bid_timestamp, bid.league_id, bid.release_clause)
+                    (
+                        bid.footballer_id,
+                        bid.player_id,
+                        bid.bid_amount,
+                        bid_timestamp,
+                        bid.league_id,
+                        bid.release_clause,
+                    ),
                 )
                 logger.info(
                     f"Received bid: Player {bid.player_id} bids {bid.bid_amount} on footballer {bid.footballer_id}"
@@ -390,23 +428,23 @@ def place_bid(bid: BidRequest):
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "message": str(e)}
- 
+
 
 @router.post("/reply_to_bid/{bid_id}")
 def reply_to_bid(bid_id: int, league_id: int, accept: bool):
     """Accept or reject a bid on a footballer.
-    
+
     Args:
         bid_id (int): The ID of the bid to reply to.
         league_id (int): The ID of the league to filter by.
         accept (bool): True to accept the bid, False to reject it.
     """
     try:
-        conn = pg_connect()        
+        conn = pg_connect()
         cursor = conn.cursor()
-        
+
         cursor.execute(
-                """
+            """
                 SELECT
                     b.footballer_id
                     , b.bidder_id
@@ -418,14 +456,14 @@ def reply_to_bid(bid_id: int, league_id: int, accept: bool):
                     LEFT JOIN player AS p on b.bidder_id = p.id AND b.league_id = p.league_id
                 WHERE b.id = %s AND f.league_id = %s
             """,
-            (bid_id, league_id)
+            (bid_id, league_id),
         )
         bid = cursor.fetchone()
         if not bid:
             cursor.close()
             conn.close()
             return {"status": "error", "message": "Bid not found."}
-        
+
         footballer_id, bidder_id, amount, owner_id, budget = bid
 
         if accept:
@@ -448,16 +486,27 @@ def reply_to_bid(bid_id: int, league_id: int, accept: bool):
                 SET active = false, acquired_from = %s
                 WHERE footballer_id = %s AND league_id = %s
                 """,
-                (bidder_id, footballer_id, league_id, owner_id, footballer_id, league_id)
+                (
+                    bidder_id,
+                    footballer_id,
+                    league_id,
+                    owner_id,
+                    footballer_id,
+                    league_id,
+                ),
             )
             if budget is not None:
                 debit_player_value(bidder_id, amount)
             if owner_id is not None:
                 debit_player_value(owner_id, -amount)
 
-            logger.info(f"Bid accepted: Footballer {footballer_id} sold to Player {bidder_id} for {amount}")
+            logger.info(
+                f"Bid accepted: Footballer {footballer_id} sold to Player {bidder_id} for {amount}"
+            )
         else:
-            logger.info(f"Bid rejected: Footballer {footballer_id} bid from Player {bidder_id} for {amount} rejected")
+            logger.info(
+                f"Bid rejected: Footballer {footballer_id} bid from Player {bidder_id} for {amount} rejected"
+            )
 
             cursor.execute(
                 """
@@ -465,7 +514,7 @@ def reply_to_bid(bid_id: int, league_id: int, accept: bool):
                 SET active = false
                 WHERE id = %s
                 """,
-                (bid_id,)
+                (bid_id,),
             )
 
         conn.commit()
@@ -510,17 +559,28 @@ def get_player_incoming_bids(player_id: int, league_id: int):
                 AND b.timestamp <= now()
             ORDER BY footballer_id, b.timestamp DESC
             """,
-            (BANK_NAME, player_id, league_id)
+            (BANK_NAME, player_id, league_id),
         )
         bids = cursor.fetchall()
 
         cursor.close()
         conn.close()
-        return {"status": "success", "bids": bids, "columns": ["bid_id", "timestamp", "footballer_id", "bidder_name", "footballer_name", "amount"]}
+        return {
+            "status": "success",
+            "bids": bids,
+            "columns": [
+                "bid_id",
+                "timestamp",
+                "footballer_id",
+                "bidder_name",
+                "footballer_name",
+                "amount",
+            ],
+        }
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "bids": []}
-    
+
 
 @router.get("/outgoing_bids/{player_id}")
 def get_player_outgoing_bids(player_id: int, league_id: int):
@@ -555,13 +615,24 @@ def get_player_outgoing_bids(player_id: int, league_id: int):
                 AND b.timestamp <= now()
             ORDER BY footballer_id, b.timestamp DESC
             """,
-            (BANK_NAME, player_id, league_id)
+            (BANK_NAME, player_id, league_id),
         )
         bids = cursor.fetchall()
 
         cursor.close()
         conn.close()
-        return {"status": "success", "bids": bids, "columns": ["bid_id", "timestamp", "footballer_id", "owner_name", "footballer_name", "amount"]}
+        return {
+            "status": "success",
+            "bids": bids,
+            "columns": [
+                "bid_id",
+                "timestamp",
+                "footballer_id",
+                "owner_name",
+                "footballer_name",
+                "amount",
+            ],
+        }
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "bids": []}
@@ -594,13 +665,24 @@ def get_player_future_bids(player_id: int, league_id: int):
                 AND b.timestamp > now()
             ORDER BY b.timestamp ASC, footballer_id
             """,
-            (BANK_NAME, player_id, league_id)
+            (BANK_NAME, player_id, league_id),
         )
         bids = cursor.fetchall()
 
         cursor.close()
         conn.close()
-        return {"status": "success", "bids": bids, "columns": ["bid_id", "timestamp", "footballer_id", "owner_name", "footballer_name", "amount"]}
+        return {
+            "status": "success",
+            "bids": bids,
+            "columns": [
+                "bid_id",
+                "timestamp",
+                "footballer_id",
+                "owner_name",
+                "footballer_name",
+                "amount",
+            ],
+        }
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"status": "error", "bids": []}
@@ -645,20 +727,37 @@ def schedule_release_clause_bid(request: ScheduleReleaseClauseBidRequest):
 
         owner_id, release_clause_amount, acquisition_ts, rc_available = result
         if owner_id is None:
-            return {"status": "error", "message": "Release clause not available for this footballer."}
+            return {
+                "status": "error",
+                "message": "Release clause not available for this footballer.",
+            }
         if owner_id == request.player_id:
-            return {"status": "error", "message": "Cannot schedule a release clause bid for your own footballer."}
+            return {
+                "status": "error",
+                "message": "Cannot schedule a release clause bid for your own footballer.",
+            }
         if rc_available:
-            return {"status": "error", "message": "Release clause is already available. Pay it directly instead."}
+            return {
+                "status": "error",
+                "message": "Release clause is already available. Pay it directly instead.",
+            }
         if release_clause_amount is None:
-            return {"status": "error", "message": "Release clause not configured for this footballer."}
+            return {
+                "status": "error",
+                "message": "Release clause not configured for this footballer.",
+            }
         if acquisition_ts is None:
-            return {"status": "error", "message": "Release clause schedule cannot be computed for this footballer."}
+            return {
+                "status": "error",
+                "message": "Release clause schedule cannot be computed for this footballer.",
+            }
 
         if acquisition_ts.tzinfo is None:
             acquisition_ts = acquisition_ts.replace(tzinfo=timezone.utc)
 
-        scheduled_timestamp = acquisition_ts + timedelta(days=RELEASE_CLAUSE_DAYS, seconds=1)
+        scheduled_timestamp = acquisition_ts + timedelta(
+            days=RELEASE_CLAUSE_DAYS, seconds=1
+        )
         now_utc = datetime.now(timezone.utc)
         if scheduled_timestamp <= now_utc:
             logger.warning(
@@ -680,7 +779,10 @@ def schedule_release_clause_bid(request: ScheduleReleaseClauseBidRequest):
             )
         )
         if response.get("status") != "success":
-            return {"status": "error", "message": "Unable to schedule release clause bid."}
+            return {
+                "status": "error",
+                "message": "Unable to schedule release clause bid.",
+            }
 
         return {
             "status": "success",
@@ -696,13 +798,14 @@ def schedule_release_clause_bid(request: ScheduleReleaseClauseBidRequest):
         if conn:
             conn.close()
 
+
 @router.post("/pay_release_clause")
 def pay_release_clause(request: ReleaseClauseRequest):
     """Pay the release clause to acquire a footballer.
-    
+
     Args:
         request (ReleaseClauseRequest): The request containing player_id and footballer_id.
-        
+
     Returns:
         dict: A dictionary with status and message.
     """
@@ -710,7 +813,7 @@ def pay_release_clause(request: ReleaseClauseRequest):
         conn = pg_connect()
         cursor = conn.cursor()
         client = mongo_client()
-        
+
         # Get footballer data
         cursor.execute(
             """
@@ -720,33 +823,39 @@ def pay_release_clause(request: ReleaseClauseRequest):
             FROM footballer
             WHERE id = %s AND league_id = %s
             """,
-            (request.footballer_id, request.league_id)
+            (request.footballer_id, request.league_id),
         )
-        
+
         result = cursor.fetchone()
         if not result:
             return {"status": "error", "message": "Footballer not found."}
-        
+
         owner_id, release_clause = result
-        
+
         # Cannot pay release clause if owner_id is NULL
         if owner_id is None:
-            return {"status": "error", "message": "Release clause not available for this footballer."}
-        
+            return {
+                "status": "error",
+                "message": "Release clause not available for this footballer.",
+            }
+
         # Cannot acquire your own footballer
         if owner_id == request.player_id:
-            return {"status": "error", "message": "Cannot pay release clause for your own footballer."}
+            return {
+                "status": "error",
+                "message": "Cannot pay release clause for your own footballer.",
+            }
 
         has_enough_budget, budget_error = _player_has_enough_budget(
             request.player_id,
             request.league_id,
             new_bid_amount=release_clause,
             current_bid_amount=0,
-            adjust_team_value=False  # Do not adjust team value when paying release clause
+            adjust_team_value=False,  # Do not adjust team value when paying release clause
         )
         if not has_enough_budget:
             return {"status": "error", "message": budget_error}
-        
+
         # Transfer the footballer
         cursor.execute(
             """
@@ -754,25 +863,36 @@ def pay_release_clause(request: ReleaseClauseRequest):
             SET owner_id = %s, on_market = FALSE, on_market_since = NULL, on_lineup = FALSE
             WHERE id = %s AND league_id = %s
             """,
-            (request.player_id, request.footballer_id, request.league_id)
+            (request.player_id, request.footballer_id, request.league_id),
         )
-        
+
         cursor.execute(
             """
             INSERT INTO bid (amount, timestamp, bidder_id, footballer_id, league_id, active, acquired_from, release_clause)
             VALUES (%s, now(), %s, %s, %s, FALSE, %s, TRUE)
             """,
-            (release_clause, request.player_id, request.footballer_id, request.league_id, owner_id)
+            (
+                release_clause,
+                request.player_id,
+                request.footballer_id,
+                request.league_id,
+                owner_id,
+            ),
         )
-        
+
         # Update player budgets
         debit_player_value(request.player_id, release_clause)
         debit_player_value(owner_id, -release_clause)
-        
+
         conn.commit()
-        
-        logger.info(f"Release clause paid: Footballer {request.footballer_id} transferred from Player {owner_id} to Player {request.player_id} for {release_clause}")
-        return {"status": "success", "message": f"Release clause paid successfully. Footballer acquired for €{release_clause:,.0f}."}
+
+        logger.info(
+            f"Release clause paid: Footballer {request.footballer_id} transferred from Player {owner_id} to Player {request.player_id} for {release_clause}"
+        )
+        return {
+            "status": "success",
+            "message": f"Release clause paid successfully. Footballer acquired for €{release_clause:,.0f}.",
+        }
     except Exception as e:
         logger.error(f"Error paying release clause: {e}")
         if conn:
@@ -788,7 +908,9 @@ def pay_release_clause(request: ReleaseClauseRequest):
 
 
 @router.post("/increment_release_clause/{footballer_id}")
-def increment_release_clause(footballer_id: int, league_id: int, player_id: int, value: int):
+def increment_release_clause(
+    footballer_id: int, league_id: int, player_id: int, value: int
+):
     """Increment the release clause of a footballer."""
     try:
         if value <= 0:
@@ -813,13 +935,22 @@ def increment_release_clause(footballer_id: int, league_id: int, player_id: int,
         owner_id, current_release_clause, footballer_value = row
 
         if owner_id != player_id:
-            return {"status": "error", "message": "You can only increment the release clause of your own footballer."}
+            return {
+                "status": "error",
+                "message": "You can only increment the release clause of your own footballer.",
+            }
 
         has_enough_budget, _ = _player_has_enough_budget(player_id, league_id, value)
         if not has_enough_budget:
-            return {"status": "error", "message": "You do not have enough budget to increment the release clause."}
+            return {
+                "status": "error",
+                "message": "You do not have enough budget to increment the release clause.",
+            }
 
-        new_release_clause = max(current_release_clause or 0, MIN_RELEASE_CLAUSE_VALUE, footballer_value) + 2*value
+        new_release_clause = (
+            max(current_release_clause or 0, MIN_RELEASE_CLAUSE_VALUE, footballer_value)
+            + 2 * value
+        )
 
         cursor.execute(
             """
@@ -830,7 +961,7 @@ def increment_release_clause(footballer_id: int, league_id: int, player_id: int,
             (new_release_clause, footballer_id, league_id),
         )
         debit_player_value(player_id, value)
-        
+
         conn.commit()
 
         logger.info(
@@ -846,7 +977,10 @@ def increment_release_clause(footballer_id: int, league_id: int, player_id: int,
         logger.error(f"Error incrementing release clause: {e}")
         if conn:
             conn.rollback()
-        return {"status": "error", "message": "An error occurred while incrementing the release clause."}
+        return {
+            "status": "error",
+            "message": "An error occurred while incrementing the release clause.",
+        }
     finally:
         if cursor:
             cursor.close()

@@ -23,16 +23,21 @@ logger = logging.getLogger(__name__)
 
 
 def _cache_data(start_time: float, leagues: list[int]) -> None:
-    target_footballers = footballers_to_update(time_threshold=UPDATE_DB_INTERVAL)["footballer_ids"]
+    target_footballers = footballers_to_update(time_threshold=UPDATE_DB_INTERVAL)[
+        "footballer_ids"
+    ]
 
     if time.time() - start_time > LOOP_TIME_SECONDS - LOOP_TIME_BUFFER:
         logger.info("No time to cache data into database this loop.")
         return
 
     for fid in target_footballers:
-        elapsed_time = update_footballer_info(fid).get('elapsed_time')
+        elapsed_time = update_footballer_info(fid).get("elapsed_time")
         elapsed_time += _auto_increment_release_clause(fid, leagues)
-        if time.time() - start_time > LOOP_TIME_SECONDS - elapsed_time * N_REQUEST_BUFFER:
+        if (
+            time.time() - start_time
+            > LOOP_TIME_SECONDS - elapsed_time * N_REQUEST_BUFFER
+        ):
             break
 
 
@@ -41,7 +46,9 @@ def _update_data(n_iteration: int) -> None:
         update_fixture_times()
 
 
-def _run_iteration(active_markets: dict[int, Market | None], n_iteration: int, start_time: float) -> None:
+def _run_iteration(
+    active_markets: dict[int, Market | None], n_iteration: int, start_time: float
+) -> None:
     """Run a single iteration of the background loop (blocking).
 
     ``active_markets`` is a dict keyed by league_id so that leagues added

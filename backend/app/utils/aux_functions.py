@@ -3,7 +3,6 @@ import time
 import requests
 from bs4 import BeautifulSoup
 
-
 REQUEST_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
@@ -30,7 +29,7 @@ def scrape_page(url, logger):
                     logger.warning(
                         f"Rate limited while fetching {url}; retrying in {2 ** attempt}s (attempt {attempt + 1}/4)"
                     )
-                time.sleep(2 ** attempt)
+                time.sleep(2**attempt)
                 continue
 
             response.raise_for_status()
@@ -43,9 +42,10 @@ def scrape_page(url, logger):
                 logger.warning(
                     f"Request failed for {url}; retrying in {2 ** attempt}s (attempt {attempt + 1}/4): {error}"
                 )
-            time.sleep(2 ** attempt)
+            time.sleep(2**attempt)
 
     raise last_error
+
 
 def extract_fixture_points(fixture_breakdown: list) -> dict:
     """Extracts total points per fixture from the fixture breakdown.
@@ -58,14 +58,9 @@ def extract_fixture_points(fixture_breakdown: list) -> dict:
     fixture_points = list()
     for fixture_info in fixture_breakdown:
         points = 0
-        for point_item, point_info in fixture_info['breakdown'].items():
+        for point_item, point_info in fixture_info["breakdown"].items():
             points += point_info.get("points", 0)
 
-        fixture_points.append(
-            {
-                'fixture': fixture_info['fixture'],
-                'points': points
-            }
-        )
+        fixture_points.append({"fixture": fixture_info["fixture"], "points": points})
 
     return fixture_points

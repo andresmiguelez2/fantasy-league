@@ -25,11 +25,9 @@ def _run_startup_migrations():
     try:
         conn = pg_connect()
         cursor = conn.cursor()
-        cursor.execute(
-            """
+        cursor.execute("""
             ALTER TABLE player ADD COLUMN IF NOT EXISTS picture_url TEXT
-            """
-        )
+            """)
         conn.commit()
         cursor.close()
         conn.close()
