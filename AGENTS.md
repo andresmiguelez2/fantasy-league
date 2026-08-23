@@ -15,11 +15,7 @@
 - A background polling loop (`backend/app/tasks.py`) starts with the app; set env
   `ENABLE_BACKGROUND_TASKS=false` to disable it during development.
 - Frontend calls the backend at `${VITE_BACKEND_URL:-<hostname>:8000}`
-  (`frontend/src/lib/api.ts`); backend CORS allows only `localhost:5173` and
-  `127.0.0.1:5173`.
-- There is no production environment: no CI/CD, deploy scripts, or prod compose
-  override exist, and both Dockerfiles run dev servers (`uvicorn --reload`,
-  `npm run dev`). The compose stack is local development only.
+  (`frontend/src/lib/api.ts`).
 
 ## Commands
 
@@ -38,8 +34,6 @@
   npm even though a stale `bun.lockb` also exists. No frontend test suite exists;
   frontend deps must be installed inside the container (`node_modules` is a Docker
   volume, so host installs don't reach it).
-- First-time database setup (schema restore from `resources/database_schema`, seed
-  scripts): follow `docs/SETUP.md`.
 
 ## Conventions
 
@@ -54,9 +48,3 @@
   `.vite/deps/` caches and some `no-explicit-any` usages — compare against baseline
   rather than expecting zero output.
 - Commits follow Conventional Commits, often with gitmoji (`feat:`, `fix: 🐛 ...`).
-- Feature work convention (see `.opencode/agents/code-developer.md`): cut a
-  `feature/<kebab-name>` branch off the active branch, commit incrementally, open a
-  PR rather than merging directly; run the `frontend-qa` subagent after UI changes.
-  `.github/agents/consistency-antagonism-review.agent.md` reviews paired/inverse
-  logic for drift.
-- No CI workflows exist — verification is manual via the commands above.
