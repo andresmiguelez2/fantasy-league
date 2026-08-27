@@ -102,6 +102,24 @@ export const getDefaultAvatarUrl = (seed: string): string => {
   return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}`;
 };
 
+export interface GameConfig {
+  bid_expiration_days: number;
+}
+
+export const fetchGameConfig = async (): Promise<GameConfig> => {
+  try {
+    const response = await fetch(`${BACKEND_URL}/general/config`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch game config (${response.status})`);
+    }
+    const data = await response.json();
+    return { bid_expiration_days: Number(data.bid_expiration_days) };
+  } catch (error) {
+    console.error("Failed to fetch game config:", error);
+    return { bid_expiration_days: 3 };
+  }
+};
+
 const ACTIVE_LEAGUE_KEY = 'activeLeagueId';
 const ACTIVE_LEAGUE_NAME_KEY = 'activeLeagueName';
 const ACTIVE_PLAYER_KEY = 'activePlayerId';
