@@ -765,6 +765,7 @@ export interface OutgoingBid {
   ownerName: string | null;
   footballerName: string;
   amount: number;
+  ownerId: number | null;
 }
 
 const fetchPlayerBids = async (endpoint: string, playerId?: string): Promise<OutgoingBid[]> => {
@@ -785,6 +786,7 @@ const fetchPlayerBids = async (endpoint: string, playerId?: string): Promise<Out
     ownerName: bid[3],
     footballerName: bid[4],
     amount: bid[5],
+    ownerId: bid[6],
   }));
 };
 

@@ -137,7 +137,9 @@ const OutgoingBids = () => {
                       {bid.ownerName ?? "-"}
                     </TableCell>
                     <TableCell className="text-center text-muted-foreground whitespace-normal break-words">
-                      {formatRemainingTime(calculateRemainingTime(bid.timestamp))}
+                      {bid.ownerId === null
+                        ? "Active market"
+                        : formatRemainingTime(calculateRemainingTime(bid.timestamp))}
                     </TableCell>
                     <TableCell className="text-center font-semibold whitespace-normal break-words">
                       {formatCurrency(bid.amount)}
