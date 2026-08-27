@@ -100,6 +100,24 @@ export const resolvePictureUrl = (url: string | null | undefined): string | unde
   return url;
 };
 
+export interface GameConfig {
+  bid_expiration_days: number;
+}
+
+export const fetchGameConfig = async (): Promise<GameConfig> => {
+  try {
+    const response = await fetch(`${BACKEND_URL}/general/config`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch game config (${response.status})`);
+    }
+    const data = await response.json();
+    return { bid_expiration_days: Number(data.bid_expiration_days) };
+  } catch (error) {
+    console.error("Failed to fetch game config:", error);
+    return { bid_expiration_days: 3 };
+  }
+};
+
 const ACTIVE_LEAGUE_KEY = "activeLeagueId";
 const ACTIVE_LEAGUE_NAME_KEY = "activeLeagueName";
 const ACTIVE_PLAYER_KEY = "activePlayerId";
@@ -1136,12 +1154,12 @@ export const uploadLeaguePlayerPicture = async (
 ): Promise<{ status: string; picture_url?: string; detail?: string }> => {
   const token = getAuthToken();
   if (!token) {
-    throw new Error('Not authenticated');
+    throw new Error("Not authenticated");
   }
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append("file", file);
   const response = await fetch(`${BACKEND_URL}/player/${playerId}/picture`, {
-    method: 'POST',
+    method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -1149,7 +1167,7 @@ export const uploadLeaguePlayerPicture = async (
   });
   const data = await response.json();
   if (!response.ok) {
-    return { status: 'error', detail: data.detail || 'Failed to upload picture' };
+    return { status: "error", detail: data.detail || "Failed to upload picture" };
   }
   return data;
 };
