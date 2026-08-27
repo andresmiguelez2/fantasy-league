@@ -5,7 +5,13 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-const BID_EXPIRATION_DAYS = 7;
+// Default matches backend/app/core/constants.py BID_EXPIRATION_DAYS.
+// Overridden at startup from the backend /general/config endpoint.
+export let BID_EXPIRATION_DAYS = 3;
+
+export const setBidExpirationDays = (days: number) => {
+  BID_EXPIRATION_DAYS = days;
+};
 
 export interface RemainingTime {
   days: number;

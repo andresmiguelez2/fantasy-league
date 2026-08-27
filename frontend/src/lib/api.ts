@@ -767,6 +767,7 @@ export interface OutgoingBid {
   ownerName: string | null;
   footballerName: string;
   amount: number;
+  ownerId: number | null;
 }
 
 const fetchPlayerBids = async (endpoint: string, playerId?: string): Promise<OutgoingBid[]> => {
@@ -787,6 +788,7 @@ const fetchPlayerBids = async (endpoint: string, playerId?: string): Promise<Out
     ownerName: bid[3],
     footballerName: bid[4],
     amount: bid[5],
+    ownerId: bid[6],
   }));
 };
 
@@ -1136,12 +1138,12 @@ export const uploadLeaguePlayerPicture = async (
 ): Promise<{ status: string; picture_url?: string; detail?: string }> => {
   const token = getAuthToken();
   if (!token) {
-    throw new Error('Not authenticated');
+    throw new Error("Not authenticated");
   }
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append("file", file);
   const response = await fetch(`${BACKEND_URL}/player/${playerId}/picture`, {
-    method: 'POST',
+    method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -1149,7 +1151,7 @@ export const uploadLeaguePlayerPicture = async (
   });
   const data = await response.json();
   if (!response.ok) {
-    return { status: 'error', detail: data.detail || 'Failed to upload picture' };
+    return { status: "error", detail: data.detail || "Failed to upload picture" };
   }
   return data;
 };
