@@ -1,8 +1,15 @@
 from fastapi import APIRouter
+from backend.app.core.constants import BID_EXPIRATION_DAYS
 from backend.app.db.database import pg_connect, mongo_client
 from .logger import logger
 
 router = APIRouter(prefix="/general", tags=["general"])
+
+
+@router.get("/config")
+def app_config():
+    """Return client-facing game constants so the frontend stays in sync with the backend."""
+    return {"bid_expiration_days": BID_EXPIRATION_DAYS}
 
 
 @router.get("/footballers_to_update")
