@@ -427,7 +427,7 @@ def place_bid(bid: BidRequest):
             return {"status": "success", "message": "Bid placed successfully."}
     except Exception as e:
         logger.error(f"Error: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": 'Other error'}
 
 
 @router.post("/reply_to_bid/{bid_id}")
