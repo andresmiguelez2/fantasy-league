@@ -604,6 +604,7 @@ def get_player_outgoing_bids(player_id: int, league_id: int):
                 , COALESCE(p.name, %s) AS owner_name
                 , fd.name AS footballer_name
                 , b.amount
+                , f.owner_id
             FROM bid AS b
                 LEFT JOIN footballer AS f ON b.footballer_id = f.id AND b.league_id = f.league_id
                 LEFT JOIN footballer_data AS fd ON b.footballer_id = fd.id
@@ -631,6 +632,7 @@ def get_player_outgoing_bids(player_id: int, league_id: int):
                 "owner_name",
                 "footballer_name",
                 "amount",
+                "owner_id",
             ],
         }
     except Exception as e:
